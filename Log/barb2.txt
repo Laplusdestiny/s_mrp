@@ -1,0 +1,5 @@
+-o -f
+compute-0-16
+2011年 11月 14日 月曜日 13:32:59 JST
+cpu time: 2.16 sec.
+OK!
