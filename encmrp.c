@@ -543,11 +543,11 @@ void init_class(ENCODER *enc)
 
 void init_mask()
 {
-    mask = (MASK *)alloc_mem(sizeof(MASK));
-    mask->weight = (int *)alloc_mem(MAX_PEAK_NUM * sizeof(int));
-    mask->class = (char *)alloc_mem(MAX_PEAK_NUM * sizeof(char));
- 		mask->base = (int *)alloc_mem(MAX_PEAK_NUM * sizeof(int));
-		mask->pm =(PMODEL **)alloc_mem(MAX_PEAK_NUM * sizeof(PMODEL *));
+	mask = (MASK *)alloc_mem(sizeof(MASK));
+	mask->weight = (int *)alloc_mem(MAX_PEAK_NUM * sizeof(int));
+	mask->class = (char *)alloc_mem(MAX_PEAK_NUM * sizeof(char));
+	mask->base = (int *)alloc_mem(MAX_PEAK_NUM * sizeof(int));
+	mask->pm =(PMODEL **)alloc_mem(MAX_PEAK_NUM * sizeof(PMODEL *));
 }
 
 void set_cost_model(ENCODER *enc, int f_mmse)
@@ -838,7 +838,7 @@ cost_t calc_cost2(ENCODER *enc, int tly, int tlx, int bry, int brx)
 }
 
 
-cost_t calc_cost(ENCODER *enc, int tly, int tlx, int bry, int brx)
+cost_t calc_cost(ENCODER *enc, int tly, int tlx, int bry, int brx)		//コストを算出
 {
 	cost_t cost;
 	int x, y, u, cl, gr, prd, e, base, frac;
@@ -1477,27 +1477,27 @@ void set_weight_flag(ENCODER *enc)
 
 	for (y = 0; y < enc->height; y++) {
 		for (x = 0; x < enc->width; x++) {
-			sample = win_sample[(int)enc->mask[y][x]]; //window nai no gaso suu
+			sample = win_sample[(int)enc->mask[y][x]];	//ウィンドウ内の画素数(enc->maskの値に依存(1,9,25,49,81))
 			for (cl = 0; cl < enc->num_class; cl++) {
 				count_cl[cl]  = 0;
 			}
 
 			for (i = 0; i < sample; i++){
 				ty = y + mask_y[i];
-				tx = x + mask_x[i];
+				tx = x + mask_x[i];	//マスクにかかる位置の画素を算出
 				if(ty < 0) ty = 0;
 				else if(ty >= enc->height) ty = enc->height - 1;
 				if(tx < 0) tx = 0;
 				else if(tx >= enc->width) tx = enc->width - 1;
 				cl = enc->class[ty][tx];
-				count_cl[cl]++; //mask nai no class count
+				count_cl[cl]++;		//マスク内のクラスのヒストグラム
 			}
 
 			for(cl = 0; cl < enc->num_class; cl++){
-					enc->weight[y][x][cl] = 0;
+				enc->weight[y][x][cl] = 0;
 				if (count_cl[cl] != 0){
 					enc->weight[y][x][cl] =( (count_cl[cl] << W_SHIFT) / sample);
-//if(y==100&&x==100)printf("count_cl[cl] = %d sample = %d weight[y][x][%d] = %d\n",count_cl[cl],sample,cl,enc->weight[y][x][cl]);
+					//if(y==100&&x==100)printf("count_cl[cl] = %d sample = %d weight[y][x][%d] = %d\n",count_cl[cl],sample,cl,enc->weight[y][x][cl]);
 				}
 			}
 		}
@@ -1778,7 +1778,7 @@ void optimize_coef(ENCODER *enc, int cl, int pos, int *num_eff)
 
 
 #else
-
+//non OPTIMIZE_MASK_LOOP
 void optimize_coef(ENCODER *enc, int cl, int pos, int *num_eff)
 {
 #define S_RANGE 2		//Search Range  ex. 2 -> +-1
@@ -2001,7 +2001,7 @@ cost_t optimize_predictor(ENCODER *enc)	//when AUTO_PRD_ORDER 1
 		if (enc->cl_hist[cl] == 0) continue;
 		for (k = 0; k < enc->num_search[cl]; k++) {
 			if (enc->num_nzcoef[cl] == 0) continue;
-			pos = (int)(((double)rand() * enc->num_nzcoef[cl]) / (RAND_MAX+1.0));
+			pos = (int)(((double)rand() * enc->num_nzcoef[cl]) / (RAND_MAX+1.0));	//いじる係数をrand関数で選択
 			pos = enc->nzconv[cl][pos];
 			optimize_coef(enc, cl, pos, &num_eff);
 			set_prd_pels(enc);
@@ -2016,7 +2016,7 @@ cost_t optimize_predictor(ENCODER *enc)	//when AUTO_PRD_ORDER 1
 #else
 
 #if OPTIMIZE_MASK_LOOP
-void optimize_coef(ENCODER *enc, int cl, int pos1, int pos2)
+void optimize_coef(ENCODER *enc, int cl, int pos1, int pos2)	//ここは使用されないはず(宣言次第)
 {
 #define SEARCH_RANGE 11
 #define SUBSEARCH_RANGE 3
@@ -2130,7 +2130,7 @@ void optimize_coef(ENCODER *enc, int cl, int pos1, int pos2)
 
 #else
 
-void optimize_coef(ENCODER *enc, int cl, int pos1, int pos2)
+void optimize_coef(ENCODER *enc, int cl, int pos1, int pos2)	//ここは使用されないはず(宣言次第)
 {
 #define SEARCH_RANGE 11
 #define SUBSEARCH_RANGE 3
@@ -3732,7 +3732,8 @@ int main(int argc, char **argv)
 #endif
 	printf("%s -> %s (%dx%d)\n", infile, outfile, img->width, img->height);
 #if AUTO_PRD_ORDER
-	printf("M = %d, K = %d, P = %d, V = %d, A = %d, l = %d, m = %d, o = %d, f = %d\n",
+	// printf("M = %d, K = %d, P = %d, V = %d, A = %d, l = %d, m = %d, o = %d, f = %d\n",
+	printf("NUM_CLASS = 	%d\nMAX_PRD_ORDER = 	%d\ncoef_precision = 	%d\nnum_pmodel = 	%d\npm_accuracy = 	%d\nmax_iteration = 	%d\nf_mmse = 	%d\nf_optpred = 	%d\nquadtree_depth = 	%d\n",
 		num_class, MAX_PRD_ORDER, coef_precision, num_pmodel, pm_accuracy, max_iteration, f_mmse, f_optpred, quadtree_depth);
 #else
 	printf("M = %d, K = %d, P = %d, V = %d, A = %d\n",
@@ -3776,6 +3777,7 @@ int main(int argc, char **argv)
 	pmlist_save = (PMODEL **)alloc_mem(enc->num_group * sizeof(PMODEL *));
 
 	/* 1st loop */
+	//単峰性確率モデルによる算術符号化
 	enc->optimize_loop = 1;
 	min_cost = INT_MAX;
 	for (i = j = 0; i < max_iteration; i++) {
@@ -3833,28 +3835,29 @@ int main(int argc, char **argv)
 #endif
 	save_prediction_value(enc);	//予測値の保存
 	predict_region(enc, 0, 0, enc->height, enc->width);
-	cost = calc_cost(enc, 0, 0, enc->height, enc->width);
+	cost = calc_cost(enc, 0, 0, enc->height, enc->width);	//現状のコストを算出
 	printf("cost = %d\n", (int)cost);
 
 
     /* init mask */
-	init_mask();
+	init_mask();	//MASK構造体のメモリ確保
 	for (i = 0; i < enc->height; i++){
 		for (j = 0; j < enc->width; j++){
-			enc->mask[i][j] = INIT_MASK;
+			enc->mask[i][j] = INIT_MASK;	//マスクの初期化
 		}
 	}
 	printf("INIT_MASK = %d\n", INIT_MASK);
-  set_weight_flag(enc);
+	set_weight_flag(enc);
 
 	/* 2nd loop */
+	//マスクによる多峰性確率モデルの作成および算術符号化
 	enc->optimize_loop = 2;
 	min_cost = INT_MAX;
 	sw = 0;
 	for (i = j = 0; i < max_iteration; i++) {
 		printf("(%2d) cost =", i);
 		if (f_optpred) {
-			cost = optimize_predictor(enc);
+			cost = optimize_predictor(enc);	//予測器の最適化
 			printf(" %d", (int)cost);
 		}
 		side_cost = sc = encode_predictor(NULL, enc, 1);
