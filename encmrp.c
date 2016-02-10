@@ -727,71 +727,70 @@ int calc_uenc(ENCODER *enc, int y, int x)
 
 void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 {
-    int ty, tx, cl, i, peak, sample;
-		int m_gr,m_prd,m_frac;
-    int count_cl[enc->num_class];
+	int ty, tx, cl, i, peak, sample;
+	int m_gr,m_prd,m_frac;
+	int count_cl[enc->num_class];
 
-    sample = win_sample[(int)enc->mask[y][x]]; //window nai no gaso suu
+	sample = win_sample[(int)enc->mask[y][x]];	//ウィンドウ内の画素数
 
-    for (cl = 0; cl < enc->num_class; cl++) {
-        count_cl[cl]  = 0;
-    }
+	for (cl = 0; cl < enc->num_class; cl++) {
+		count_cl[cl]  = 0;
+	}
 
-    for (i = 0; i < sample; i++){
-        ty = y + mask_y[i];
-        tx = x + mask_x[i];
-        if(ty < 0) ty = 0;
-        else if(ty >= enc->height) ty = enc->height - 1;
-        if(tx < 0) tx = 0;
-        else if(tx >= enc->width) tx = enc->width - 1;
-				cl = enc->class[ty][tx];
-				count_cl[cl]++; //mask nai no class count
-    }
+	for (i = 0; i < sample; i++){
+		ty = y + mask_y[i];
+		tx = x + mask_x[i];
+		if(ty < 0) ty = 0;
+		else if(ty >= enc->height) ty = enc->height - 1;
+		if(tx < 0) tx = 0;
+		else if(tx >= enc->width) tx = enc->width - 1;
+		cl = enc->class[ty][tx];
+		count_cl[cl]++; //mask nai no class count
+	}
 
-   for(cl = peak = 0; cl < enc->num_class; cl++){
-   	if (count_cl[cl]!=0){
+	for(cl = peak = 0; cl < enc->num_class; cl++){
+		if (count_cl[cl]!=0){
 			mask->class[peak] = cl;
-	  	mask->weight[peak] =( (count_cl[cl] << W_SHIFT) / sample);
-	  	m_gr = enc->uquant[cl][u];
-	  	m_prd = enc->prd_class[y][x][cl];
-	  	m_prd = CLIP(0, enc->maxprd, m_prd);
-//			if(peak==0)m_prd = 1000;
-//			else m_prd = 10000;
-//		if (y==8&&x== 8) 	printf("(%d,%d) class[%d] = %d weight[%d] =%lf m_prd =%d\n ",x,y,peak,mask->class[peak],peak,mask->weight[peak],m_prd);
-	  	mask->base[peak] = enc->bconv[m_prd];
-	  	m_frac = enc->fconv[m_prd];
-	  	mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
-	  	peak++;
-	  }
-   }
-//	if (y==8&&x== 8) printf("********\n");
-   mask->num_peak = peak; //peak no kazu
-//	if (peak != 1) printf ("mask->num_peak =%d" ,mask->num_peak);
-    //printf("(y, x) = (%d, %d), mask->class[0] = %d\n", y, x, mask->class[0]);
+			mask->weight[peak] =( (count_cl[cl] << W_SHIFT) / sample);
+			m_gr = enc->uquant[cl][u];
+			m_prd = enc->prd_class[y][x][cl];
+			m_prd = CLIP(0, enc->maxprd, m_prd);
+			// if(peak==0)m_prd = 1000;
+			// else m_prd = 10000;
+			// if (y==8&&x== 8) 	printf("(%d,%d) class[%d] = %d weight[%d] =%lf m_prd =%d\n ",x,y,peak,mask->class[peak],peak,mask->weight[peak],m_prd);
+			mask->base[peak] = enc->bconv[m_prd];
+			m_frac = enc->fconv[m_prd];
+			mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
+			peak++;
+		}
+	}
+	// if (y==8&&x== 8) printf("********\n");
+	mask->num_peak = peak;	//ピークの数
+	// if (peak != 1) printf ("mask->num_peak =%d" ,mask->num_peak);
+	// printf("(y, x) = (%d, %d), mask->class[0] = %d\n", y, x, mask->class[0]);
 }
 
 int set_mask_parameter_optimize(ENCODER *enc,int y, int x, int u, int r_cl)
 {
-    int cl, peak;
-		int m_gr,m_prd,m_frac,r_peak;
+	int cl, peak;
+	int m_gr,m_prd,m_frac,r_peak;
+	r_peak = -1;
 
-    r_peak = -1;
-
-		for(cl = peak = 0; cl < enc->num_class; cl++){
-			if (enc->weight[y][x][cl] != 0){
-				mask->class[peak] = cl;
-				mask->weight[peak] = enc->weight[y][x][cl];
-				m_prd = enc->prd_class[y][x][cl];
-				m_prd = CLIP(0, enc->maxprd, m_prd);
-				mask->base[peak] = enc->bconv[m_prd];
-				m_frac = enc->fconv[m_prd];
-				m_gr = enc->uquant[cl][u];
-				if (cl == r_cl)	 r_peak = peak;
-				mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
-				peak++;
-			}
+	for(cl = peak = 0; cl < enc->num_class; cl++){
+		if (enc->weight[y][x][cl] != 0){
+			mask->class[peak] = cl;
+			mask->weight[peak] = enc->weight[y][x][cl];
+			m_prd = enc->prd_class[y][x][cl];
+			m_prd = CLIP(0, enc->maxprd, m_prd);
+			mask->base[peak] = enc->bconv[m_prd];
+			m_frac = enc->fconv[m_prd];
+			m_gr = enc->uquant[cl][u];
+			if (cl == r_cl)	 r_peak = peak;
+			mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
+			peak++;
 		}
-   mask->num_peak = peak; //peak no kazu
+	}
+	mask->num_peak = peak;	//ピークの数
 	return(r_peak);
 }
 
@@ -2323,7 +2322,7 @@ cost_t optimize_group_mult(ENCODER *enc)
 	cbuf = (cost_t **)alloc_2d_array(enc->num_group, MAX_UPARA + 2,
 		sizeof(cost_t));
 	thc_p = enc->th_cost;
-  a = 1.0 / log(2.0);
+	a = 1.0 / log(2.0);
 
 	for (k = 0; k < MAX_UPARA + 2; k++) trellis[0][k] = 0;
 	/* Dynamic programming */
@@ -2337,24 +2336,24 @@ cost_t optimize_group_mult(ENCODER *enc)
 		}
 		for (y = 0; y < enc->height; y++) {
 			for (x = 0; x < enc->width; x++) {
-	  	if (enc->weight[y][x][cl] == 0) continue;
-					u = enc->upara[y][x] + 1;
-					peak = set_mask_parameter_optimize(enc, y, x, u-1,cl);
-					e = enc->encval[y][x];
-					prd = enc->prd_class[y][x][cl];
-					prd = CLIP(0, enc->maxprd, prd);
-					frac = enc->fconv[prd];
-					for (gr = 0; gr < enc->num_group; gr++) {
-						mask->pm[peak] = enc->pmlist[gr] + frac;
-						if (mask->num_peak == 1){
-							base = mask->base[0];
-							pm = mask->pm[0];
-							cbuf[gr][u] += pm->cost[base + e] + pm->subcost[base];
-						}else{
-							set_pmodel_mult_cost(mask,enc->maxval+1,e);
-							cbuf[gr][u] += a * (log(mask->cumfreq)-log(mask->freq));
-						}
+				if (enc->weight[y][x][cl] == 0) continue;
+				u = enc->upara[y][x] + 1;
+				peak = set_mask_parameter_optimize(enc, y, x, u-1,cl);
+				e = enc->encval[y][x];
+				prd = enc->prd_class[y][x][cl];
+				prd = CLIP(0, enc->maxprd, prd);
+				frac = enc->fconv[prd];
+				for (gr = 0; gr < enc->num_group; gr++) {
+					mask->pm[peak] = enc->pmlist[gr] + frac;
+					if (mask->num_peak == 1){
+						base = mask->base[0];
+						pm = mask->pm[0];
+						cbuf[gr][u] += pm->cost[base + e] + pm->subcost[base];
+					}else{
+						set_pmodel_mult_cost(mask,enc->maxval+1,e);
+						cbuf[gr][u] += a * (log(mask->cumfreq)-log(mask->freq));
 					}
+				}
 			}
 		}
 
@@ -2939,9 +2938,9 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)
 	/* Arithmetic */
 	if (fp != NULL) {
 		bits = 0;
-		//		PMODEL *pm;
-		//		uint cumb;
-		//		int zrfreq, nzfreq;
+		// PMODEL *pm;
+		// uint cumb;
+		// int zrfreq, nzfreq;
 		pm = &enc->spm;
 		for (d = 0; d < enc->prd_mhd; d++) {
 			rc_encode(fp, enc->rc, enc->zero_m[d], 1, NUM_ZMODEL);
@@ -2975,7 +2974,7 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)
 #else
 
 /* change pmodel each position */
-int encode_predictor(FILE *fp, ENCODER *enc, int flag)
+int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 0
 {
 	int cl, coef, sgn, k, m, min_m, bits;
 	cost_t cost, min_cost, t_cost;
@@ -3733,7 +3732,7 @@ int main(int argc, char **argv)
 	printf("%s -> %s (%dx%d)\n", infile, outfile, img->width, img->height);
 #if AUTO_PRD_ORDER
 	// printf("M = %d, K = %d, P = %d, V = %d, A = %d, l = %d, m = %d, o = %d, f = %d\n",
-	printf("NUM_CLASS = 	%d\nMAX_PRD_ORDER = 	%d\ncoef_precision = 	%d\nnum_pmodel = 	%d\npm_accuracy = 	%d\nmax_iteration = 	%d\nf_mmse = 	%d\nf_optpred = 	%d\nquadtree_depth = 	%d\n",
+	printf("NUM_CLASS 	= %d\nMAX_PRD_ORDER 	= %d\ncoef_precision 	= %d\nnum_pmodel 	= %d\npm_accuracy 	= %d\nmax_iteration 	= %d\nf_mmse 		= %d\nf_optpred 	= %d\nquadtree_depth 	= %d\n",
 		num_class, MAX_PRD_ORDER, coef_precision, num_pmodel, pm_accuracy, max_iteration, f_mmse, f_optpred, quadtree_depth);
 #else
 	printf("M = %d, K = %d, P = %d, V = %d, A = %d\n",
@@ -3860,7 +3859,7 @@ int main(int argc, char **argv)
 			cost = optimize_predictor(enc);	//予測器の最適化
 			printf(" %d", (int)cost);
 		}
-		side_cost = sc = encode_predictor(NULL, enc, 1);
+		side_cost = sc = encode_predictor(NULL, enc, 1);	//予測期の符号量を見積もる
 		printf("[%d] ->", (int)sc);
 #if OPTIMIZE_MASK_LOOP
 		cost = optimize_group_mult(enc);
