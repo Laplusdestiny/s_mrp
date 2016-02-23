@@ -7,7 +7,7 @@
 # define BOUNDARY		"\\"
 # define BS				'\\'
 # define DIR			"C:\\test\\"	// Directory for output (Set this value according to your environment.)
-															// [ATTENTION] This program does not support relative path!
+				// [ATTENTION] This program does not support relative path!
 #else
 # define BOUNDARY		"/"
 # define BS				'/'
@@ -17,7 +17,7 @@
 // For Encoder only
 #define LOG_LIST		DIR"Log_List.csv"
 #define LOG_RATE_DIR	DIR"Rate_Map"BOUNDARY
-#define LOG_VARI_DIR	DIR"Var_Upara"BOUNDARY
+#define LOG_VARI_DIR		DIR"Var_Upara"BOUNDARY
 
 // For Encoder and Decoder
 #define LOG_CL_DIR		DIR"Class_Map"BOUNDARY
@@ -27,32 +27,32 @@
 #define LOG_AMP_CH_DIR	DIR"Amp_Chara"BOUNDARY
 
 /****** MRP-VERSION ************************/
-#define MAGIC_NUMBER    ('M' << 8) + 'R'
-#define BANNER          "ENCMRP/DECMRP version %.2f (Nov. 2009)"
-#define VERSION         69
+#define MAGIC_NUMBER	('M' << 8) + 'R'
+#define BANNER		"ENCMRP/DECMRP version %.2f (Jan. 2016)"
+#define VERSION		611
 
 /****** OPTIMIZE ***************************/
-#define OPT_SIDEINFO	1	// 1 : side-info into consideration (standard), 0 : neglect side-info
-#define MAX_ITERATION   100
-#define EXTRA_ITERATION 10
+#define OPT_SIDEINFO	1 // 1 : side-info into consideration (standard), 0 : neglect side-info
+#define MAX_ITERATION	100
+#define EXTRA_ITERATION	10
 #define AUTO_DEL_CL		1
 #define AUTO_PRD_ORDER	1
 
 /****** MULT PEAK **************************/
-#define MULT_PEAK_MODE 1
-#define OPTIMIZE_MASK  1
-#define OPTIMIZE_MASK_LOOP 1
-#define WIN_BSIZE      32
-#define NUM_MASK       5
-#define W_SHIFT        7
-#define INIT_MASK      0   // 0 1 2 3 4
-#define MAX_PEAK_NUM   25
+#define MULT_PEAK_MODE		1
+#define OPTIMIZE_MASK 		1
+#define OPTIMIZE_MASK_LOOP	1
+#define WIN_BSIZE			32
+#define NUM_MASK			5
+#define W_SHIFT			7
+#define INIT_MASK			0   // 0 1 2 3 4
+#define MAX_PEAK_NUM		25
 
 /***** BLOCK_SIZE **************************/
-#define BASE_BSIZE      8
+#define BASE_BSIZE		8
 #define QUADTREE_DEPTH	4
-#define MAX_BSIZE       32
-#define MIN_BSIZE       (MAX_BSIZE >> QUADTREE_DEPTH)
+#define MAX_BSIZE		32
+#define MIN_BSIZE		(MAX_BSIZE >> QUADTREE_DEPTH)
 
 /***** CLASS *******************************/
 #define NUM_CLASS       -1
@@ -77,15 +77,15 @@
 #endif
 
 /***** PMODEL ******************************/
-#define PM_ACCURACY     3
-#define NUM_PMODEL      16
-#define MIN_FREQ        1
-#define PMCLASS_MAX		16
+#define PM_ACCURACY	3
+#define NUM_PMODEL	16
+#define MIN_FREQ		1
+#define PMCLASS_MAX	16
 #define PMCLASS_LEVEL	32
-	#define PMMASK_MAX		5
-	#define PMMASK_LEVEL	10
-#define NUM_ZMODEL      49
-#define TOT_ZEROFR      (1 << 10)
+#define PMMASK_MAX	5
+#define PMMASK_LEVEL	10
+#define NUM_ZMODEL	49
+#define TOT_ZEROFR		(1 << 10)
 #define MAX_SYMBOL		1024	// must be >> MAX_UPARA
 
 /***** RangeCoder **************************/

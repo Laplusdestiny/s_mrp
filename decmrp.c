@@ -81,7 +81,7 @@ DECODER *init_decoder(FILE *fp)
 	}
 	dec->class = (char **)alloc_2d_array(dec->height, dec->width,
 		sizeof(char));
-	  dec->mask = (char **)alloc_2d_array(dec->height, dec->width, 
+	  dec->mask = (char **)alloc_2d_array(dec->height, dec->width,
 				       sizeof(char));
 	if (dec->num_pmodel > 1) {
 		dec->pm_idx = (int *)alloc_mem(dec->num_group * sizeof(int));
@@ -170,7 +170,7 @@ void decode_predictor(FILE *fp, DECODER *dec)
 
 #else
 
-void decode_predictor(FILE *fp, DECODER *dec)
+void decode_predictor(FILE *fp, DECODER *dec)	//when AUTO_PRD_ORDER 0
 {
 	int k, m, cl, coef, sgn, d;
 	PMODEL *pm;
@@ -518,9 +518,9 @@ void decode_mask(FILE *fp, DECODER *dec)
 					if (dec->class[yy][xx] != cl) {
 						k = rc_decode(fp, dec->rc, pm, 0, pm->size);
 						goto dec;
-					} 
+					}
 				}
-			} 
+			}
 dec:
 			if (y + WIN_BSIZE > dec->height)
 				ty = dec->height % WIN_BSIZE;
@@ -543,13 +543,12 @@ dec:
 #endif
 void decode_mask(FILE *fp, DECODER *dec)
 {
-	int i, j, x, y, k, tlx, tly, brx, bry, blksize, level;
+	int i, j, x, y, k, tlx, tly, brx, bry, blksize;
 	PMODEL *pm, cpm[1];
 	double p;
 	int mtf_code[NUM_MASK];
 
-		level = 0;
-		blksize = WIN_BSIZE;
+	blksize = WIN_BSIZE;
 
 	pm = &dec->spm;
 
@@ -594,11 +593,11 @@ void decode_mask(FILE *fp, DECODER *dec)
 			for (k = 0; k < NUM_MASK; k++) {
 				if (dec->mtfbuf[k] == i) break;
 			}
-	  	for (y = tly; y < bry; y++) {
-		 		for (x = tlx; x < brx; x++) {
-			  	dec->mask[y][x] = k;
-		 		}
-	  	}
+	  		for (y = tly; y < bry; y++) {
+				for (x = tlx; x < brx; x++) {
+					dec->mask[y][x] = k;
+				}
+			}
 		}
 	}
 	return;
@@ -606,15 +605,14 @@ void decode_mask(FILE *fp, DECODER *dec)
 
 void init_mask()
 {
-    mask = (MASK *)alloc_mem(sizeof(MASK));
-    mask->weight = (int *)alloc_mem(MAX_PEAK_NUM * sizeof(int));
- //   mask->class = (char *)alloc_mem(MAX_PEAK_NUM * sizeof(char));
- 		mask->base = (int *)alloc_mem(MAX_PEAK_NUM * sizeof(int));
-		mask->pm =(PMODEL **)alloc_mem(MAX_PEAK_NUM * sizeof(PMODEL *));
-
+	mask = (MASK *)alloc_mem(sizeof(MASK));
+	mask->weight = (int *)alloc_mem(MAX_PEAK_NUM * sizeof(int));
+	mask->class = (char *)alloc_mem(MAX_PEAK_NUM * sizeof(char));
+	mask->base = (int *)alloc_mem(MAX_PEAK_NUM * sizeof(int));
+	mask->pm =(PMODEL **)alloc_mem(MAX_PEAK_NUM * sizeof(PMODEL *));
 }
 
-int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, int shift) 
+int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, int shift)
 {
 	int ty, tx, cl, i, peak, sample,m_gr,m_prd,m_base,r_cl,r_prd;
 	int count_cl[dec->num_class];
@@ -634,13 +632,13 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 		if(tx < 0) tx = 0;
 		else if(tx >= dec->width) tx = dec->width - 1;
 		cl = dec->class[ty][tx];
-		count_cl[cl]++; //mask nai no class count
+		count_cl[cl]++;		//マスク内のクラスの数のカウント
 	}
 
 	r_cl = dec->class[y][x]; //real_class
 	for(cl = peak = 0; cl < dec->num_class; cl++){
 		if (count_cl[cl]!=0){
-	//		mask->class[peak] = cl;
+			// mask->class[peak] = cl;
 			mask->weight[peak] = ( (count_cl[cl] << W_SHIFT) / sample);
 			th_p = dec->th[cl];
 			for (m_gr = 0; m_gr < dec->num_group - 1; m_gr++) {
@@ -654,9 +652,9 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 			m_base >>= dec->pm_accuracy;
 			mask->base[peak] = m_base;
 			peak++;
-		} 
+		}
 	}
-	mask->num_peak = peak; //peak no kazu
+	mask->num_peak = peak;	//ピークの数
 	return(r_prd);
 }
 

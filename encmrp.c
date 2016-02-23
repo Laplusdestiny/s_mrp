@@ -634,22 +634,22 @@ void set_cost_rate(ENCODER *enc)	//分散ごとの確率モデルにおける符
 
 void set_pmodel_mult_cost(MASK *mask,int size, int e)
 {
-  int p,base;
-  PMODEL *pm;
+	int p,base;
+	PMODEL *pm;
 
-  mask->freq = MIN_FREQ;
-  mask->cumfreq = 0;
+	mask->freq = MIN_FREQ;
+	mask->cumfreq = 0;
 	for (p = 0; p < mask->num_peak; p++){
 		base = mask->base[p];
 		pm = mask->pm[p];
 		mask->freq += (mask->weight[p] * (pm->freq[base + e] - MIN_FREQ)) >> W_SHIFT;
 		mask->cumfreq += (mask->weight[p] * (pm->cumfreq[base + size] - pm->cumfreq[base])) >> W_SHIFT;
-  }
+	}
 	return;
 }
 
 
-void predict_region(ENCODER *enc, int tly, int tlx, int bry, int brx)
+void predict_region(ENCODER *enc, int tly, int tlx, int bry, int brx)	//予測値の再計算
 {
 	int x, y, k, l, cl, prd, org;
 	int *coef_p, *nzc_p;
@@ -745,7 +745,7 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 		if(tx < 0) tx = 0;
 		else if(tx >= enc->width) tx = enc->width - 1;
 		cl = enc->class[ty][tx];
-		count_cl[cl]++; //mask nai no class count
+		count_cl[cl]++;	//マスク内のクラスの数
 	}
 
 	for(cl = peak = 0; cl < enc->num_class; cl++){
@@ -797,15 +797,13 @@ int set_mask_parameter_optimize(ENCODER *enc,int y, int x, int u, int r_cl)
 cost_t calc_cost2(ENCODER *enc, int tly, int tlx, int bry, int brx)
 {
 	cost_t cost;
-	//	int x, y, u, cl, gr, prd, e, base, frac;
 	int x, y, u, cl, gr, e, base;
-	//	int *upara_p, *prd_p, *encval_p;
 	int *upara_p, *encval_p;
 	char *class_p, *group_p;
 	double a;
 	PMODEL *pm;
 
-  a = 1.0 / log(2.0);
+	a = 1.0 / log(2.0);
 
 	if (bry > enc->height) bry = enc->height;
 	if (tlx < 0) tlx = 0;
@@ -2475,7 +2473,7 @@ printf ("op_group -> %d" ,(int)cost);
 							m_gr = enc->uquant[cl][u];
 							if (m_gr == gr)	 {
 								mask->pm[peak] =  enc->pmodels[gr][k] + frac;
-                count++;
+								count++;
 							}else{
 								mask->pm[peak] = enc->pmlist[m_gr] + frac;
 							}
@@ -3387,8 +3385,7 @@ int opcl_find_class(ENCODER *enc, int k, int tly, int tlx, int bry, int brx, int
 	return (min_cl);
 }
 
-void opcl_sub(ENCODER *enc, int k, int *blk, int tly, int tlx,
-			  int blksize, int width, int level)
+void opcl_sub(ENCODER *enc, int k, int *blk, int tly, int tlx, int blksize, int width, int level)
 {
 //	int cl, min_cl, x, y, bry, brx;
 	int min_cl, x, y, bry, brx;
@@ -3465,10 +3462,10 @@ cost_t opcl(ENCODER *enc, int k, int *blk, int restore)
 	 		if (enc->class[y][x] > k) {
 				enc->class[y][x]--;
 			}
-      prd_cl_s[y][x] = enc->prd_class[y][x][k];
-  	 	for (i = k; i < enc->num_class - 1; i++) {
-	  		enc->prd_class[y][x][i] = enc->prd_class[y][x][i + 1];
-		  }
+			prd_cl_s[y][x] = enc->prd_class[y][x][k];
+			for (i = k; i < enc->num_class - 1; i++) {
+				enc->prd_class[y][x][i] = enc->prd_class[y][x][i + 1];
+			}
 		}
 	}
 	for (i = 0; i < enc->num_group; i++) {
@@ -3838,7 +3835,7 @@ int main(int argc, char **argv)
 	printf("cost = %d\n", (int)cost);
 
 
-    /* init mask */
+/* init mask */
 	init_mask();	//MASK構造体のメモリ確保
 	for (i = 0; i < enc->height; i++){
 		for (j = 0; j < enc->width; j++){
@@ -3859,32 +3856,32 @@ int main(int argc, char **argv)
 			cost = optimize_predictor(enc);	//予測器の最適化
 			printf(" %d", (int)cost);
 		}
-		side_cost = sc = encode_predictor(NULL, enc, 1);	//予測期の符号量を見積もる
+		side_cost = sc = encode_predictor(NULL, enc, 1);	//予測器の符号量を見積もる
 		printf("[%d] ->", (int)sc);
 #if OPTIMIZE_MASK_LOOP
 		cost = optimize_group_mult(enc);
 #else
-		cost = optimize_group(enc);
+		cost = optimize_group(enc);	//閾値に対する分散の再決定
 #endif
-		side_cost += sc = encode_threshold(NULL, enc, 1);
+		side_cost += sc = encode_threshold(NULL, enc, 1);	//閾値の符号量を見積もる
 		printf(" %d[%d] ->", (int)cost, (int)sc);
-		cost = optimize_class(enc);
-		side_cost += sc = encode_class(NULL, enc, 1);
+		cost = optimize_class(enc);		//クラス情報の最適化
+		side_cost += sc = encode_class(NULL, enc, 1);	//クラス情報の符号量を見積もる
 		printf(" %d[%d] (%d)", (int)cost, (int)sc, (int)side_cost);
 #if OPTIMIZE_MASK_LOOP
-//		if (sw != 0) {
+		// if (sw != 0) {
 		cost = optimize_mask(enc);
 		printf(" -> %d", (int)cost);
-//		}else{
-//    set_weight_flag(enc);
-//	  }
+		// }else{
+			// set_weight_flag(enc);
+		// }
 #endif
 		cost += side_cost;
 #if AUTO_DEL_CL
-		if (sw != 0) {
+		if (sw != 0) {	//コスト削減に一度でも失敗した場合に入る
 			if( enc->num_class > 1) {
 				sw = enc->num_class;
-				cost = auto_del_class(enc, cost);
+				cost = auto_del_class(enc, cost);	//使用していないクラスの削除
 				while (sw != enc->num_class) {
 					sw = enc->num_class;
 					cost = auto_del_class(enc, cost);
@@ -3895,7 +3892,7 @@ int main(int argc, char **argv)
 #endif
 
 #if OPTIMIZE_MASK_LOOP
-    set_weight_flag(enc);
+		set_weight_flag(enc);
 #endif
 
 		if (cost < min_cost) {

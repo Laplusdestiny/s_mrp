@@ -240,7 +240,7 @@ void printmodel(PMODEL *pm, int size)
 		for (j = 0; j < num; j++) {
 			putchar('*');
 		}
-		printf(" (%4d ²ó)\n", pm->freq[i]);
+		printf(" (%4d å›ž)\n", pm->freq[i]);
 	}
 
 	return;
