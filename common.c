@@ -49,21 +49,35 @@ double zerocoef_prob[NUM_ZMODEL] = {
 	0.865,0.884,0.903,0.921,0.938,0.954,0.967,0.980,0.990,0.997,
 };
 
-int mask_x[] = { 0,  1,  0, -1,  0,  1, -1, -1,  1,  2,  0, -2,  0,
-                 2,  1, -1, -2, -2, -1,  1,  2,  2, -2, -2,  2,  3,
-                 3,  3,  3,  2,  1,  0, -1, -2, -3, -3, -3, -3, -3,
-                -3, -3, -2, -1,  0,  1,  2,  3,  3,  3,
-                 4,  4,  4,  4,  4,  3,  2,  1,  0, -1, -2, -3, -4,
-                -4, -4, -4, -4, -4, -4, -4, -4, -3, -2, -1,  0,  1,
-                 2,  3,  4,  4,  4,  4};
+int mask_x[] = {
+	//1
+	0
+	//9
+	,  1,  0, -1,  0,  1, -1, -1,  1
+	//25
+	,  2,  0, -2,  0,  2,  1, -1, -2, -2, -1,  1,  2,  2, -2, -2,  2
+	//49
+	,  3,  3,  3,  3,  2,  1,  0, -1, -2, -3, -3, -3, -3, -3,
+              -3, -3, -2, -1,  0,  1,  2,  3,  3,  3,
+              //81
+               4,  4,  4,  4,  4,  3,  2,  1,  0, -1, -2, -3, -4,
+               -4, -4, -4, -4, -4, -4, -4, -4, -3, -2, -1,  0,  1,
+               2,  3,  4,  4,  4,  4};
 
-int mask_y[] = { 0,  0,  1,  0, -1,  1,  1, -1, -1,  0,  2,  0, -2,
-                 1,  2,  2,  1, -1, -2, -2, -1,  2,  2, -2, -2,  0,
-                 1,  2,  3,  3,  3,  3,  3,  3,  3,  2,  1,  0, -1,
-                -2, -3, -3, -3, -3, -3, -3, -3, -2, -1,
-                 0,  1,  2,  3,  4,  4,  4,  4,  4,  4,  4,  4,  4,
-                 3,  2,  1,  0, -1, -2, -3, -4, -4, -4, -4, -4, -4,
-                 -4, -4, -4, -3, -2, -1};
+int mask_y[] = {
+	//1
+	0
+	//9
+	,  0,  1,  0, -1,  1,  1, -1, -1
+	//25
+	,  0,  2,  0, -2, 1,  2,  2,  1, -1, -2, -2, -1,  2,  2, -2, -2
+	//49
+	,  0,  1,  2,  3,  3,  3,  3,  3,  3,  3,  2,  1,  0, -1,  -2
+	, -3, -3, -3, -3, -3, -3, -3, -2, -1,
+	//81
+              0,  1,  2,  3,  4,  4,  4,  4,  4,  4,  4,  4,  4,
+              3,  2,  1,  0, -1, -2, -3, -4, -4, -4, -4, -4, -4,
+              -4, -4, -4, -3, -2, -1};
 
 int win_sample[] = {1, 9, 25, 49, 81};
 
@@ -103,6 +117,29 @@ void **alloc_2d_array(int height, int width, int size)
 		mat[k] =  ptr;
 		ptr += width * size;
 	}
+	return (mat);
+}
+
+void ***alloc_3d_array(int height, int width, int depth, int size)
+{
+	void ***mat;
+	char **ptr, *ptrp;
+	int k,d;
+
+	mat = alloc_mem(sizeof(void **) * height + sizeof(void *) * height * width
+					+ height * width * depth * size);
+	ptr = (char **)(mat + height);
+	ptrp = (char *)(ptr + height * width);
+
+	for (k = 0; k < height; k++) {
+		mat[k] = (void **)ptr;
+		ptr += width;
+		for (d = 0; d < width; d++) {
+			mat[k][d] = ptrp;
+			ptrp += depth * size;
+		}
+	}
+
 	return (mat);
 }
 
@@ -245,28 +282,28 @@ void printmodel(PMODEL *pm, int size)
 
 	return;
 }
-/****/
-void set_pmodel_mult(PMODEL *m_pm, MASK *mask,int size)
-{
-  int p,i,base;
-  PMODEL *pm;
 
-  for(i = 0; i < size; i++){//init
-    m_pm->freq[i] = MIN_FREQ;
-    m_pm->cumfreq[i] = 0;
-  }
-  for(i = 0; i < size; i++){//size ha maxvalue+1
+void set_pmodel_mult(PMODEL *m_pm, MASK *mask,int size)	//ピークの数に合わせた多峰性確率モデルの作成
+{
+	int p,i,base;
+	PMODEL *pm;
+
+	for(i = 0; i < size; i++){	//init
+		m_pm->freq[i] = MIN_FREQ;	//=1
+		m_pm->cumfreq[i] = 0;
+	}
+	for(i = 0; i < size; i++){	//size = maxvalue+1
 		for (p = 0; p < mask->num_peak; p++){
 			base = mask->base[p];
 			pm = mask->pm[p];
-      m_pm->freq[i] += (mask->weight[p] * (pm->freq[base + i] - MIN_FREQ)) >> W_SHIFT;
-    }
+			m_pm->freq[i] += (mask->weight[p] * (pm->freq[base + i] - MIN_FREQ)) >> W_SHIFT;
+		}
 
-//printf("%d m_pm->freq[%d] = [%d]\n", mask->num_peak,i,m_pm->freq[i]);
-    m_pm->cumfreq[i + 1] = m_pm->cumfreq[i] + m_pm->freq[i];
-//printf("%d m_pm->cumfreq[%d] = [%d]\n", mask->num_peak,i,m_pm->cumfreq[i]);
+		// printf("%d m_pm->freq[%d] = [%d]\n", mask->num_peak,i,m_pm->freq[i]);
+		m_pm->cumfreq[i + 1] = m_pm->cumfreq[i] + m_pm->freq[i];
+		// printf("%d m_pm->cumfreq[%d] = [%d]\n", mask->num_peak,i,m_pm->cumfreq[i]);
 
-  }
+	}
 	return;
 }
 

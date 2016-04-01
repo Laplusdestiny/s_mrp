@@ -15,10 +15,10 @@ extern int mask_x[], mask_y[];
 extern int win_sample[], win_dis[];
 
 MASK *mask;
+int ***tempm_array;
 
 float ****calc_entropy_of_conditional_probability(PMODEL ***pmodels, int num_group,
-												  int num_pmodel, int pm_accuracy,
-												  int maxval)
+	int num_pmodel, int pm_accuracy, int maxval)
 {
 	int i, j, k, l, gr, total;
 	uint *freq_p, *cumfreq_p;
@@ -361,13 +361,10 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 		}
 	}
 	enc->ctx_weight = init_ctx_weight();
-	enc->class = (char **)alloc_2d_array(enc->height, enc->width,
-		sizeof(char));
-	enc->group = (char **)alloc_2d_array(enc->height, enc->width,
-		sizeof(char));
+	enc->class = (char **)alloc_2d_array(enc->height, enc->width, sizeof(char));
+	enc->group = (char **)alloc_2d_array(enc->height, enc->width, sizeof(char));
 
-    enc->mask = (char **)alloc_2d_array(enc->height, enc->width,
-				       sizeof(char));
+	enc->mask = (char **)alloc_2d_array(enc->height, enc->width, sizeof(char));
 
 	for (y = 0; y < enc->height; y++) {
 		for (x = 0; x < enc->width; x++) {
@@ -480,6 +477,10 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 #endif
 	enc->cl_hist = (int *)alloc_mem(enc->num_class * sizeof(int));
 
+#if TEMPLETE_MATCHING_ON
+	enc->temp_num = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
+	enc->tempm_array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
+#endif
 	return (enc);
 }
 
@@ -572,6 +573,7 @@ void set_cost_model(ENCODER *enc, int f_mmse)
 			k = (i << 1) - j - 1;
 			if (k < 0) k = -(k + 1);
 			enc->econv[i][j] = k;
+			// printf("[%d][%d]%d\n",i,j,k);
 		}
 	}
 	enc->encval = enc->err;
@@ -611,6 +613,7 @@ void set_cost_rate(ENCODER *enc)	//分散ごとの確率モデルにおける符
 		i = (enc->maxprd - k + (1 << shift) / 2) >> shift;
 		enc->fconv[k] = (i & mask);
 		enc->bconv[k] = (i >> enc->pm_accuracy);
+		// printf("i:%d | fconv:%d | bconv:%d\n",i, enc->fconv[k], enc->bconv[k]);
 	}
 	num_spm = 1 << enc->pm_accuracy;
 
@@ -709,7 +712,7 @@ void save_prediction_value(ENCODER *enc)
 	}
 }
 
-int calc_uenc(ENCODER *enc, int y, int x)
+int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出
 {
 	int u, k, *err_p, *roff_p, *wt_p;
 	err_p = &enc->err[y][x];
@@ -724,6 +727,148 @@ int calc_uenc(ENCODER *enc, int y, int x)
 	if (u > MAX_UPARA) u = MAX_UPARA;
 	return (u);
 }
+
+#if TEMPLETE_MATCHING_ON
+void*** TempleteM (ENCODER *enc) {
+	int x , y , bx , by , g , h , i , j , k , count , area1[AREA] , area_o[AREA] , *tm_array , m ,
+		*roff_p , *org_p , x_size = X_SIZE , sum1 , sum_o ;
+	double ave1 , ave_o , nas ;
+
+/////////////////////////
+///////メモリ確保////////
+/////////////////////////
+
+	tm_array = (int *)alloc_mem((Y_SIZE * X_SIZE * 2 + X_SIZE) * 4 * sizeof(int)) ;
+	enc->mmc = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
+	TM_Member tm[Y_SIZE * X_SIZE * 2 + X_SIZE ];
+
+///////////////////////////
+////////画像の走査/////////
+///////////////////////////
+
+printf("Calculating Templete Matching\n");
+for(y = 0 ; y < enc->height ; y++){
+	for (x = 0; x < enc->width; x++){
+
+		bzero(&tm, sizeof(tm));
+		enc->mmc[y][x] = 0;
+
+		roff_p = enc->roff[y][x];//init_ref_offsetが入っている．予測器の範囲指定と番号付け
+		org_p = &enc->org[y][x];
+
+		for(i=0;i < AREA; i++){//市街地距離AREA個分
+			area1[i] = 0;
+			area1[i] = org_p[roff_p[i]];
+		}
+
+///////////////////////////
+//テンプレートマッチング///
+///////////////////////////
+
+		j = 0;
+
+		if(y == 0 || y == 1 || y == 2){
+			x_size = 50;
+		}else{
+			x_size = X_SIZE;
+		}
+
+		for (by = y - Y_SIZE ; by <= y ; by++) {
+			if((by < 0) || (by > enc->height))continue;
+			for (bx = x - x_size ; bx <= x + x_size - 1; bx++) {
+				if((by == y) && (bx == x) )break;
+				if((bx < 0) || (bx > enc->width))continue;
+
+				roff_p = enc->roff[by][bx];
+				org_p = &enc->org[by][bx];
+
+				for(k=0;k < AREA; k++){//市街地距離AREA個分
+					area_o[k] = 0;
+					area_o[k] = org_p[roff_p[k]];
+				}
+
+				sum1 = 0;
+				sum_o = 0;
+ 				for(m = 0; m < AREA ; m++){//平均の計算
+					sum1 += area1[m];
+					sum_o += area_o[m];
+				}
+				ave1 = (double)sum1 / AREA;
+				ave_o = (double)sum_o / AREA;
+
+				nas = 0;
+
+				for(m = 0; m < AREA ; m++){//テンプレートマッチングの計算
+					nas += fabs( ((double)area1[m] - ave1) - ((double)area_o[m] - ave_o) );
+					// a = ( area1[m] - area_o[m] ) * ( area1[m] - area_o[m]);
+					// sum = sum + a;
+				}
+				tm[j].id = j;
+				tm[j].by = by;
+				tm[j].bx = bx;
+				tm[j].ave_o = (int)ave_o;
+				tm[j].sum = (int)(nas * NAS_ACCURACY);
+
+				j++;
+			}//bx fin
+		}//by fin
+/////////////////////////
+///////ソートの実行//////
+/////////////////////////
+
+		enc->temp_num[y][x] = j;
+		TM_Member temp;
+		for (g = 0; g < j - 1; g++) {
+			for (h = j - 1; h > g; h--) {
+				if(tm[h - 1].sum > tm[h].sum) {  /* 前の要素の方が大きかったら */
+					temp = tm[h];        /* 交換する */
+					tm[h] = tm[h - 1];
+					tm[h - 1] = temp;
+				}
+			}
+		}
+
+		for(k = 0 ; k < j  ; k++){
+			count = 0;
+			tm_array[k * 4 + count] = 0;
+			tm_array[k * 4 + count] = tm[k].id;
+			count++;
+			tm_array[k * 4 + count] = 0;
+			tm_array[k * 4 + count] = tm[k].by;
+			count++;
+			tm_array[k * 4 + count] = 0;
+			tm_array[k * 4 + count] = tm[k].bx;
+			count++;
+			tm_array[k * 4 + count] = 0;
+			tm_array[k * 4 + count] = tm[k].sum;
+			if(tm[k].sum ==0) enc->mmc[y][x]++;
+		}
+		// printf("%d ",enc->mmc[y][x]);
+
+
+		for(k = 0 ; k < MAX_DATA_SAVE_DOUBLE ; k++){
+			tempm_array[y][x][k] = tm_array[k];
+		}
+
+		for(k = 0 ; k < MAX_DATA_SAVE ; k++){
+			enc->tempm_array[y][x][k] = tm[k].ave_o;
+		}
+	}//x fin
+	// printf("\n");
+}//y fin
+
+// printf("number of hours worked:%lf[s]\n",(float)(end - start)/CLOCKS_PER_SEC);
+
+
+/////////////////////////////
+////////メモリ解放///////////
+////////////////////////////
+
+	free(tm_array);
+	return(0);
+// return(array);
+}
+#endif
 
 void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 {
@@ -745,13 +890,13 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 		if(tx < 0) tx = 0;
 		else if(tx >= enc->width) tx = enc->width - 1;
 		cl = enc->class[ty][tx];
-		count_cl[cl]++;	//マスク内のクラスの数
+		count_cl[cl]++;	//マスクにかかる領域にあるクラス毎の画素数
 	}
 
 	for(cl = peak = 0; cl < enc->num_class; cl++){
 		if (count_cl[cl]!=0){
-			mask->class[peak] = cl;
-			mask->weight[peak] =( (count_cl[cl] << W_SHIFT) / sample);
+			mask->class[peak] = cl;		//マスクにかかる領域毎のクラスを保存
+			mask->weight[peak] =( (count_cl[cl] << W_SHIFT) / sample);	//各ピーク毎の重み
 			m_gr = enc->uquant[cl][u];
 			m_prd = enc->prd_class[y][x][cl];
 			m_prd = CLIP(0, enc->maxprd, m_prd);
@@ -1493,7 +1638,7 @@ void set_weight_flag(ENCODER *enc)
 			for(cl = 0; cl < enc->num_class; cl++){
 				enc->weight[y][x][cl] = 0;
 				if (count_cl[cl] != 0){
-					enc->weight[y][x][cl] =( (count_cl[cl] << W_SHIFT) / sample);
+					enc->weight[y][x][cl] =( (count_cl[cl] << W_SHIFT) / sample);//確率モデルの重み
 					//if(y==100&&x==100)printf("count_cl[cl] = %d sample = %d weight[y][x][%d] = %d\n",count_cl[cl],sample,cl,enc->weight[y][x][cl]);
 				}
 			}
@@ -1531,7 +1676,7 @@ void set_prd_pels(ENCODER *enc)
 Coef Modification
 *****************************************************************************/
 #if OPTIMIZE_MASK_LOOP
-void optimize_coef(ENCODER *enc, int cl, int pos, int *num_eff)
+void optimize_coef(ENCODER *enc, int cl, int pos, int *num_eff)	//係数を少し変えて
 {
 #define S_RANGE 2		//Search Range  ex. 2 -> +-1
 #define SUBS_RANGE 2	//Search Range of One Coef Modification
@@ -1640,9 +1785,9 @@ void optimize_coef(ENCODER *enc, int cl, int pos, int *num_eff)
 	// shift = enc->coef_precision - 1;
   a = 1.0 / log(2.0);
 	for (y = 0; y < enc->height; y++) {
-//		class_p = enc->class[y];
+		// class_p = enc->class[y];
 		for (x = 0; x < enc->width; x++) {
-//			if (cl != *class_p++) continue;
+			// if (cl != *class_p++) continue;
 	  	if (enc->weight[y][x][cl] == 0) continue;
 			u = enc->upara[y][x];
 			peak = set_mask_parameter_optimize(enc, y, x, u, cl);
@@ -1718,7 +1863,6 @@ void optimize_coef(ENCODER *enc, int cl, int pos, int *num_eff)
 			}
 		}
 	}
-//						printf("b");
 
 	j = SUBS_RANGE + pos * S_RANGE;
 	for (i = 0; i < SUBS_RANGE + (enc->max_prd_order * S_RANGE) + num_swap_search; i++) {
@@ -2000,7 +2144,7 @@ cost_t optimize_predictor(ENCODER *enc)	//when AUTO_PRD_ORDER 1
 			if (enc->num_nzcoef[cl] == 0) continue;
 			pos = (int)(((double)rand() * enc->num_nzcoef[cl]) / (RAND_MAX+1.0));	//いじる係数をrand関数で選択
 			pos = enc->nzconv[cl][pos];
-			optimize_coef(enc, cl, pos, &num_eff);
+			optimize_coef(enc, cl, pos, &num_eff);	//予測係数の最適化
 			set_prd_pels(enc);
 		}
 		enc->num_search[cl] = num_eff + 3;
@@ -2441,7 +2585,7 @@ cost_t optimize_group_mult(ENCODER *enc)
 			}
 		}
 	}
-printf ("op_group -> %d" ,(int)cost);
+printf ("op_group -> %d" ,(int)cost);	//しきい値毎に分散を最適化した時のコスト算出
 
 	/* optimize probability models */
 	if (enc->optimize_loop > 1 && enc->num_pmodel > 1) {
@@ -2552,7 +2696,7 @@ printf ("op_group -> %d" ,(int)cost);
 		}
 	}
 }
-printf (" op_c -> %d" ,(int)cost);
+printf (" op_c -> %d" ,(int)cost);	//分散毎に確率モデルの形状を最適化した時のコスト
 
 	free(cbuf);
 	free(dpcost);
@@ -3251,7 +3395,6 @@ int encode_mask(FILE *fp, ENCODER *enc, int flag)
 
 int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 {
-//  	int x, y, e, bits, u;
 	int x, y, e, u, base, bits, cumbase;
 	PMODEL *pm;
 
@@ -3259,26 +3402,26 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 	/* Arithmetic */
 	for (y = 0; y < enc->height; y++) {
 		for (x = 0; x < enc->width; x++) {
-		  u = enc->upara[y][x];
-		  set_mask_parameter(enc,y,x,u);
+			u = enc->upara[y][x];
+			set_mask_parameter(enc,y,x,u);
 			e = enc->encval[y][x];
 			if (mask->num_peak == 1){
 				base = mask->base[0];
 				pm = mask->pm[0];
 				cumbase = pm->cumfreq[base];
 				rc_encode(fp, enc->rc,
-						pm->cumfreq[base + e] - cumbase,
-						pm->freq[base + e],
-						pm->cumfreq[base + enc->maxval + 1] - cumbase);
+					pm->cumfreq[base + e] - cumbase,
+					pm->freq[base + e],
+					pm->cumfreq[base + enc->maxval + 1] - cumbase);
 				// if((y%100 == 0)&&(x%100 == 0)) printf("(y=%d,x=%d)peak 1",y,x);
 			}else{
 				pm = &enc->mult_pm;
 				set_pmodel_mult(pm,mask,enc->maxval+1);
 				// if(y==200&&x%10==0) printmodel(pm,enc->maxval+1);
 				rc_encode(fp, enc->rc,
-						pm->cumfreq[e],
-						pm->freq[e],
-						pm->cumfreq[enc->maxval + 1]);
+					pm->cumfreq[e],
+					pm->freq[e],
+					pm->cumfreq[enc->maxval + 1]);
 			}
 		}
 	}
@@ -3829,8 +3972,27 @@ int main(int argc, char **argv)
 #if AUTO_PRD_ORDER
 	set_prd_pels(enc);	//予測器の情報を更新
 #endif
-	save_prediction_value(enc);	//予測値の保存
-	predict_region(enc, 0, 0, enc->height, enc->width);
+	save_prediction_value(enc);	//クラスごとの予測値の保存
+
+#if TEMPLETE_MATCHING_ON
+	tempm_array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
+	TempleteM(enc);
+	#if CHECK_DEBUG_TM
+		for(y=0; y<enc->height; y++){
+			for(x=0; x<enc->width; x++){
+				if(y==0 && x==0)continue;
+				if(y%32==0 && x%32==0){
+					printf("(%3d,%3d)%d\n", y, x, enc->org[y][x]);
+					for(i=0; i<MAX_DATA_SAVE; i++){
+						printf("(%3d)[%3d][%3d] | sum: %d\n",tempm_array[y][x][i*4], tempm_array[y][x][i*4+1], tempm_array[y][x][i*4+2], tempm_array[y][x][i*4+3]);
+					}
+				}
+			}
+		}
+	#endif
+#endif
+
+	predict_region(enc, 0, 0, enc->height, enc->width);	//クラスに対応した予測値を保存
 	cost = calc_cost(enc, 0, 0, enc->height, enc->width);	//現状のコストを算出
 	printf("cost = %d\n", (int)cost);
 
@@ -3839,10 +4001,10 @@ int main(int argc, char **argv)
 	init_mask();	//MASK構造体のメモリ確保
 	for (i = 0; i < enc->height; i++){
 		for (j = 0; j < enc->width; j++){
-			enc->mask[i][j] = INIT_MASK;	//マスクの初期化
+			enc->mask[i][j] = INIT_MASK;	//マスクの初期化(=0)
 		}
 	}
-	printf("INIT_MASK = %d\n", INIT_MASK);
+	printf("INIT_MASK = %d\n", INIT_MASK);	//マスクサイズのパラメータ(1,9,25...) / 0であればマスクを用いた多峰性確率モデルではなく，従来の単峰性確率モデル
 	set_weight_flag(enc);
 
 	/* 2nd loop */
@@ -4019,10 +4181,10 @@ int main(int argc, char **argv)
 	bits += th_info = encode_threshold(fp, enc, 1);
 	printf("thresholds\t:%10d bits\n", th_info);
 #if OPTIMIZE_MASK
-    bits += mask_info = encode_mask(fp, enc, 1);
-    printf("mask_info\t:%10d bits\n", mask_info);
+	bits += mask_info = encode_mask(fp, enc, 1);
+	printf("mask_info\t:%10d bits\n", mask_info);
 #endif
-  bits += err_info = encode_image(fp, enc);
+	bits += err_info = encode_image(fp, enc);
 	printf("pred. errors\t:%10d bits\n", err_info);
 	printf("------------------------------\n");
 	printf("total\t\t:%10d bits\n", bits);

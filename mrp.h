@@ -16,14 +16,14 @@
 
 // For Encoder only
 #define LOG_LIST		DIR"Log_List.csv"
-#define LOG_RATE_DIR	DIR"Rate_Map"BOUNDARY
+#define LOG_RATE_DIR		DIR"Rate_Map"BOUNDARY
 #define LOG_VARI_DIR		DIR"Var_Upara"BOUNDARY
 
 // For Encoder and Decoder
 #define LOG_CL_DIR		DIR"Class_Map"BOUNDARY
 #define LOG_VBS_DIR		DIR"Block_Size"BOUNDARY
 #define LOG_TH_DIR		DIR"Threshold"BOUNDARY
-#define LOG_PRED_DIR	DIR"Predictor"BOUNDARY
+#define LOG_PRED_DIR		DIR"Predictor"BOUNDARY
 #define LOG_AMP_CH_DIR	DIR"Amp_Chara"BOUNDARY
 
 /****** MRP-VERSION ************************/
@@ -32,7 +32,7 @@
 #define VERSION		611
 
 /****** OPTIMIZE ***************************/
-#define OPT_SIDEINFO	1 // 1 : side-info into consideration (standard), 0 : neglect side-info
+#define OPT_SIDEINFO		1 // 1 : side-info into consideration (standard), 0 : neglect side-info
 #define MAX_ITERATION	100
 #define EXTRA_ITERATION	10
 #define AUTO_DEL_CL		1
@@ -41,7 +41,7 @@
 /****** MULT PEAK **************************/
 #define MULT_PEAK_MODE		1
 #define OPTIMIZE_MASK 		1
-#define OPTIMIZE_MASK_LOOP	1
+#define OPTIMIZE_MASK_LOOP		1
 #define WIN_BSIZE			32
 #define NUM_MASK			5
 #define W_SHIFT			7
@@ -77,21 +77,21 @@
 #endif
 
 /***** PMODEL ******************************/
-#define PM_ACCURACY	3
-#define NUM_PMODEL	16
+#define PM_ACCURACY		3
+#define NUM_PMODEL 		16
 #define MIN_FREQ		1
-#define PMCLASS_MAX	16
+#define PMCLASS_MAX		16
 #define PMCLASS_LEVEL	32
-#define PMMASK_MAX	5
+#define PMMASK_MAX		5
 #define PMMASK_LEVEL	10
-#define NUM_ZMODEL	49
+#define NUM_ZMODEL		49
 #define TOT_ZEROFR		(1 << 10)
 #define MAX_SYMBOL		1024	// must be >> MAX_UPARA
 
 /***** RangeCoder **************************/
 #define HAVE_64BIT_INTEGER	1
 #if HAVE_64BIT_INTEGER
-#  define RANGE_SIZE 64
+#  define RANGE_SIZE 		64
 #  if defined(__INTEL_COMPILER) || defined(_MSC_VER) || defined(__BORLANDC__)
 #    define range_t unsigned __int64
 #  else
@@ -121,6 +121,19 @@
 
 /***** TIME ********************************/
 #define HAVE_CLOCK
+
+/*****TEMPLETE MATCHING ********************/
+#define TEMPLETE_MATCHING_ON 	1
+#define AREA			6
+#define Y_SIZE			20
+#define X_SIZE			20
+#define NAS_ACCURACY	100
+#define MAX_DATA_SAVE	50
+#define MAX_DATA_SAVE_DOUBLE MAX_DATA_SAVE*4
+#define MAX_MULTIMODAL	45
+
+/*********DEBUG******************************/
+#define CHECK_DEBUG_TM 0
 
 /***** STRUCTURE ***************************/
 
@@ -161,6 +174,14 @@ typedef struct {
 	int y, x;
 } CPOINT;
 
+typedef struct{
+	int id;
+	int by;
+	int bx;
+	int sum;
+	int ave_o;
+} TM_Member;
+
 typedef struct {
 	int height;
 	int width;
@@ -188,7 +209,7 @@ typedef struct {
 	int *ctx_weight;
 	int ***roff;
 	int ***prd_class;
-	int ***weight;
+	int ***weight;	//マスクを用いた確率モデルの高さの重み
 	char **mask;
 	int qtctx[QUADTREE_DEPTH << 3];
 	char **qtmap[QUADTREE_DEPTH];
@@ -223,6 +244,11 @@ typedef struct {
 	cost_t qtflag_cost[QUADTREE_DEPTH << 3];
 #if AUTO_DEL_CL
 	cost_t **err_cost;
+#endif
+#if TEMPLETE_MATCHING_ON
+	int **temp_num;
+	int ***tempm_array;
+	int **mmc;
 #endif
 } ENCODER;
 
@@ -261,12 +287,17 @@ typedef struct {
 	int *zero_fr;
 	int *ord2mhd;
 #endif
+#if TEMPLETE_MATCHING_ON
+	int **temp_num;
+	int ***tempm_array;
+#endif
 } DECODER;
 
 /***** FUNC - common.c ****************************/
 FILE *fileopen(char *, char *);
 void *alloc_mem(size_t);
 void **alloc_2d_array(int, int, int);
+void ***alloc_3d_array(int, int, int, int);
 IMAGE *alloc_image(int, int, int);
 PMODEL ***init_pmodels(int, int, int, int *, double *, int);
 		void printmodel(PMODEL *, int);

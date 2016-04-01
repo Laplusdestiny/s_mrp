@@ -13,6 +13,7 @@ extern int mask_y[], mask_x[];
 extern int win_sample[], win_dis[];
 
 MASK *mask;
+int ***tempm_array;
 
 uint getbits(FILE *fp, int n)
 {
@@ -659,7 +660,7 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 }
 
 
-IMAGE *decode_image(FILE *fp, DECODER *dec)
+IMAGE *decode_image(FILE *fp, DECODER *dec)		//when MULT_PEEK_MODE 1
 {
 	int x, y, cl, gr, prd, u, e, p, bitmask, shift, base;
 	int *th_p;
@@ -711,7 +712,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)
 }
 #else
 
-IMAGE *decode_image(FILE *fp, DECODER *dec)
+IMAGE *decode_image(FILE *fp, DECODER *dec)		//when MULT_PEEK_MODE 0
 {
 	int x, y, cl, gr, prd, u, e, p, mask, shift, base;
 	int *th_p;
