@@ -739,7 +739,7 @@ void*** TempleteM (ENCODER *enc) {
 /////////////////////////
 
 	tm_array = (int *)alloc_mem((Y_SIZE * X_SIZE * 2 + X_SIZE) * 4 * sizeof(int)) ;
-	enc->mmc = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
+	// enc->mmc = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
 	TM_Member tm[Y_SIZE * X_SIZE * 2 + X_SIZE ];
 
 ///////////////////////////
@@ -751,7 +751,7 @@ for(y = 0 ; y < enc->height ; y++){
 	for (x = 0; x < enc->width; x++){
 
 		bzero(&tm, sizeof(tm));
-		enc->mmc[y][x] = 0;
+		// enc->mmc[y][x] = 0;
 
 		roff_p = enc->roff[y][x];//init_ref_offsetが入っている．予測器の範囲指定と番号付け
 		org_p = &enc->org[y][x];
@@ -841,7 +841,7 @@ for(y = 0 ; y < enc->height ; y++){
 			count++;
 			tm_array[k * 4 + count] = 0;
 			tm_array[k * 4 + count] = tm[k].sum;
-			if(tm[k].sum ==0) enc->mmc[y][x]++;
+			// if(tm[k].sum ==0) enc->mmc[y][x]++;
 		}
 		// printf("%d ",enc->mmc[y][x]);
 
@@ -907,6 +907,7 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 			m_frac = enc->fconv[m_prd];
 			mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
 			peak++;
+			// if(y%16==0 && x%16==0)printf("(%3d, %3d)mask\nclass: %d\nweight: %d\nbase[%d]: %d\npm[%d]: %d\n", y, x, mask->class[peak], mask->weight[peak], peak, mask->base[peak], peak, mask->pm[peak]);
 		}
 	}
 	// if (y==8&&x== 8) printf("********\n");
@@ -3978,12 +3979,12 @@ int main(int argc, char **argv)
 	tempm_array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
 	TempleteM(enc);
 	#if CHECK_DEBUG_TM
-		for(y=0; y<enc->height; y++){
-			for(x=0; x<enc->width; x++){
-				if(y==0 && x==0)continue;
-				if(y%32==0 && x%32==0){
+		for( y = 0; y < enc->height ; y++ ) {
+			for( x = 0 ; x < enc->width;  x++ ) {
+				if( y == 0 && x == 0 ) continue;
+				if( y % 32 == 0 && x % 32 == 0 ) {
 					printf("(%3d,%3d)%d\n", y, x, enc->org[y][x]);
-					for(i=0; i<MAX_DATA_SAVE; i++){
+					for(i=0; i<5; i++){
 						printf("(%3d)[%3d][%3d] | sum: %d\n",tempm_array[y][x][i*4], tempm_array[y][x][i*4+1], tempm_array[y][x][i*4+2], tempm_array[y][x][i*4+3]);
 					}
 				}

@@ -123,7 +123,7 @@
 #define HAVE_CLOCK
 
 /*****TEMPLETE MATCHING ********************/
-#define TEMPLETE_MATCHING_ON 	1
+#define TEMPLETE_MATCHING_ON 	0
 #define AREA			6
 #define Y_SIZE			20
 #define X_SIZE			20
