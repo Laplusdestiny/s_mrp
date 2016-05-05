@@ -15,7 +15,10 @@ extern int mask_x[], mask_y[];
 extern int win_sample[], win_dis[];
 
 MASK *mask;
+#if TEMPLETE_MATCHING_ON
 int ***tempm_array;
+int **exam_array;
+#endif
 
 float ****calc_entropy_of_conditional_probability(PMODEL ***pmodels, int num_group,
 	int num_pmodel, int pm_accuracy, int maxval)
@@ -645,6 +648,9 @@ void set_pmodel_mult_cost(MASK *mask,int size, int e)
 	for (p = 0; p < mask->num_peak; p++){
 		base = mask->base[p];
 		pm = mask->pm[p];
+		#if CHECK_DEBUG_TM
+			printf("mask->freq: %d | mask->weight[%d]: %d | base+e: %d | pm: %d\n", mask->freq, p, mask->weight[p], base+e, pm->freq[base+e]);
+		#endif
 		mask->freq += (mask->weight[p] * (pm->freq[base + e] - MIN_FREQ)) >> W_SHIFT;
 		mask->cumfreq += (mask->weight[p] * (pm->cumfreq[base + size] - pm->cumfreq[base])) >> W_SHIFT;
 	}
@@ -731,7 +737,7 @@ int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出
 #if TEMPLETE_MATCHING_ON
 void*** TempleteM (ENCODER *enc) {
 	int x , y , bx , by , g , h , i , j , k , count , area1[AREA] , area_o[AREA] , *tm_array , m ,
-		*roff_p , *org_p , x_size = X_SIZE , sum1 , sum_o ;
+		*roff_p , *org_p , x_size = X_SIZE , sum1 , sum_o, temp_x, temp_y;
 	double ave1 , ave_o , nas ;
 
 /////////////////////////
@@ -739,8 +745,8 @@ void*** TempleteM (ENCODER *enc) {
 /////////////////////////
 
 	tm_array = (int *)alloc_mem((Y_SIZE * X_SIZE * 2 + X_SIZE) * 4 * sizeof(int)) ;
-	// enc->mmc = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
 	TM_Member tm[Y_SIZE * X_SIZE * 2 + X_SIZE ];
+	// init_2d_array(exam_array, enc->height, enc->width, enc->maxval > 1);
 
 ///////////////////////////
 ////////画像の走査/////////
@@ -750,7 +756,8 @@ printf("Calculating Templete Matching\n");
 for(y = 0 ; y < enc->height ; y++){
 	for (x = 0; x < enc->width; x++){
 
-		bzero(&tm, sizeof(tm));
+		// bzero(&tm, sizeof(tm));
+		memset(&tm, 0, sizeof(tm));
 		// enc->mmc[y][x] = 0;
 
 		roff_p = enc->roff[y][x];//init_ref_offsetが入っている．予測器の範囲指定と番号付け
@@ -841,10 +848,7 @@ for(y = 0 ; y < enc->height ; y++){
 			count++;
 			tm_array[k * 4 + count] = 0;
 			tm_array[k * 4 + count] = tm[k].sum;
-			// if(tm[k].sum ==0) enc->mmc[y][x]++;
 		}
-		// printf("%d ",enc->mmc[y][x]);
-
 
 		for(k = 0 ; k < MAX_DATA_SAVE_DOUBLE ; k++){
 			tempm_array[y][x][k] = tm_array[k];
@@ -853,8 +857,14 @@ for(y = 0 ; y < enc->height ; y++){
 		for(k = 0 ; k < MAX_DATA_SAVE ; k++){
 			enc->tempm_array[y][x][k] = tm[k].ave_o;
 		}
+		temp_y = tempm_array[y][x][1];
+		temp_x = tempm_array[y][x][2];
+		if(y==0 && x==0){
+			exam_array[y][x] = enc->maxval > 1;
+		} else {
+			exam_array[y][x] = enc->org[temp_y][temp_x];
+		}
 	}//x fin
-	// printf("\n");
 }//y fin
 
 // printf("number of hours worked:%lf[s]\n",(float)(end - start)/CLOCKS_PER_SEC);
@@ -866,13 +876,13 @@ for(y = 0 ; y < enc->height ; y++){
 
 	free(tm_array);
 	return(0);
-// return(array);
+	// return(array);
 }
 #endif
 
 void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 {
-	int ty, tx, cl, i, peak, sample;
+	int ty, tx, cl, i, peak, sample/*, temp_x, temp_y*/;
 	int m_gr,m_prd,m_frac;
 	int count_cl[enc->num_class];
 
@@ -910,6 +920,24 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 			// if(y%16==0 && x%16==0)printf("(%3d, %3d)mask\nclass: %d\nweight: %d\nbase[%d]: %d\npm[%d]: %d\n", y, x, mask->class[peak], mask->weight[peak], peak, mask->base[peak], peak, mask->pm[peak]);
 		}
 	}
+
+#if TEMPLETE_MATCHING_ON
+	if(y==0 && x==0){
+
+	} else {
+		cl = enc->class[y][x];
+		mask->weight[peak] = ( (count_cl[cl] << W_SHIFT) / sample);
+
+		m_gr = enc->uquant[cl][u];
+		m_prd = exam_array[y][x] << 6;
+		m_prd = CLIP(0, enc->maxprd, m_prd);
+		mask->base[peak] = enc->bconv[m_prd];
+		m_frac = enc->fconv[m_prd];
+		mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
+		peak++;
+	}
+#endif
+
 	// if (y==8&&x== 8) printf("********\n");
 	mask->num_peak = peak;	//ピークの数
 	// if (peak != 1) printf ("mask->num_peak =%d" ,mask->num_peak);
@@ -962,6 +990,9 @@ cost_t calc_cost2(ENCODER *enc, int tly, int tlx, int bry, int brx)
 		upara_p = &enc->upara[y][tlx];
 		encval_p = &enc->encval[y][tlx];
 		for (x = tlx; x < brx; x++) {
+			#ifdef CHECK_DEBUG_TM
+				printf("[%3d,%3d]\n", y, x);
+			#endif
 			*upara_p++ = u = calc_uenc(enc, y, x);
 			set_mask_parameter(enc,y,x,u);
 			cl = *class_p++;
@@ -3977,11 +4008,12 @@ int main(int argc, char **argv)
 
 #if TEMPLETE_MATCHING_ON
 	tempm_array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
+	exam_array = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
 	TempleteM(enc);
-	#if CHECK_DEBUG_TM
+	#if 0
 		for( y = 0; y < enc->height ; y++ ) {
 			for( x = 0 ; x < enc->width;  x++ ) {
-				if( y == 0 && x == 0 ) continue;
+				// if( y == 0 && x == 0 ) continue;
 				if( y % 32 == 0 && x % 32 == 0 ) {
 					printf("(%3d,%3d)%d\n", y, x, enc->org[y][x]);
 					for(i=0; i<5; i++){

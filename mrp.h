@@ -123,7 +123,7 @@
 #define HAVE_CLOCK
 
 /*****TEMPLETE MATCHING ********************/
-#define TEMPLETE_MATCHING_ON 	0
+#define TEMPLETE_MATCHING_ON 	1
 #define AREA			6
 #define Y_SIZE			20
 #define X_SIZE			20
@@ -133,7 +133,7 @@
 #define MAX_MULTIMODAL	45
 
 /*********DEBUG******************************/
-#define CHECK_DEBUG_TM 0
+#define CHECK_DEBUG_TM 1
 
 /***** STRUCTURE ***************************/
 
@@ -290,7 +290,10 @@ typedef struct {
 #if TEMPLETE_MATCHING_ON
 	int **temp_num;
 	int ***tempm_array;
+	int ***roff;
+	int *array;
 #endif
+	int **org;
 } DECODER;
 
 /***** FUNC - common.c ****************************/

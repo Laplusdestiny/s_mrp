@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 #include "mrp.h"
 
 extern CPOINT dyx[];
@@ -14,6 +15,7 @@ extern int win_sample[], win_dis[];
 
 MASK *mask;
 int ***tempm_array;
+int **exam_array;
 
 uint getbits(FILE *fp, int n)
 {
@@ -32,6 +34,89 @@ uint getbits(FILE *fp, int n)
 	x = (x << n) | (bitbuf >> bitpos);
 	bitbuf &= ((1 << bitpos) - 1);
 	return (x);
+}
+
+int ***init_ref_offset(int height, int width, int prd_order)
+{
+	int ***roff, *ptr;
+	int x, y, dx, dy, k;
+	int order, min_dx, max_dx, min_dy;
+
+	min_dx = max_dx = min_dy = 0;
+	order = (prd_order > NUM_UPELS)? prd_order : NUM_UPELS;
+	for (k = 0; k < order; k++) {
+		dy = dyx[k].y;
+		dx = dyx[k].x;
+		if (dy < min_dy) min_dy = dy;
+		if (dx < min_dx) min_dx = dx;
+		if (dx > max_dx) max_dx = dx;
+	}
+	roff = (int ***)alloc_2d_array(height, width, sizeof(int *));
+	if (min_dy != 0) {
+		ptr = (int *)alloc_mem((1 - min_dy) * (1 + max_dx - min_dx) * order * sizeof(int));
+	}else {
+		ptr = (int *)alloc_mem((2 + max_dx - min_dx) * order * sizeof(int));
+	}
+	for (y = 0; y < height; y++) {
+		for (x = 0; x < width; x++) {
+			if (y == 0) {
+				if (x == 0) {
+					roff[y][x] = ptr;
+					dx = 0;
+					dy = height;
+					for (k = 0; k < order; k++) {
+						*ptr++ = dy * width + dx;
+					}
+				} else if (x + min_dx <= 0 || x + max_dx >= width) {
+					roff[y][x] = ptr;
+					dy = 0;
+					for (k = 0; k < order; k++) {
+						dx = dyx[k].x;
+						if (x + dx < 0) dx = -x;
+						else if (dx >= 0) dx = -1;
+						*ptr++ = dy * width + dx;
+					}
+				} else {
+					roff[y][x] = roff[y][x - 1];
+				}
+				// for K = 1 and NUM_UPELS = 1
+			} else if (min_dy == 0 && y == 1 && x == 0) {
+				roff[y][x] = ptr;
+				dy = -1;
+				dx = 0;
+				*ptr++ = dy * width + dx;
+			} else if (y + min_dy <= 0) {
+				if (x == 0) {
+					roff[y][x] = ptr;
+					for (k = 0; k < order; k++) {
+						dy = dyx[k].y;
+						if (y + dy < 0) dy = -y;
+						else if (dy >= 0) dy = -1;
+						dx = dyx[k].x;
+						if (x + dx < 0) dx = -x;
+						*ptr++ = dy * width + dx;
+					}
+				} else if (x + min_dx <= 0 || x + max_dx >= width) {
+					roff[y][x] = ptr;
+					for (k = 0; k < order; k++) {
+						dy = dyx[k].y;
+						if (y + dy < 0) dy = -y;
+						dx = dyx[k].x;
+						if (x + dx < 0) dx = -x;
+						else if (x + dx >= width) {
+							dx = width - x - 1;
+						}
+						*ptr++ = dy * width + dx;
+					}
+				} else {
+					roff[y][x] = roff[y][x - 1];
+				}
+			} else {
+				roff[y][x] = roff[y - 1][x];
+			}
+		}
+	}
+	return (roff);
 }
 
 DECODER *init_decoder(FILE *fp)
@@ -109,6 +194,12 @@ DECODER *init_decoder(FILE *fp)
 		dec->zero_fr[i] = (int)(zerocoef_prob[i] * (double)TOT_ZEROFR);
 	}
 #endif
+#if TEMPLETE_MATCHING_ON
+	tempm_array = (int ***)alloc_3d_array(dec->height, dec->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
+	dec->roff = init_ref_offset(dec->height, dec->width, dec->max_prd_order);
+	dec->array = (int *)alloc_mem(MAX_DATA_SAVE_DOUBLE * sizeof(int));
+#endif
+	dec->org = (int **)alloc_2d_array(dec->height, dec->width, sizeof(int));
 	return (dec);
 }
 
@@ -435,6 +526,103 @@ int calc_udec(DECODER *dec, int y, int x)
 	return (u);
 }
 
+#if TEMPLETE_MATCHING_ON
+void TempleteM (DECODER *dec, int dec_y, int dec_x, int *array){
+	int bx, by, g, h, i, j, k, count, area1[AREA], area_o[AREA], *roff_p, *org_p,  x_size = X_SIZE, sum1, sum_o;
+	double ave1, ave_o, nas;
+	int tm_array[(Y_SIZE * X_SIZE * 2 )*4] = {0};
+	TM_Member tm[Y_SIZE * X_SIZE * 2];
+	TM_Member temp;
+
+	if(dec_y==0 && dec_x==0) return;
+
+	// bzero(&tm, sizeof(tm));
+	memset(&tm, 0, sizeof(tm));
+
+	roff_p = dec->roff[dec_y][dec_x];
+	org_p = &dec->org[dec_y][dec_x];
+
+	sum1 = 0;
+	for(i=0; i<AREA; i++){
+		area1[i] = 0;
+		area1[i] = org_p[roff_p[i]];
+		sum1 += area1[i];
+	}
+	ave1 = (double)sum1 / AREA;
+
+	j=0;
+	if(dec_y == 0 || dec_y == 1 || dec_y == 2){
+		x_size = 50;
+	} else {
+		x_size = X_SIZE;
+	}
+
+	for( by = dec_y - Y_SIZE; by <= dec_y; by++){
+		if( by < 0 || by > dec->height)continue;
+		for( bx = dec_x - x_size; bx <= dec_x + x_size-1; bx++){
+			if( bx <0 || bx > dec->width)continue;
+			roff_p = dec->roff[by][bx];
+			org_p = &dec->org[by][bx];
+
+			sum_o = 0;
+			for(i=0; i<AREA; i++){
+				area_o[i] = 0;
+				area_o[i] = org_p[roff_p[i]];
+				sum_o += area_o[i];
+			}
+			ave_o = (double)sum_o / AREA;
+
+			nas = 0;
+			for(i=0; i<AREA; i++){
+				nas += fabs( ((double)area1[i] - ave1) - ((double)area_o[i] - ave_o));
+			}
+
+			tm[j].id = j;
+			tm[j].by = by;
+			tm[j].bx = bx;
+			tm[j].ave_o = (int)ave_o;
+			tm[j].sum = (int)(nas * NAS_ACCURACY);
+
+			j++;
+		}//bx fin
+	}//by fin
+
+	dec->temp_num[dec_y][dec_x] = j;
+
+	for(g=0; g<j-1; g++){
+		for(h=j-1; h>g; h--){
+			if(tm[h-1].sum > tm[h].sum){
+				temp = tm[h];
+				tm[h] = tm[h-1];
+				tm[h-1] = temp;
+			}
+		}
+	}
+
+	for(k=0; k< Y_SIZE * X_SIZE * 2 + X_SIZE; k++){
+		count=0;
+		tm_array[k * 4 + count] = tm[k].id;
+		count++;
+		tm_array[k * 4 + count] = tm[k].by;
+		count++;
+		tm_array[k * 4 + count] = tm[k].bx;
+		count++;
+		tm_array[k * 4 + count] = tm[k].sum;
+	}
+
+	for(k=0; k<MAX_DATA_SAVE; k++){
+		array[k] = tm_array[k];
+	}
+
+	for(k=0; k<MAX_DATA_SAVE_DOUBLE; k++){
+		dec->array[k] = tm[k].ave_o;
+	}
+
+	exam_array[dec_y][dec_x] = dec->org[tm_array[1]][tm_array[2]];
+
+}
+#endif
+
 int calc_prd(IMAGE *img, DECODER *dec, int cl, int y, int x)
 {
 	int k, prd, prd_order, rx, ry, *coef_p, *nzc_p, i;
@@ -668,12 +856,22 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//when MULT_PEEK_MODE 1
 	PMODEL *pm;
 
 	img = alloc_image(dec->width, dec->height, dec->maxval);
+	// dec->org = (int **)init_2d_array(dec->org, dec->height, dec->width, dec->maxval>1);
+
+#if TEMPLETE_MATCHING_ON
+	int *tm_array = (int *)alloc_mem((Y_SIZE * X_SIZE *4) * sizeof(int));
+	exam_array = (int **)alloc_2d_array(dec->height, dec->width, sizeof(int));
+#endif
 
 	bitmask = (1 << dec->pm_accuracy) - 1;
 	shift = dec->coef_precision - dec->pm_accuracy;
 	for (y = 0; y < dec->height; y++) {
 		for (x = 0; x < dec->width; x++) {
 			u = calc_udec(dec, y, x);
+
+#if TEMPLETE_MATCHING_ON
+			TempleteM(dec, y, x, tm_array);
+#endif
 
 			if (dec->mask[y][x] == 0){
 				cl = dec->class[y][x];
@@ -701,7 +899,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//when MULT_PEEK_MODE 1
 					p = rc_decode(fp, dec->rc, pm, 0, dec->maxval+1);
 				}
 			}
-			img->val[y][x] = p;
+			img->val[y][x] = dec->org[y][x] = p;
 			prd >>= (dec->coef_precision - 1);
 			e = (p << 1) - prd - 1;
 			if (e < 0) e = -(e + 1);
@@ -715,7 +913,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//when MULT_PEEK_MODE 1
 IMAGE *decode_image(FILE *fp, DECODER *dec)		//when MULT_PEEK_MODE 0
 {
 	int x, y, cl, gr, prd, u, e, p, mask, shift, base;
-	int *th_p;
+	int *th_p, ;
 	IMAGE *img;
 	PMODEL *pm;
 

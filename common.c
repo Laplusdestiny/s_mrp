@@ -155,6 +155,38 @@ IMAGE *alloc_image(int width, int height, int maxval)
 	return (img);
 }
 
+void init_array(int *array, int height, int value){	//1次元配列の初期化
+	int i=0;
+
+	for(i=0; i<height; i++){
+		array[i] = value;
+	}
+	// return(array);
+}
+
+void init_2d_array(int **array, int height, int width, int value){
+	int i=0, j=0;
+
+	for(i=0; i<height; i++){
+		for(j=0; j<width; j++){
+			array[i][j] = value;
+		}
+	}
+	// return(array);
+}
+
+void init_3d_array(int ***array, int height, int width, int depth ,int value){
+	int i=0, j=0, k=0;
+
+	for(i=0; i<height; i++){
+		for(j=0; j<width; j++){
+			for(k=0; k<depth; k++){
+				array[i][j][k] = value;
+			}
+		}
+	}
+	// return(array);
+}
 /*
 Natural logarithm of the gamma function
 cf. "Numerical Recipes in C", 6.1
