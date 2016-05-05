@@ -843,8 +843,30 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 			peak++;
 		}
 	}
+
+#if TEMPLETE_MATCHING_ON
+	if(y==0 && x==0){
+
+	} else {
+		cl = dec->class[y][x];
+		mask->weight[peak] = ( (count_cl[cl] << W_SHIFT) / sample);
+		th_p = dec->th[cl];
+		for(m_gr = 0; m_gr < dec->num_group - 1; m_gr++){
+			if(u < *th_p++)break;
+		}
+
+		// m_prd = calc_prd(img, dec, cl, y, x);
+		m_prd = exam_array[y][x] << dec->coef_precision;
+		// if(cl == r_cl) r_prd = m_prd;
+		m_base = (dec->max_prd - m_prd + (1 << shift) / 2) >> shift;
+		mask->pm[peak] = dec->pmodels[m_gr][0] + (m_base & bmask);
+		m_base >>= dec->pm_accuracy;
+		mask->base[peak] = m_base;
+		peak++;
+	}
+#endif
 	mask->num_peak = peak;	//ピークの数
-	return(r_prd);
+	return(r_prd);	//r_prdは誤差を算出するときに使う模様・・・？
 }
 
 
@@ -859,8 +881,8 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//when MULT_PEEK_MODE 1
 	// dec->org = (int **)init_2d_array(dec->org, dec->height, dec->width, dec->maxval>1);
 
 #if TEMPLETE_MATCHING_ON
-	int *tm_array = (int *)alloc_mem((Y_SIZE * X_SIZE *4) * sizeof(int));
-	exam_array = (int **)alloc_2d_array(dec->height, dec->width, sizeof(int));
+	int *tm_array = (int *)alloc_mem((Y_SIZE * X_SIZE *4) * sizeof(int));	//事例のデータ
+	exam_array = (int **)alloc_2d_array(dec->height, dec->width, sizeof(int));	//最もマッチングコストが小さい画素の輝度値を保存
 #endif
 
 	bitmask = (1 << dec->pm_accuracy) - 1;

@@ -929,7 +929,7 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 		mask->weight[peak] = ( (count_cl[cl] << W_SHIFT) / sample);
 
 		m_gr = enc->uquant[cl][u];
-		m_prd = exam_array[y][x] << 6;
+		m_prd = exam_array[y][x] << enc->coef_precision;
 		m_prd = CLIP(0, enc->maxprd, m_prd);
 		mask->base[peak] = enc->bconv[m_prd];
 		m_frac = enc->fconv[m_prd];
@@ -964,6 +964,22 @@ int set_mask_parameter_optimize(ENCODER *enc,int y, int x, int u, int r_cl)
 			peak++;
 		}
 	}
+
+#if TEMPLETE_MATCHING_ON
+	if(y==0 && x==0){
+
+	} else {
+		cl = enc->class[y][x];
+		mask->weight[peak] = enc->weight[y][x][cl];
+		m_prd = exam_array[y][x] << enc->coef_precision;
+		m_prd = CLIP(0, enc->maxprd, m_prd);
+		mask->base[peak] = enc->bconv[m_prd];
+		m_frac = enc->fconv[m_prd];
+		if(cl == r_cl) r_peak = peak;	//これは一体？
+		mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
+		peak++;
+	}
+#endif
 	mask->num_peak = peak;	//ピークの数
 	return(r_peak);
 }
@@ -2479,7 +2495,7 @@ void set_mask_parameter_optimize2(ENCODER *enc,int y, int x, int u)
 	  	peak++;
 	  }
    }
-   mask->num_peak = peak; //peak no kazu
+   mask->num_peak = peak;	//ピークの数
 }
 
 cost_t optimize_group_mult(ENCODER *enc)
