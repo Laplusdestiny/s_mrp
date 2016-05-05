@@ -858,7 +858,7 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 		// m_prd = calc_prd(img, dec, cl, y, x);
 		m_prd = exam_array[y][x] << dec->coef_precision;
 		// if(cl == r_cl) r_prd = m_prd;
-		m_base = (dec->max_prd - m_prd + (1 << shift) / 2) >> shift;
+		m_base = (dec->maxprd - m_prd + (1 << shift) / 2) >> shift;
 		mask->pm[peak] = dec->pmodels[m_gr][0] + (m_base & bmask);
 		m_base >>= dec->pm_accuracy;
 		mask->base[peak] = m_base;

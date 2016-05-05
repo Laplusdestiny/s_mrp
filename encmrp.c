@@ -969,12 +969,13 @@ int set_mask_parameter_optimize(ENCODER *enc,int y, int x, int u, int r_cl)
 	if(y==0 && x==0){
 
 	} else {
-		cl = enc->class[y][x];
+		mask->class[peak] = cl = enc->class[y][x];
 		mask->weight[peak] = enc->weight[y][x][cl];
 		m_prd = exam_array[y][x] << enc->coef_precision;
 		m_prd = CLIP(0, enc->maxprd, m_prd);
 		mask->base[peak] = enc->bconv[m_prd];
 		m_frac = enc->fconv[m_prd];
+		m_gr = enc->uquant[cl][u];
 		if(cl == r_cl) r_peak = peak;	//これは一体？
 		mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
 		peak++;
