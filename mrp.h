@@ -133,7 +133,7 @@
 #define MAX_MULTIMODAL	45
 
 /*********DEBUG******************************/
-#define CHECK_DEBUG_TM 1
+#define CHECK_DEBUG_TM 0
 
 /***** STRUCTURE ***************************/
 

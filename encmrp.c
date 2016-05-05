@@ -990,7 +990,7 @@ cost_t calc_cost2(ENCODER *enc, int tly, int tlx, int bry, int brx)
 		upara_p = &enc->upara[y][tlx];
 		encval_p = &enc->encval[y][tlx];
 		for (x = tlx; x < brx; x++) {
-			#ifdef CHECK_DEBUG_TM
+			#if CHECK_DEBUG_TM
 				printf("[%3d,%3d]\n", y, x);
 			#endif
 			*upara_p++ = u = calc_uenc(enc, y, x);
