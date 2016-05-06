@@ -198,6 +198,7 @@ DECODER *init_decoder(FILE *fp)
 	tempm_array = (int ***)alloc_3d_array(dec->height, dec->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
 	dec->roff = init_ref_offset(dec->height, dec->width, dec->max_prd_order);
 	dec->array = (int *)alloc_mem(MAX_DATA_SAVE_DOUBLE * sizeof(int));
+	dec->temp_num = (int **)alloc_2d_array(dec->height, dec->width, sizeof(int));
 #endif
 	dec->org = (int **)alloc_2d_array(dec->height, dec->width, sizeof(int));
 	return (dec);
