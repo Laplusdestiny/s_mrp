@@ -134,6 +134,7 @@
 
 /*********DEBUG******************************/
 #define CHECK_DEBUG_TM 0
+#define CHECK_DEBUG 1
 
 /***** STRUCTURE ***************************/
 

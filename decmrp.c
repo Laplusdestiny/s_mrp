@@ -188,7 +188,7 @@ DECODER *init_decoder(FILE *fp)
 	for (i = 0; i < dec->max_prd_order; i++) {
 		dec->ord2mhd[i] = (int)((sqrt(1 + 4 * i) - 1) / 2);
 	}
-	dec->prd_mhd = dec->ord2mhd[dec->max_prd_order - 1] + 1;
+	dec->prd_mhd = dec->ord2mhd[	dec->max_prd_order - 1] + 1;
 	dec->zero_fr = (int *)alloc_mem(NUM_ZMODEL * sizeof(int));
 	for (i = 0; i < NUM_ZMODEL; i++) {
 		dec->zero_fr[i] = (int)(zerocoef_prob[i] * (double)TOT_ZEROFR);
@@ -529,7 +529,7 @@ int calc_udec(DECODER *dec, int y, int x)
 
 #if TEMPLETE_MATCHING_ON
 void TempleteM (DECODER *dec, int dec_y, int dec_x, int *array){
-	int bx, by, g, h, i, j, k, count, area1[AREA], area_o[AREA], *roff_p, *org_p,  x_size = X_SIZE, sum1, sum_o;
+	int bx, by, g, h, i, j, k, count, area1[AREA], area_o[AREA], *roff_p, *org_p,  x_size = X_SIZE, sum1, sum_o, temp_x, temp_y;
 	double ave1, ave_o, nas;
 	int tm_array[(Y_SIZE * X_SIZE * 2 )*4] = {0};
 	TM_Member tm[Y_SIZE * X_SIZE * 2];
@@ -619,7 +619,11 @@ void TempleteM (DECODER *dec, int dec_y, int dec_x, int *array){
 		dec->array[k] = tm[k].ave_o;
 	}
 
-	exam_array[dec_y][dec_x] = dec->org[tm_array[1]][tm_array[2]];
+	temp_y = array[1];
+	temp_x = array[2];
+	ave_o = dec->array[0];
+
+	exam_array[dec_y][dec_x] = (int)((double)dec->org[temp_y][temp_x] - ave_o + ave1);
 
 }
 #endif
@@ -893,7 +897,11 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//when MULT_PEEK_MODE 1
 			u = calc_udec(dec, y, x);
 
 #if TEMPLETE_MATCHING_ON
-			TempleteM(dec, y, x, tm_array);
+			if(y==0 && x==0){
+				exam_array[y][x] = dec->maxval > 1;
+			} else {
+				TempleteM(dec, y, x, tm_array);
+			}
 #endif
 
 			if (dec->mask[y][x] == 0){

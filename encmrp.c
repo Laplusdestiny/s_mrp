@@ -1,4 +1,3 @@
-/***** Encoder *****/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -763,10 +762,13 @@ for(y = 0 ; y < enc->height ; y++){
 		roff_p = enc->roff[y][x];//init_ref_offsetが入っている．予測器の範囲指定と番号付け
 		org_p = &enc->org[y][x];
 
+		sum1 = 0;
 		for(i=0;i < AREA; i++){//市街地距離AREA個分
 			area1[i] = 0;
 			area1[i] = org_p[roff_p[i]];
+			sum1 += area1[i];
 		}
+		ave1 = (double)sum1 / AREA;
 
 ///////////////////////////
 //テンプレートマッチング///
@@ -794,13 +796,11 @@ for(y = 0 ; y < enc->height ; y++){
 					area_o[k] = org_p[roff_p[k]];
 				}
 
-				sum1 = 0;
 				sum_o = 0;
  				for(m = 0; m < AREA ; m++){//平均の計算
-					sum1 += area1[m];
 					sum_o += area_o[m];
 				}
-				ave1 = (double)sum1 / AREA;
+
 				ave_o = (double)sum_o / AREA;
 
 				nas = 0;
@@ -859,10 +859,12 @@ for(y = 0 ; y < enc->height ; y++){
 		}
 		temp_y = tempm_array[y][x][1];
 		temp_x = tempm_array[y][x][2];
+		ave_o = enc->tempm_array[y][x][0];
+
 		if(y==0 && x==0){
 			exam_array[y][x] = enc->maxval > 1;
 		} else {
-			exam_array[y][x] = enc->org[temp_y][temp_x];
+			exam_array[y][x] = (int)(enc->org[temp_y][temp_x] - ave_o + ave1);
 		}
 	}//x fin
 }//y fin
@@ -910,6 +912,9 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 			m_gr = enc->uquant[cl][u];
 			m_prd = enc->prd_class[y][x][cl];
 			m_prd = CLIP(0, enc->maxprd, m_prd);
+			#if CHECK_DEBUG
+				if( y % 16==0 && x % 16 == 0)	printf("[set_mask_parameter] m_prd[%d]: %d\n", peak, m_prd);
+			#endif
 			// if(peak==0)m_prd = 1000;
 			// else m_prd = 10000;
 			// if (y==8&&x== 8) 	printf("(%d,%d) class[%d] = %d weight[%d] =%lf m_prd =%d\n ",x,y,peak,mask->class[peak],peak,mask->weight[peak],m_prd);
@@ -931,6 +936,9 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 		m_gr = enc->uquant[cl][u];
 		m_prd = exam_array[y][x] << enc->coef_precision;
 		m_prd = CLIP(0, enc->maxprd, m_prd);
+		#if CHECK_DEBUG
+			if( y % 16==0 && x % 16 == 0)	printf("[set_mask_parameter] m_prd[%d]: %d\n", peak, m_prd);
+		#endif
 		mask->base[peak] = enc->bconv[m_prd];
 		m_frac = enc->fconv[m_prd];
 		mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
@@ -976,7 +984,7 @@ int set_mask_parameter_optimize(ENCODER *enc,int y, int x, int u, int r_cl)
 		mask->base[peak] = enc->bconv[m_prd];
 		m_frac = enc->fconv[m_prd];
 		m_gr = enc->uquant[cl][u];
-		if(cl == r_cl) r_peak = peak;	//これは一体？
+		if(cl == r_cl) r_peak = peak;	//これは一体？返り値に設定されている・・・
 		mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
 		peak++;
 	}
@@ -2814,9 +2822,9 @@ void remove_emptyclass(ENCODER *enc)
 				enc->th[cl][k] = enc->th[i][k];
 			}
 #if MULT_PEAK_MODE
-	    for (k = 0; k < MAX_UPARA+1; k++) {
-		   	enc->uquant[cl][k] = enc->uquant[i][k];
-		  }
+			for (k = 0; k < MAX_UPARA+1; k++) {
+				enc->uquant[cl][k] = enc->uquant[i][k];
+			}
 			for (y = 0; y < enc->height; y++) {
 				for (x = 0; x < enc->width; x++) {
 					enc->prd_class[y][x][cl] = enc->prd_class[y][x][i];
