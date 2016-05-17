@@ -785,7 +785,7 @@ for(y = 0 ; y < enc->height ; y++){
 		for (by = y - Y_SIZE ; by <= y ; by++) {
 			if((by < 0) || (by > enc->height))continue;
 			for (bx = x - x_size ; bx <= x + x_size - 1; bx++) {
-				if((by == y) && (bx == x) )break;
+				if((by == y) && (bx == x) )break;	//(0,0)は事例がない
 				if((bx < 0) || (bx > enc->width))continue;
 
 				roff_p = enc->roff[by][bx];
@@ -862,9 +862,9 @@ for(y = 0 ; y < enc->height ; y++){
 		ave_o = enc->tempm_array[y][x][0];
 
 		if(y==0 && x==0){
-			exam_array[y][x] = enc->maxval > 1;
+			exam_array[y][x] = enc->maxval > 1;	//事例がないため，輝度値の中央
 		} else {
-			exam_array[y][x] = (int)(enc->org[temp_y][temp_x] - ave_o + ave1);
+			exam_array[y][x] = (int)((double)enc->org[temp_y][temp_x] - ave_o + ave1);
 		}
 	}//x fin
 }//y fin
@@ -881,6 +881,25 @@ for(y = 0 ; y < enc->height ; y++){
 	// return(array);
 }
 #endif
+
+double continuous_GGF(ENCODER *enc, double e,int w_gr){
+	int lngamma(double), cn=WEIGHT_CN, num_pmodel=enc->num_pmodel;
+	double sigma,delta_c,shape,eta,p;
+	double accuracy = 1 / (double)NAS_ACCURACY;
+
+	sigma = enc->sigma[w_gr];
+	delta_c = 3.2 / (double)num_pmodel;//cnは0.2ずつ動くので. num_pmodel is 16 . delta_c = 0.2
+	shape = delta_c * (double)(cn);//cnを実際の数値に変換
+	eta = exp(0.5*(lgamma(3.0/shape)-lgamma(1.0/shape))) / sigma;//一般化ガウス関数.ηのみ
+
+	if(e <= accuracy){
+		p = 1.5;
+	}else{
+		p = 1.5 * exp(-pow(eta * (e), shape));
+	}
+
+	return(p);
+}
 
 void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 {
@@ -908,7 +927,7 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 	for(cl = peak = 0; cl < enc->num_class; cl++){
 		if (count_cl[cl]!=0){
 			mask->class[peak] = cl;		//マスクにかかる領域毎のクラスを保存
-			mask->weight[peak] =( (count_cl[cl] << W_SHIFT) / sample);	//各ピーク毎の重み
+			mask->weight[peak] = ( (count_cl[cl] << W_SHIFT) / sample);	//各ピーク毎の重み
 			m_gr = enc->uquant[cl][u];
 			m_prd = enc->prd_class[y][x][cl];
 			m_prd = CLIP(0, enc->maxprd, m_prd);
@@ -931,7 +950,7 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 
 	} else {
 		cl = enc->class[y][x];
-		mask->weight[peak] = ( (count_cl[cl] << W_SHIFT) / sample);
+		mask->weight[peak] = continuous_GGF(enc, (double)tempm_array[y][x][3] / NAS_ACCURACY, enc->w_gr) * ( (count_cl[cl] << W_SHIFT) / sample);
 
 		m_gr = enc->uquant[cl][u];
 		m_prd = exam_array[y][x] << enc->coef_precision;
@@ -978,7 +997,7 @@ int set_mask_parameter_optimize(ENCODER *enc,int y, int x, int u, int r_cl)
 
 	} else {
 		mask->class[peak] = cl = enc->class[y][x];
-		mask->weight[peak] = enc->weight[y][x][cl];
+		mask->weight[peak] = continuous_GGF(enc, (double)tempm_array[y][x][3] / NAS_ACCURACY, enc->w_gr) * enc->weight[y][x][cl];
 		m_prd = exam_array[y][x] << enc->coef_precision;
 		m_prd = CLIP(0, enc->maxprd, m_prd);
 		mask->base[peak] = enc->bconv[m_prd];
@@ -3480,6 +3499,9 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 					pm->freq[e],
 					pm->cumfreq[enc->maxval + 1]);
 			}
+			#if CHECK_DEBUG
+				printf("e[%3d][%3d]: %d\n", y, x, e);
+			#endif
 		}
 	}
 	rc_finishenc(fp, enc->rc);
@@ -3608,13 +3630,12 @@ void opcl_sub(ENCODER *enc, int k, int *blk, int tly, int tlx, int blksize, int 
 			return;
 		}
 	}
-	mtf_classlabel(enc->class, enc->mtfbuf, tly, tlx,
-		blksize, width, enc->num_class);
+	mtf_classlabel(enc->class, enc->mtfbuf, tly, tlx, blksize, width, enc->num_class);
 	// err_cost = enc->err_cost[*blk];
 	// min_cost = 1E5;
 	min_cl = 0;
 #if OPTIMIZE_MASK_LOOP
-  min_cl = opcl_find_class(enc, k, tly, tlx, bry, brx, BASE_BSIZE);
+	min_cl = opcl_find_class(enc, k, tly, tlx, bry, brx, BASE_BSIZE);
 #else
 	for (cl = 0; cl < enc->num_class; cl++) {
 		if (cl == k) continue;
@@ -4035,6 +4056,7 @@ int main(int argc, char **argv)
 	tempm_array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
 	exam_array = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
 	TempleteM(enc);
+	enc->w_gr = W_GR;	//マッチングコストに対する重みの分散値の初期化
 	#if 0
 		for( y = 0; y < enc->height ; y++ ) {
 			for( x = 0 ; x < enc->width;  x++ ) {

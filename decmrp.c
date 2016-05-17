@@ -14,7 +14,7 @@ extern int mask_y[], mask_x[];
 extern int win_sample[], win_dis[];
 
 MASK *mask;
-int ***tempm_array;
+int *tempm_array;
 int **exam_array;
 
 uint getbits(FILE *fp, int n)
@@ -195,7 +195,7 @@ DECODER *init_decoder(FILE *fp)
 	}
 #endif
 #if TEMPLETE_MATCHING_ON
-	tempm_array = (int ***)alloc_3d_array(dec->height, dec->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
+	tempm_array = (int *)alloc_mem(MAX_DATA_SAVE_DOUBLE * sizeof(int));
 	dec->roff = init_ref_offset(dec->height, dec->width, dec->max_prd_order);
 	dec->array = (int *)alloc_mem(MAX_DATA_SAVE_DOUBLE * sizeof(int));
 	dec->temp_num = (int **)alloc_2d_array(dec->height, dec->width, sizeof(int));
@@ -528,7 +528,7 @@ int calc_udec(DECODER *dec, int y, int x)
 }
 
 #if TEMPLETE_MATCHING_ON
-void TempleteM (DECODER *dec, int dec_y, int dec_x, int *array){
+void TempleteM (DECODER *dec, int dec_y, int dec_x){
 	int bx, by, g, h, i, j, k, count, area1[AREA], area_o[AREA], *roff_p, *org_p,  x_size = X_SIZE, sum1, sum_o, temp_x, temp_y;
 	double ave1, ave_o, nas;
 	int tm_array[(Y_SIZE * X_SIZE * 2 )*4] = {0};
@@ -612,15 +612,15 @@ void TempleteM (DECODER *dec, int dec_y, int dec_x, int *array){
 	}
 
 	for(k=0; k<MAX_DATA_SAVE; k++){
-		array[k] = tm_array[k];
+		tempm_array[k] = tm_array[k];
 	}
 
 	for(k=0; k<MAX_DATA_SAVE_DOUBLE; k++){
 		dec->array[k] = tm[k].ave_o;
 	}
 
-	temp_y = array[1];
-	temp_x = array[2];
+	temp_y = tempm_array[1];
+	temp_x = tempm_array[2];
 	ave_o = dec->array[0];
 
 	exam_array[dec_y][dec_x] = (int)((double)dec->org[temp_y][temp_x] - ave_o + ave1);
@@ -806,6 +806,29 @@ void init_mask()
 	mask->pm =(PMODEL **)alloc_mem(MAX_PEAK_NUM * sizeof(PMODEL *));
 }
 
+double continuous_GGF(DECODER *dec, double e, int gr)
+{
+	int lngamma(double);
+	int cn,num_pmodel = dec->num_pmodel;
+	double sigma,delta_c,shape,eta,p;
+	double accuracy = 1 / (double)NAS_ACCURACY;
+	cn = WEIGHT_CN;
+	sigma = dec->sigma[gr];
+
+	delta_c = 3.2 / (double)num_pmodel;//cnは0.2ずつ動くので. num_pmodel is 16 . delta_c = 0.2
+	shape = delta_c * (double)(cn);//cnを実際の数値に変換
+
+	eta = exp(0.5*(lgamma(3.0/shape)-lgamma(1.0/shape))) / sigma;//一般化ガウス関数.ηのみ
+
+	if(e <= accuracy){
+		p = 1.5;
+	}else{
+		p = 1.5 * exp(-pow(eta * (e), shape));
+	}
+
+	return(p);
+}
+
 int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, int shift)
 {
 	int ty, tx, cl, i, peak, sample,m_gr,m_prd,m_base,r_cl,r_prd;
@@ -854,7 +877,7 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 
 	} else {
 		cl = dec->class[y][x];
-		mask->weight[peak] = ( (count_cl[cl] << W_SHIFT) / sample);
+		mask->weight[peak] = continuous_GGF(dec, (double)tempm_array[3] / NAS_ACCURACY, dec->w_gr) *( (count_cl[cl] << W_SHIFT) / sample);
 		th_p = dec->th[cl];
 		for(m_gr = 0; m_gr < dec->num_group - 1; m_gr++){
 			if(u < *th_p++)break;
@@ -886,8 +909,9 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//when MULT_PEEK_MODE 1
 	// dec->org = (int **)init_2d_array(dec->org, dec->height, dec->width, dec->maxval>1);
 
 #if TEMPLETE_MATCHING_ON
-	int *tm_array = (int *)alloc_mem((Y_SIZE * X_SIZE *4) * sizeof(int));	//事例のデータ
+	// int *tm_array = (int *)alloc_mem((Y_SIZE * X_SIZE *4) * sizeof(int));	//事例のデータ
 	exam_array = (int **)alloc_2d_array(dec->height, dec->width, sizeof(int));	//最もマッチングコストが小さい画素の輝度値を保存
+	dec->w_gr = W_GR;
 #endif
 
 	bitmask = (1 << dec->pm_accuracy) - 1;
@@ -900,7 +924,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//when MULT_PEEK_MODE 1
 			if(y==0 && x==0){
 				exam_array[y][x] = dec->maxval > 1;
 			} else {
-				TempleteM(dec, y, x, tm_array);
+				TempleteM(dec, y, x);
 			}
 #endif
 
@@ -935,6 +959,10 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//when MULT_PEEK_MODE 1
 			e = (p << 1) - prd - 1;
 			if (e < 0) e = -(e + 1);
 			dec->err[y][x] = e;
+
+			#if CHECK_DEBUG
+				printf("d[%3d][%3d]: %d\n", y, x, p);
+			#endif
 		}
 	}
 	return (img);

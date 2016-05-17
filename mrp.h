@@ -131,10 +131,11 @@
 #define MAX_DATA_SAVE	50
 #define MAX_DATA_SAVE_DOUBLE MAX_DATA_SAVE*4
 #define MAX_MULTIMODAL	45
-
+#define W_GR 			7
+#define WEIGHT_CN		5
 /*********DEBUG******************************/
 #define CHECK_DEBUG_TM 0
-#define CHECK_DEBUG 1
+#define CHECK_DEBUG 0
 
 /***** STRUCTURE ***************************/
 
@@ -250,6 +251,7 @@ typedef struct {
 	int **temp_num;
 	int ***tempm_array;
 	int **mmc;
+	int w_gr;
 #endif
 } ENCODER;
 
@@ -293,6 +295,7 @@ typedef struct {
 	int ***tempm_array;
 	int ***roff;
 	int *array;
+	int w_gr;
 #endif
 	int **org;
 } DECODER;
