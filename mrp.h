@@ -35,7 +35,7 @@
 #define OPT_SIDEINFO		1 // 1 : side-info into consideration (standard), 0 : neglect side-info
 #define MAX_ITERATION	100
 #define EXTRA_ITERATION	10
-#define AUTO_DEL_CL		1
+#define AUTO_DEL_CL		0
 #define AUTO_PRD_ORDER	1
 
 /****** MULT PEAK **************************/
@@ -124,6 +124,7 @@
 
 /*****TEMPLETE MATCHING ********************/
 #define TEMPLETE_MATCHING_ON 	1
+
 #define AREA			6
 #define Y_SIZE			20
 #define X_SIZE			20
@@ -135,7 +136,7 @@
 #define WEIGHT_CN		5
 /*********DEBUG******************************/
 #define CHECK_DEBUG_TM 0
-#define CHECK_DEBUG 0
+#define CHECK_DEBUG 1
 
 /***** STRUCTURE ***************************/
 
@@ -252,6 +253,7 @@ typedef struct {
 	int ***tempm_array;
 	int **mmc;
 	int w_gr;
+	// char optimize_w_gr;
 #endif
 } ENCODER;
 

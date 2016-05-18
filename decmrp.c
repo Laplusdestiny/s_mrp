@@ -536,7 +536,7 @@ void TempleteM (DECODER *dec, int dec_y, int dec_x){
 	TM_Member temp;
 
 	if(dec_y==0 && dec_x==0) return;
-
+	printf("TempleteM[%3d][%3d]",dec_y, dec_x);
 	// bzero(&tm, sizeof(tm));
 	memset(&tm, 0, sizeof(tm));
 
@@ -624,7 +624,7 @@ void TempleteM (DECODER *dec, int dec_y, int dec_x){
 	ave_o = dec->array[0];
 
 	exam_array[dec_y][dec_x] = (int)((double)dec->org[temp_y][temp_x] - ave_o + ave1);
-
+	printf(" -> end");
 }
 #endif
 
@@ -852,7 +852,7 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 		count_cl[cl]++;		//マスク内のクラスの数のカウント
 	}
 
-	r_cl = dec->class[y][x]; //real_class
+	r_cl = dec->class[y][x]; 	//当該ブロックのクラス番号
 	for(cl = peak = 0; cl < dec->num_class; cl++){
 		if (count_cl[cl]!=0){
 			// mask->class[peak] = cl;
@@ -883,9 +883,7 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 			if(u < *th_p++)break;
 		}
 
-		// m_prd = calc_prd(img, dec, cl, y, x);
 		m_prd = exam_array[y][x] << dec->coef_precision;
-		// if(cl == r_cl) r_prd = m_prd;
 		m_base = (dec->maxprd - m_prd + (1 << shift) / 2) >> shift;
 		mask->pm[peak] = dec->pmodels[m_gr][0] + (m_base & bmask);
 		m_base >>= dec->pm_accuracy;
@@ -894,7 +892,7 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 	}
 #endif
 	mask->num_peak = peak;	//ピークの数
-	return(r_prd);	//r_prdは誤差を算出するときに使う模様・・・？
+	return(r_prd);	//r_prdは当該ブロックのクラスによる予測値
 }
 
 
@@ -906,10 +904,8 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//when MULT_PEEK_MODE 1
 	PMODEL *pm;
 
 	img = alloc_image(dec->width, dec->height, dec->maxval);
-	// dec->org = (int **)init_2d_array(dec->org, dec->height, dec->width, dec->maxval>1);
 
 #if TEMPLETE_MATCHING_ON
-	// int *tm_array = (int *)alloc_mem((Y_SIZE * X_SIZE *4) * sizeof(int));	//事例のデータ
 	exam_array = (int **)alloc_2d_array(dec->height, dec->width, sizeof(int));	//最もマッチングコストが小さい画素の輝度値を保存
 	dec->w_gr = W_GR;
 #endif
@@ -927,7 +923,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//when MULT_PEEK_MODE 1
 				TempleteM(dec, y, x);
 			}
 #endif
-
+			printf(" -> mask: %d\n", dec->mask[y][x]);
 			if (dec->mask[y][x] == 0){
 				cl = dec->class[y][x];
 				th_p = dec->th[cl];
@@ -958,7 +954,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//when MULT_PEEK_MODE 1
 			prd >>= (dec->coef_precision - 1);
 			e = (p << 1) - prd - 1;
 			if (e < 0) e = -(e + 1);
-			dec->err[y][x] = e;
+			dec->err[y][x] = e;	//特徴量算出に用いる
 
 			#if CHECK_DEBUG
 				printf("d[%3d][%3d]: %d\n", y, x, p);
