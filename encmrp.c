@@ -955,7 +955,7 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 		cl = enc->class[y][x];
 		// if(y==0 && x==1)printf("%d\n", tempm_array[y][x][3]);
 		mask->weight[peak] = continuous_GGF(enc, (double)tempm_array[y][x][3] / NAS_ACCURACY, enc->w_gr) * ( (count_cl[cl] << W_SHIFT) / sample);
-		if(y==0 && x==1)printf("weight: %d\n",mask->weight[peak]);
+		// if(y==0 && x==1)printf("weight: %d\n",mask->weight[peak]);
 		m_gr = enc->uquant[cl][u];
 		m_prd = exam_array[y][x] << enc->coef_precision;
 		m_prd = CLIP(0, enc->maxprd, m_prd);
@@ -2530,7 +2530,7 @@ void set_mask_parameter_optimize2(ENCODER *enc,int y, int x, int u)
 
 #if TEMPLETE_MATCHING_ON
 	mask->class[peak] = enc->class[y][x];
-	mask->weight[peak] = continuous_GGF(enc, (double)exam_array[y][x][3] / NAS_ACCURACY, enc->w_gr) * enc->weight[y][x][cl];
+	mask->weight[peak] = continuous_GGF(enc, (double)tempm_array[y][x][3] / NAS_ACCURACY, enc->w_gr) * enc->weight[y][x][cl];
 	peak++;
 #endif
 
@@ -2905,6 +2905,7 @@ int write_header(ENCODER *enc, FILE *fp)
 	bits += putbits(fp, 3, enc->pm_accuracy);
 	bits += putbits(fp, 1, (enc->quadtree_depth < 0)? 0 : 1);
 	bits += putbits(fp, 4, enc->w_gr);
+	printf("w_gr: %d\n", enc->w_gr);
 	return (bits);
 }
 
@@ -3524,7 +3525,9 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 			}else{
 				pm = &enc->mult_pm;
 				set_pmodel_mult(pm,mask,enc->maxval+1);
-				// if(y==200&&x%10==0) printmodel(pm,enc->maxval+1);
+				#if CHECK_DEBUG
+					if(y==0 && x==1) printmodel(pm,enc->maxval+1);
+				#endif
 				rc_encode(fp, enc->rc,
 					pm->cumfreq[e],
 					pm->freq[e],

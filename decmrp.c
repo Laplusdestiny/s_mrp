@@ -944,7 +944,7 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 }
 
 
-IMAGE *decode_image(FILE *fp, DECODER *dec)		//when MULT_PEEK_MODE 1
+IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 {
 	int x, y, cl, gr, prd, u, e, p, bitmask, shift, base;
 	int *th_p;
@@ -998,6 +998,9 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//when MULT_PEEK_MODE 1
 				}else{
 					pm = &dec->mult_pm;
 					set_pmodel_mult(pm,mask,dec->maxval+1);
+					#if CHECK_DEBUG
+						if(y==0 && x==1)printmodel(pm, dec->maxval+1);
+					#endif
 					p = rc_decode(fp, dec->rc, pm, 0, dec->maxval+1);
 				}
 			}
@@ -1017,7 +1020,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//when MULT_PEEK_MODE 1
 }
 #else
 
-IMAGE *decode_image(FILE *fp, DECODER *dec)		//when MULT_PEEK_MODE 0
+IMAGE *decode_image(FILE *fp, DECODER *dec)		//単峰性確率モデル
 {
 	int x, y, cl, gr, prd, u, e, p, mask, shift, base;
 	int *th_p, ;
