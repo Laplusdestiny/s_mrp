@@ -141,6 +141,7 @@ DECODER *init_decoder(FILE *fp)
 	dec->max_coef = (2 << dec->coef_precision);
 	dec->pm_accuracy = getbits(fp, 3);
 	dec->quadtree_depth = (getbits(fp, 1))? QUADTREE_DEPTH : -1;
+	dec->w_gr = getbits(fp, 4);
 	dec->maxprd = dec->maxval << dec->coef_precision;
 	dec->predictor = (int **)alloc_2d_array(dec->num_class, dec->max_prd_order,
 		sizeof(int));
@@ -529,14 +530,16 @@ int calc_udec(DECODER *dec, int y, int x)
 
 #if TEMPLETE_MATCHING_ON
 void TempleteM (DECODER *dec, int dec_y, int dec_x){
-	int bx, by, g, h, i, j, k, count, area1[AREA], area_o[AREA], *roff_p, *org_p,  x_size = X_SIZE, sum1, sum_o, temp_x, temp_y;
+	int bx, by, g, h, i, j, k, count, area1[AREA], area_o[AREA], *roff_p, *org_p,  x_size = X_SIZE, sum1, sum_o, temp_x, temp_y, break_flag=0;
 	double ave1, ave_o, nas;
 	int tm_array[(Y_SIZE * X_SIZE * 2 )*4] = {0};
 	TM_Member tm[Y_SIZE * X_SIZE * 2];
 	TM_Member temp;
 
 	if(dec_y==0 && dec_x==0) return;
-	printf("TempleteM[%3d][%3d]",dec_y, dec_x);
+	#if CHECK_DEBUG_TM
+		printf("TempleteM[%3d][%3d]\n",dec_y, dec_x);
+	#endif
 	// bzero(&tm, sizeof(tm));
 	memset(&tm, 0, sizeof(tm));
 
@@ -562,6 +565,9 @@ void TempleteM (DECODER *dec, int dec_y, int dec_x){
 		if( by < 0 || by > dec->height)continue;
 		for( bx = dec_x - x_size; bx <= dec_x + x_size-1; bx++){
 			if( bx <0 || bx > dec->width)continue;
+			if(by==dec_y && bx >= dec_x)break_flag=1;
+			if(break_flag==1)break;
+
 			roff_p = dec->roff[by][bx];
 			org_p = &dec->org[by][bx];
 
@@ -576,6 +582,9 @@ void TempleteM (DECODER *dec, int dec_y, int dec_x){
 			nas = 0;
 			for(i=0; i<AREA; i++){
 				nas += fabs( ((double)area1[i] - ave1) - ((double)area_o[i] - ave_o));
+				#if CHECK_DEBUG_TM
+					printf("nas: %f | area1: %d | area_o: %d | ave1: %f | ave_o: %f\n", nas, area1[i], area_o[i], ave1, ave_o);
+				#endif
 			}
 
 			tm[j].id = j;
@@ -583,11 +592,15 @@ void TempleteM (DECODER *dec, int dec_y, int dec_x){
 			tm[j].bx = bx;
 			tm[j].ave_o = (int)ave_o;
 			tm[j].sum = (int)(nas * NAS_ACCURACY);
-
+			#if CHECK_DEBUG_TM
+			printf("B[%3d](%3d,%3d) sum: %d | ave: %d\n", tm[j].id, tm[j].by, tm[j].bx, tm[j].sum, tm[j].ave_o);
+			#endif
 			j++;
 		}//bx fin
+		if(break_flag==1)break;
 	}//by fin
-
+	break_flag=0;
+	// printf("temp_num: %d\n", j);
 	dec->temp_num[dec_y][dec_x] = j;
 
 	for(g=0; g<j-1; g++){
@@ -600,31 +613,57 @@ void TempleteM (DECODER *dec, int dec_y, int dec_x){
 		}
 	}
 
-	for(k=0; k< Y_SIZE * X_SIZE * 2 + X_SIZE; k++){
+	// for(k=0; k< Y_SIZE * X_SIZE * 2 + X_SIZE; k++){
+	for(k=0; k < j; k++){
 		count=0;
+		tm_array[k * 4 + count] = 0;
 		tm_array[k * 4 + count] = tm[k].id;
 		count++;
+		tm_array[k * 4 + count] = 0;
 		tm_array[k * 4 + count] = tm[k].by;
 		count++;
+		tm_array[k * 4 + count] = 0;
 		tm_array[k * 4 + count] = tm[k].bx;
 		count++;
+		tm_array[k * 4 + count] = 0;
 		tm_array[k * 4 + count] = tm[k].sum;
-	}
-
-	for(k=0; k<MAX_DATA_SAVE; k++){
-		tempm_array[k] = tm_array[k];
+		#if CHECK_DEBUG_TM
+			printf("A[%3d](%3d,%3d) sum: %d | ave: %d\n", tm[k].id, tm[k].by, tm[k].bx, tm[k].sum, tm[k].ave_o);
+		#endif
 	}
 
 	for(k=0; k<MAX_DATA_SAVE_DOUBLE; k++){
+		tempm_array[k] = tm_array[k];
+	}
+
+	for(k=0; k<MAX_DATA_SAVE; k++){
 		dec->array[k] = tm[k].ave_o;
 	}
 
+//一番マッチングコストが小さいものを予測値のひとつに加える
 	temp_y = tempm_array[1];
 	temp_x = tempm_array[2];
-	ave_o = dec->array[0];
+	// ave_o = tm[0].ave_o;
+	sum_o = ave_o = 0;
+	roff_p = dec->roff[temp_y][temp_x];
+	org_p = &dec->org[temp_y][temp_x];
+	for(i=0; i<AREA; i++){
+		area_o[i] = 0;
+		area_o[i] = org_p[roff_p[i]];
+		sum_o += area_o[i];
+	}
+	ave_o = (double)sum_o / AREA;
+
+	#if CHECK_DEBUG_TM
+		printf("org: %d | ave_o: %f | ave1: %f\n",dec->org[temp_y][temp_x], ave_o, ave1);
+	#endif
 
 	exam_array[dec_y][dec_x] = (int)((double)dec->org[temp_y][temp_x] - ave_o + ave1);
-	printf(" -> end");
+	if(exam_array[dec_y][dec_x] < 0 || exam_array[dec_y][dec_x] > dec->maxval)	exam_array[dec_y][dec_x] = ave1;
+
+	#if CHECK_DEBUG_TM
+		printf(" [%3d][%3d]: %d-> end", dec_y, dec_x, exam_array[dec_y][dec_x]);
+	#endif
 }
 #endif
 
@@ -794,6 +833,12 @@ void decode_mask(FILE *fp, DECODER *dec)
 			}
 		}
 	}
+
+	/*for(tly = 0; tly < dec->height; tly++){
+		for(tlx = 0; tlx < dec->width; tlx++){
+			printf("mask[%3d][%3d]: %d\n",tly, tlx, dec->mask[tly][tlx]);
+		}
+	}*/
 	return;
 }
 
@@ -855,7 +900,7 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 	r_cl = dec->class[y][x]; 	//当該ブロックのクラス番号
 	for(cl = peak = 0; cl < dec->num_class; cl++){
 		if (count_cl[cl]!=0){
-			// mask->class[peak] = cl;
+			mask->class[peak] = cl;	//コメントアウトされていた？
 			mask->weight[peak] = ( (count_cl[cl] << W_SHIFT) / sample);
 			th_p = dec->th[cl];
 			for (m_gr = 0; m_gr < dec->num_group - 1; m_gr++) {
@@ -877,7 +922,10 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 
 	} else {
 		cl = dec->class[y][x];
+		mask->class[peak] = cl;
+		// printf("%d\n", tempm_array[3]);
 		mask->weight[peak] = continuous_GGF(dec, (double)tempm_array[3] / NAS_ACCURACY, dec->w_gr) *( (count_cl[cl] << W_SHIFT) / sample);
+		if(y==0 && x==1)printf("weight: %d\n",mask->weight[peak]);
 		th_p = dec->th[cl];
 		for(m_gr = 0; m_gr < dec->num_group - 1; m_gr++){
 			if(u < *th_p++)break;
@@ -923,7 +971,10 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//when MULT_PEEK_MODE 1
 				TempleteM(dec, y, x);
 			}
 #endif
-			printf(" -> mask: %d\n", dec->mask[y][x]);
+			/*#if CHECK_DEBUG
+				printf(" -> mask: %d\n", dec->mask[y][x]);
+			#endif*/
+
 			if (dec->mask[y][x] == 0){
 				cl = dec->class[y][x];
 				th_p = dec->th[cl];
@@ -936,10 +987,10 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//when MULT_PEEK_MODE 1
 				base >>= dec->pm_accuracy;
 				p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
 					- base;
-			}else{ //mult_peak
+			}else{	//mult_peak
 
 				prd = set_mask_parameter(img, dec, y, x, u, bitmask, shift);
-				if (mask->num_peak == 1){ // single_peak
+				if (mask->num_peak == 1){	// single_peak
 					base = mask->base[0];
 					pm = mask->pm[0];
 					p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
@@ -950,6 +1001,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//when MULT_PEEK_MODE 1
 					p = rc_decode(fp, dec->rc, pm, 0, dec->maxval+1);
 				}
 			}
+
 			img->val[y][x] = dec->org[y][x] = p;
 			prd >>= (dec->coef_precision - 1);
 			e = (p << 1) - prd - 1;

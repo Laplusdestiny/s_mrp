@@ -736,8 +736,8 @@ int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出
 
 #if TEMPLETE_MATCHING_ON
 void*** TempleteM (ENCODER *enc) {
-	int x , y , bx , by , g , h , i , j , k , count , area1[AREA] , area_o[AREA] , *tm_array , m ,
-		*roff_p , *org_p , x_size = X_SIZE , sum1 , sum_o, temp_x, temp_y;
+	int x , y , bx , by , g , h , i , j , k , count , area1[AREA] , area_o[AREA] , *tm_array ,
+		*roff_p , *org_p , x_size = X_SIZE , sum1 , sum_o, temp_x, temp_y, break_flag=0;
 	double ave1 , ave_o , nas ;
 
 /////////////////////////
@@ -755,7 +755,7 @@ void*** TempleteM (ENCODER *enc) {
 printf("Calculating Templete Matching\n");
 for(y = 0 ; y < enc->height ; y++){
 	for (x = 0; x < enc->width; x++){
-
+		if(y==0 && x==0)continue;	//(0,0)は事例がない
 		// bzero(&tm, sizeof(tm));
 		memset(&tm, 0, sizeof(tm));
 		// enc->mmc[y][x] = 0;
@@ -771,7 +771,7 @@ for(y = 0 ; y < enc->height ; y++){
 		}
 		ave1 = (double)sum1 / AREA;
 
-///////////////////////////
+////////////////////////////
 //テンプレートマッチング///
 ///////////////////////////
 
@@ -786,31 +786,28 @@ for(y = 0 ; y < enc->height ; y++){
 		for (by = y - Y_SIZE ; by <= y ; by++) {
 			if((by < 0) || (by > enc->height))continue;
 			for (bx = x - x_size ; bx <= x + x_size - 1; bx++) {
-				if((by == y) && (bx == x) )break;	//(0,0)は事例がない
 				if((bx < 0) || (bx > enc->width))continue;
+				if(by==y && bx >= x) break_flag=1;
+				if(break_flag==1)break;
 
 				roff_p = enc->roff[by][bx];
 				org_p = &enc->org[by][bx];
 
-				for(k=0;k < AREA; k++){//市街地距離AREA個分
-					area_o[k] = 0;
-					area_o[k] = org_p[roff_p[k]];
-				}
-
 				sum_o = 0;
- 				for(m = 0; m < AREA ; m++){//平均の計算
-					sum_o += area_o[m];
+				for(i=0;i < AREA; i++){//市街地距離AREA個分
+					area_o[i] = 0;
+					area_o[i] = org_p[roff_p[i]];
+					sum_o += area_o[i];
 				}
 
 				ave_o = (double)sum_o / AREA;
 
 				nas = 0;
 
-				for(m = 0; m < AREA ; m++){//テンプレートマッチングの計算
-					nas += fabs( ((double)area1[m] - ave1) - ((double)area_o[m] - ave_o) );
-					// a = ( area1[m] - area_o[m] ) * ( area1[m] - area_o[m]);
-					// sum = sum + a;
+				for(i = 0; i < AREA ; i++){//マッチングコストの計算
+					nas += fabs( ((double)area1[i] - ave1) - ((double)area_o[i] - ave_o) );
 				}
+
 				tm[j].id = j;
 				tm[j].by = by;
 				tm[j].bx = bx;
@@ -819,7 +816,9 @@ for(y = 0 ; y < enc->height ; y++){
 
 				j++;
 			}//bx fin
+			if(break_flag==1)break;
 		}//by fin
+		break_flag=0;
 /////////////////////////
 ///////ソートの実行//////
 /////////////////////////
@@ -858,6 +857,8 @@ for(y = 0 ; y < enc->height ; y++){
 		for(k = 0 ; k < MAX_DATA_SAVE ; k++){
 			enc->tempm_array[y][x][k] = tm[k].ave_o;
 		}
+
+//一番マッチングコストが小さいものを予測値のひとつに加える
 		temp_y = tempm_array[y][x][1];
 		temp_x = tempm_array[y][x][2];
 		ave_o = enc->tempm_array[y][x][0];
@@ -866,6 +867,7 @@ for(y = 0 ; y < enc->height ; y++){
 			exam_array[y][x] = enc->maxval > 1;	//事例がないため，輝度値の中央
 		} else {
 			exam_array[y][x] = (int)((double)enc->org[temp_y][temp_x] - ave_o + ave1);
+			if(exam_array[y][x] < 0 || exam_array[y][x] > enc->maxval)	exam_array[y][x] = ave1;
 		}
 	}//x fin
 }//y fin
@@ -951,8 +953,9 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 
 	} else {
 		cl = enc->class[y][x];
+		// if(y==0 && x==1)printf("%d\n", tempm_array[y][x][3]);
 		mask->weight[peak] = continuous_GGF(enc, (double)tempm_array[y][x][3] / NAS_ACCURACY, enc->w_gr) * ( (count_cl[cl] << W_SHIFT) / sample);
-
+		if(y==0 && x==1)printf("weight: %d\n",mask->weight[peak]);
 		m_gr = enc->uquant[cl][u];
 		m_prd = exam_array[y][x] << enc->coef_precision;
 		m_prd = CLIP(0, enc->maxprd, m_prd);
@@ -987,7 +990,7 @@ int set_mask_parameter_optimize(ENCODER *enc,int y, int x, int u, int r_cl)
 			mask->base[peak] = enc->bconv[m_prd];
 			m_frac = enc->fconv[m_prd];
 			m_gr = enc->uquant[cl][u];
-			if (cl == r_cl)	 r_peak = peak;
+			if (cl == r_cl)	 r_peak = peak;	//当該ブロックのピーク番号
 			mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
 			peak++;
 		}
@@ -1004,7 +1007,7 @@ int set_mask_parameter_optimize(ENCODER *enc,int y, int x, int u, int r_cl)
 		mask->base[peak] = enc->bconv[m_prd];
 		m_frac = enc->fconv[m_prd];
 		m_gr = enc->uquant[cl][u];
-		if(cl == r_cl) r_peak = peak;	//これは一体？返り値に設定されている・・・
+		// if(cl == r_cl) r_peak = peak;
 		mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
 		peak++;
 	}
@@ -2515,16 +2518,23 @@ cost_t optimize_mask(ENCODER *enc)
 
 void set_mask_parameter_optimize2(ENCODER *enc,int y, int x, int u)
 {
-    int cl, peak;
+	int cl, peak;
 
-   for(cl = peak = 0; cl < enc->num_class; cl++){
-   	if (enc->weight[y][x][cl] != 0){
+	for(cl = peak = 0; cl < enc->num_class; cl++){
+		if (enc->weight[y][x][cl] != 0){
 			mask->class[peak] = cl;
-	  	mask->weight[peak] = enc->weight[y][x][cl];
-	  	peak++;
-	  }
-   }
-   mask->num_peak = peak;	//ピークの数
+			mask->weight[peak] = enc->weight[y][x][cl];
+			peak++;
+		}
+	}
+
+#if TEMPLETE_MATCHING_ON
+	mask->class[peak] = enc->class[y][x];
+	mask->weight[peak] = continuous_GGF(enc, (double)exam_array[y][x][3] / NAS_ACCURACY, enc->w_gr) * enc->weight[y][x][cl];
+	peak++;
+#endif
+
+	mask->num_peak = peak;	//ピークの数
 }
 
 cost_t optimize_group_mult(ENCODER *enc)
@@ -2894,6 +2904,7 @@ int write_header(ENCODER *enc, FILE *fp)
 	bits += putbits(fp, 4, enc->coef_precision - 1);
 	bits += putbits(fp, 3, enc->pm_accuracy);
 	bits += putbits(fp, 1, (enc->quadtree_depth < 0)? 0 : 1);
+	bits += putbits(fp, 4, enc->w_gr);
 	return (bits);
 }
 
@@ -3396,10 +3407,10 @@ int encode_mask(FILE *fp, ENCODER *enc, int flag)
 	numidx = 0;
 	for (y = 0; y < enc->height; y += blksize) {
 		for (x = 0; x < enc->width; x += blksize) {
-//	if (y >= enc->height || x >= enc->width) continue;
-    	k = enc->mask[y][x];
-	    mtf_classlabel(enc->mask, enc->mtfbuf, y, x, blksize, enc->width, NUM_MASK);
-	    i = enc->mtfbuf[k];
+			// if (y >= enc->height || x >= enc->width) continue;
+			k = enc->mask[y][x];
+			mtf_classlabel(enc->mask, enc->mtfbuf, y, x, blksize, enc->width, NUM_MASK);
+			i = enc->mtfbuf[k];
 			index[numidx++] = i;
 			hist[i]++;
 		}

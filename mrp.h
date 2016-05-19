@@ -33,9 +33,9 @@
 
 /****** OPTIMIZE ***************************/
 #define OPT_SIDEINFO		1 // 1 : side-info into consideration (standard), 0 : neglect side-info
-#define MAX_ITERATION	100
+#define MAX_ITERATION	5	//100
 #define EXTRA_ITERATION	10
-#define AUTO_DEL_CL		0
+#define AUTO_DEL_CL		1
 #define AUTO_PRD_ORDER	1
 
 /****** MULT PEAK **************************/
@@ -275,7 +275,7 @@ typedef struct {
 	int **nzconv;
 	int *num_nzcoef;
 	int **th;
-				char **mask;
+	char **mask;
 	int **err;
 	int *ctx_weight;
 	char **qtmap[QUADTREE_DEPTH];
@@ -309,8 +309,8 @@ void **alloc_2d_array(int, int, int);
 void ***alloc_3d_array(int, int, int, int);
 IMAGE *alloc_image(int, int, int);
 PMODEL ***init_pmodels(int, int, int, int *, double *, int);
-		void printmodel(PMODEL *, int);
-    void set_pmodel_mult(PMODEL *, MASK *, int);
+void printmodel(PMODEL *, int);
+void set_pmodel_mult(PMODEL *, MASK *, int);
 void set_spmodel(PMODEL *, int, int);
 int *init_ctx_weight(void);
 void mtf_classlabel(char **, int *, int, int, int, int, int);
@@ -329,12 +329,12 @@ void print_threshold(int **, int, int, PMODEL **, int *, char *);
 void print_class(char **, int, int, int, char *);
 void print_class_color(char **, int, int, int, char *);
 void print_class_and_block(char **, int, char ***, int, int, int, char *);
-	void print_mask(char **, int, int, char *);
+void print_mask(char **, int, int, char *);
 void print_amp_chara(int **, int, int, int, int, char *);
 //Lower funcs are can use in encoder only.
 void print_rate_map(ENCODER *, char *);
-	void print_rate_compare_map(ENCODER *, char *);
-	void print_rate_compare_class_map(ENCODER *, char *);
+void print_rate_compare_map(ENCODER *, char *);
+void print_rate_compare_class_map(ENCODER *, char *);
 void print_block_size(int **, char ***, int, int, int, char *);
 void calc_var_upara( ENCODER *, char *);
 void init_log_sheet(ENCODER *, char *);
