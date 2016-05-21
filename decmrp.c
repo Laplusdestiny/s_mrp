@@ -5,6 +5,9 @@
 #include <math.h>
 #include <string.h>
 #include "mrp.h"
+#if OPENMP_ON
+	#include <omp.h>
+#endif
 
 extern CPOINT dyx[];
 extern double sigma_a[];
@@ -141,7 +144,11 @@ DECODER *init_decoder(FILE *fp)
 	dec->max_coef = (2 << dec->coef_precision);
 	dec->pm_accuracy = getbits(fp, 3);
 	dec->quadtree_depth = (getbits(fp, 1))? QUADTREE_DEPTH : -1;
+
+#if TEMPLETE_MATCHING_ON
 	dec->w_gr = getbits(fp, 4);
+#endif
+
 	dec->maxprd = dec->maxval << dec->coef_precision;
 	dec->predictor = (int **)alloc_2d_array(dec->num_class, dec->max_prd_order,
 		sizeof(int));
@@ -536,7 +543,6 @@ void TempleteM (DECODER *dec, int dec_y, int dec_x){
 	TM_Member tm[Y_SIZE * X_SIZE * 2];
 	TM_Member temp;
 
-	if(dec_y==0 && dec_x==0) return;
 	#if CHECK_DEBUG_TM
 		printf("TempleteM[%3d][%3d]\n",dec_y, dec_x);
 	#endif
@@ -551,8 +557,14 @@ void TempleteM (DECODER *dec, int dec_y, int dec_x){
 		area1[i] = 0;
 		area1[i] = org_p[roff_p[i]];
 		sum1 += area1[i];
+		#if CHECK_DEBUG_TM
+				if(dec_y==check_y && dec_x==check_x)	printf("sum1: %d | area1[%d]:%d\n", sum1, i, area1[i]);
+			#endif
 	}
 	ave1 = (double)sum1 / AREA;
+		#if CHECK_DEBUG_TM
+			if(dec_y==check_y && dec_x==check_x) printf("ave1: %f\n", ave1);
+		#endif
 
 	j=0;
 	if(dec_y == 0 || dec_y == 1 || dec_y == 2){
@@ -576,8 +588,14 @@ void TempleteM (DECODER *dec, int dec_y, int dec_x){
 				area_o[i] = 0;
 				area_o[i] = org_p[roff_p[i]];
 				sum_o += area_o[i];
+				#if CHECK_DEBUG_TM
+						if(dec_y==check_y && dec_x==check_x)	printf("sum_o: %d | area_o[%d]: %d\n",sum_o, i, area_o[i]);
+					#endif
 			}
 			ave_o = (double)sum_o / AREA;
+			#if CHECK_DEBUG_TM
+					if(dec_y==check_y && dec_x==check_x)	printf("ave_o: %f\n", ave_o);
+				#endif
 
 			nas = 0;
 			for(i=0; i<AREA; i++){
@@ -658,8 +676,12 @@ void TempleteM (DECODER *dec, int dec_y, int dec_x){
 		printf("org: %d | ave_o: %f | ave1: %f\n",dec->org[temp_y][temp_x], ave_o, ave1);
 	#endif
 
-	exam_array[dec_y][dec_x] = (int)((double)dec->org[temp_y][temp_x] - ave_o + ave1);
-	if(exam_array[dec_y][dec_x] < 0 || exam_array[dec_y][dec_x] > dec->maxval)	exam_array[dec_y][dec_x] = ave1;
+	if(dec_y ==0 && dec_x < 3){
+		exam_array[dec_y][dec_x] = dec->maxval > 1;
+	} else {
+		exam_array[dec_y][dec_x] = (int)((double)dec->org[temp_y][temp_x] - ave_o + ave1);
+		if(exam_array[dec_y][dec_x] < 0 || exam_array[dec_y][dec_x] > dec->maxval)	exam_array[dec_y][dec_x] = ave1;
+	}
 
 	#if CHECK_DEBUG_TM
 		printf(" [%3d][%3d]: %d-> end", dec_y, dec_x, exam_array[dec_y][dec_x]);
@@ -851,6 +873,7 @@ void init_mask()
 	mask->pm =(PMODEL **)alloc_mem(MAX_PEAK_NUM * sizeof(PMODEL *));
 }
 
+#if TEMPLETE_MATCHING_ON
 double continuous_GGF(DECODER *dec, double e, int gr)
 {
 	int lngamma(double);
@@ -873,6 +896,7 @@ double continuous_GGF(DECODER *dec, double e, int gr)
 
 	return(p);
 }
+#endif
 
 int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, int shift)
 {
@@ -909,6 +933,9 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 
 			m_prd = calc_prd(img, dec, cl, y, x);
 			if (cl == r_cl) r_prd = m_prd;
+			/*#if CHECK_DEBUG
+				if(y == 0)	printf("[set_mask_parameter] m_prd[%d]: %d\n", peak, m_prd);
+			#endif*/
 			m_base = (dec->maxprd - m_prd + (1 << shift) / 2) >> shift;
 			mask->pm[peak] = dec->pmodels[m_gr][0] + (m_base & bmask);
 			m_base >>= dec->pm_accuracy;
@@ -918,7 +945,7 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 	}
 
 #if TEMPLETE_MATCHING_ON
-	if(y==0 && x==0){
+	if(y==0 && x < 3){
 
 	} else {
 		cl = dec->class[y][x];
@@ -932,6 +959,9 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 		}
 
 		m_prd = exam_array[y][x] << dec->coef_precision;
+		#if CHECK_DEBUG
+			if(y == 0)	printf("[set_mask_parameter] m_prd[%d]: %d\n", peak, m_prd);
+		#endif
 		m_base = (dec->maxprd - m_prd + (1 << shift) / 2) >> shift;
 		mask->pm[peak] = dec->pmodels[m_gr][0] + (m_base & bmask);
 		m_base >>= dec->pm_accuracy;
@@ -1012,7 +1042,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 			dec->err[y][x] = e;	//特徴量算出に用いる
 
 			#if CHECK_DEBUG
-				printf("d[%3d][%3d]: %d\n", y, x, p);
+				printf("d[%d][%d]:%d\n", y, x, p);
 			#endif
 		}
 	}

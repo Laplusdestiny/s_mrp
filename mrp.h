@@ -124,6 +124,7 @@
 
 /*****TEMPLETE MATCHING ********************/
 #define TEMPLETE_MATCHING_ON 	1
+#if TEMPLETE_MATCHING_ON
 
 #define AREA			6
 #define Y_SIZE			20
@@ -134,9 +135,18 @@
 #define MAX_MULTIMODAL	45
 #define W_GR 			7
 #define WEIGHT_CN		5
+
+#endif
 /*********DEBUG******************************/
-#define CHECK_DEBUG_TM 0
-#define CHECK_DEBUG 1
+#define CHECK_DEBUG_TM 1
+#define CHECK_DEBUG 0
+#define check_y		0
+#define check_x		1
+
+#define  OPENMP_ON 1
+#if OPENMP_ON
+#	define NUM_THREADS		4
+#endif
 
 /***** STRUCTURE ***************************/
 
