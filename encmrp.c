@@ -948,9 +948,10 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 			m_gr = enc->uquant[cl][u];
 			m_prd = enc->prd_class[y][x][cl];
 			m_prd = CLIP(0, enc->maxprd, m_prd);
-			/*#if CHECK_DEBUG
-				if( y == 1)	printf("[set_mask_parameter] m_prd[%d]: %d\n", peak, m_prd);
-			#endif*/
+			#if CHECK_DEBUG
+				if( y == check_y && x == check_x)
+					printf("[set_mask_parameter] m_prd[%d]: %d\n", peak, m_prd);
+			#endif
 			// if(peak==0)m_prd = 1000;
 			// else m_prd = 10000;
 			// if (y==8&&x== 8) 	printf("(%d,%d) class[%d] = %d weight[%d] =%lf m_prd =%d\n ",x,y,peak,mask->class[peak],peak,mask->weight[peak],m_prd);
@@ -974,7 +975,8 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 		m_prd = exam_array[y][x] << enc->coef_precision;
 		m_prd = CLIP(0, enc->maxprd, m_prd);
 		#if CHECK_DEBUG
-			if( y == 0)	printf("[set_mask_parameter][%3d][%3d] m_prd[%d]: %d\n", y, x, peak, m_prd);
+			if( y == check_y && x == check_x)
+				printf("[set_mask_parameter]m_prd[%d]: %d\n", peak, m_prd);
 		#endif
 		mask->base[peak] = enc->bconv[m_prd];
 		m_frac = enc->fconv[m_prd];
@@ -1219,6 +1221,7 @@ cost_t design_predictor(ENCODER *enc, int f_mmse)
 			mat[index[j]][enc->prd_order] = 0;
 		}
 	}
+
 	free(weight);
 	free(index);
 	free(mat);
@@ -2557,7 +2560,7 @@ cost_t optimize_group_mult(ENCODER *enc)
 	int **trellis;
 
 #if TEMPLETE_MATCHING_ON
-	int before_gr=0, new_gr=0;
+	int new_gr=0, before_gr=0;
 	cost_t  w_gr_cost=0;
 #endif
 
@@ -2803,7 +2806,7 @@ printf ("op_group -> %d" ,(int)cost);	//しきい値毎に分散を最適化し�
 }
 #if TEMPLETE_MATCHING_ON
 		// 片側ラプラス関数の分散の決定
-		printf("[opt_w_gr]");
+		printf(" [opt w_gr]");
 		before_gr = enc->w_gr;
 		min_cost = INT_MAX;
 		// enc->optimize_w_gr = 1;
@@ -3548,7 +3551,7 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 				pm = &enc->mult_pm;
 				set_pmodel_mult(pm,mask,enc->maxval+1);
 				#if CHECK_DEBUG
-					if(y==0 && x==1) printmodel(pm,enc->maxval+1);
+					if(y==check_y && x==check_x) printmodel(pm,enc->maxval+1);
 				#endif
 				rc_encode(fp, enc->rc,
 					pm->cumfreq[e],
@@ -3819,7 +3822,7 @@ cost_t opcl(ENCODER *enc, int k, int *blk, int restore)
 	free(th_s);
 	free(prd_s);
 	free(uq_s);
-  free(prd_cl_s);
+  	free(prd_cl_s);
 	return(cost);
 }
 
@@ -4010,8 +4013,8 @@ int main(int argc, char **argv)
 	printf("NUM_CLASS 	= %d\nMAX_PRD_ORDER 	= %d\ncoef_precision 	= %d\nnum_pmodel 	= %d\npm_accuracy 	= %d\nmax_iteration 	= %d\nf_mmse 		= %d\nf_optpred 	= %d\nquadtree_depth 	= %d\n",
 		num_class, MAX_PRD_ORDER, coef_precision, num_pmodel, pm_accuracy, max_iteration, f_mmse, f_optpred, quadtree_depth);
 	#if OPENMP_ON
-		// omp_set_num_threads(8);
-		printf("Parallel Threads= %d\n", omp_get_num_threads());
+		omp_set_num_threads(NUM_THREADS);
+		printf("Parallel Threads= %d\n", omp_get_max_threads());
 	#endif
 #else
 	printf("M = %d, K = %d, P = %d, V = %d, A = %d\n",

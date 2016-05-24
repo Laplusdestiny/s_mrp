@@ -138,15 +138,13 @@
 
 #endif
 /*********DEBUG******************************/
-#define CHECK_DEBUG_TM 1
-#define CHECK_DEBUG 0
+#define CHECK_DEBUG_TM 0
+#define CHECK_DEBUG 1
 #define check_y		0
-#define check_x		1
+#define check_x		5
 
-#define  OPENMP_ON 1
-#if OPENMP_ON
-#	define NUM_THREADS		4
-#endif
+#define  OPENMP_ON	1
+#define NUM_THREADS		4	//depend on server threads num
 
 /***** STRUCTURE ***************************/
 

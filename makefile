@@ -4,7 +4,7 @@ CC = gcc
 ifeq ($(CC), icc)
   CFLAG = -O3 -ip -axsse4.1 -msse3 -g -unroll
 else
-  CFLAG = -O3 -funroll-loops -Wall -g
+  CFLAG = -O3 -funroll-loops -Wall -g -fopenmp
 endif
 
 ENCODER = ENCMRP
@@ -34,4 +34,7 @@ clean :
 	rm -f $(ENCODER) $(DECODER) $(ENCOBJ) $(DECOBJ) core.* *~
 
 job :
-	sh run.sh &
+	sjob -h compute-0-20 run.sh &
+
+cleanlog :
+	rm -rf Log/*
