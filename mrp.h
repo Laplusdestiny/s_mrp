@@ -33,7 +33,7 @@
 
 /****** OPTIMIZE ***************************/
 #define OPT_SIDEINFO		1 // 1 : side-info into consideration (standard), 0 : neglect side-info
-#define MAX_ITERATION	5	//100
+#define MAX_ITERATION	100	//100
 #define EXTRA_ITERATION	10
 #define AUTO_DEL_CL		1
 #define AUTO_PRD_ORDER	1
@@ -134,16 +134,16 @@
 #define MAX_DATA_SAVE_DOUBLE MAX_DATA_SAVE*4
 #define MAX_MULTIMODAL	45
 #define W_GR 			7
-#define WEIGHT_CN		5
+#define WEIGHT_CN		3
 
 #endif
 /*********DEBUG******************************/
-#define CHECK_DEBUG_TM 0
-#define CHECK_DEBUG 1
-#define check_y		0
-#define check_x		5
+#define CHECK_DEBUG_TM 	0
+#define CHECK_DEBUG 		1
+#define check_y			0
+#define check_x			5
 
-#define  OPENMP_ON	1
+#define  OPENMP_ON		1
 #define NUM_THREADS		4	//depend on server threads num
 
 /***** STRUCTURE ***************************/

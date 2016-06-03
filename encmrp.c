@@ -908,9 +908,9 @@ double continuous_GGF(ENCODER *enc, double e,int w_gr){
 	eta = exp(0.5*(lgamma(3.0/shape)-lgamma(1.0/shape))) / sigma;//一般化ガウス関数.ηのみ
 
 	if(e <= accuracy){
-		p = 1.5;
+		p = 10;
 	}else{
-		p = 1.5 * exp(-pow(eta * (e), shape));
+		p = 10 * exp(-pow(eta * (e), shape));
 	}
 
 	return(p);
@@ -949,8 +949,7 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 			m_prd = enc->prd_class[y][x][cl];
 			m_prd = CLIP(0, enc->maxprd, m_prd);
 			#if CHECK_DEBUG
-				if( y == check_y && x == check_x)
-					printf("[set_mask_parameter] m_prd[%d]: %d\n", peak, m_prd);
+				// if( y == check_y && x == check_x)	printf("[set_mask_parameter] m_prd[%d]: %d\n", peak, m_prd);
 			#endif
 			// if(peak==0)m_prd = 1000;
 			// else m_prd = 10000;
@@ -975,8 +974,7 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 		m_prd = exam_array[y][x] << enc->coef_precision;
 		m_prd = CLIP(0, enc->maxprd, m_prd);
 		#if CHECK_DEBUG
-			if( y == check_y && x == check_x)
-				printf("[set_mask_parameter]m_prd[%d]: %d\n", peak, m_prd);
+			// if( y == check_y && x == check_x)	printf("[set_mask_parameter]m_prd[%d]: %d\n", peak, m_prd);
 		#endif
 		mask->base[peak] = enc->bconv[m_prd];
 		m_frac = enc->fconv[m_prd];

@@ -5,9 +5,7 @@
 #include <math.h>
 #include <string.h>
 #include "mrp.h"
-#if OPENMP_ON
-	#include <omp.h>
-#endif
+#include <omp.h>
 
 extern CPOINT dyx[];
 extern double sigma_a[];
@@ -886,9 +884,9 @@ double continuous_GGF(DECODER *dec, double e, int gr)
 	eta = exp(0.5*(lgamma(3.0/shape)-lgamma(1.0/shape))) / sigma;//一般化ガウス関数.ηのみ
 
 	if(e <= accuracy){
-		p = 1.5;
+		p = 10;
 	}else{
-		p = 1.5 * exp(-pow(eta * (e), shape));
+		p = 10 * exp(-pow(eta * (e), shape));
 	}
 
 	return(p);
@@ -1024,7 +1022,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 					pm = &dec->mult_pm;
 					set_pmodel_mult(pm,mask,dec->maxval+1);
 					#if CHECK_DEBUG
-						if(y==0 && x==1)printmodel(pm, dec->maxval+1);
+						if(y==check_y && x==check_x)printmodel(pm, dec->maxval+1);
 					#endif
 					p = rc_decode(fp, dec->rc, pm, 0, dec->maxval+1);
 				}
