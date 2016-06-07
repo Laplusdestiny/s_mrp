@@ -122,9 +122,9 @@
 /***** TIME ********************************/
 #define HAVE_CLOCK
 
-/*****TEMPLETE MATCHING ********************/
-#define TEMPLETE_MATCHING_ON 	1
-#if TEMPLETE_MATCHING_ON
+/*****TEMPLATE MATCHING ********************/
+#define TEMPLATE_MATCHING_ON 	1
+#if TEMPLATE_MATCHING_ON
 
 #define AREA			6
 #define Y_SIZE			20
@@ -256,7 +256,7 @@ typedef struct {
 #if AUTO_DEL_CL
 	cost_t **err_cost;
 #endif
-#if TEMPLETE_MATCHING_ON
+#if TEMPLATE_MATCHING_ON
 	int **temp_num;
 	int ***tempm_array;
 	int **mmc;
@@ -300,7 +300,7 @@ typedef struct {
 	int *zero_fr;
 	int *ord2mhd;
 #endif
-#if TEMPLETE_MATCHING_ON
+#if TEMPLATE_MATCHING_ON
 	int **temp_num;
 	int ***tempm_array;
 	int ***roff;

@@ -143,7 +143,7 @@ DECODER *init_decoder(FILE *fp)
 	dec->pm_accuracy = getbits(fp, 3);
 	dec->quadtree_depth = (getbits(fp, 1))? QUADTREE_DEPTH : -1;
 
-#if TEMPLETE_MATCHING_ON
+#if TEMPLATE_MATCHING_ON
 	dec->w_gr = getbits(fp, 4);
 #endif
 
@@ -200,7 +200,7 @@ DECODER *init_decoder(FILE *fp)
 		dec->zero_fr[i] = (int)(zerocoef_prob[i] * (double)TOT_ZEROFR);
 	}
 #endif
-#if TEMPLETE_MATCHING_ON
+#if TEMPLATE_MATCHING_ON
 	tempm_array = (int *)alloc_mem(MAX_DATA_SAVE_DOUBLE * sizeof(int));
 	dec->roff = init_ref_offset(dec->height, dec->width, dec->max_prd_order);
 	dec->array = (int *)alloc_mem(MAX_DATA_SAVE_DOUBLE * sizeof(int));
@@ -533,8 +533,8 @@ int calc_udec(DECODER *dec, int y, int x)
 	return (u);
 }
 
-#if TEMPLETE_MATCHING_ON
-void TempleteM (DECODER *dec, int dec_y, int dec_x){
+#if TEMPLATE_MATCHING_ON
+void TemplateM (DECODER *dec, int dec_y, int dec_x){
 	int bx, by, g, h, i, j, k, count, area1[AREA], area_o[AREA], *roff_p, *org_p,  x_size = X_SIZE, sum1, sum_o, temp_x, temp_y, break_flag=0;
 	double ave1, ave_o, nas;
 	int tm_array[(Y_SIZE * X_SIZE * 2 )*4] = {0};
@@ -542,7 +542,7 @@ void TempleteM (DECODER *dec, int dec_y, int dec_x){
 	TM_Member temp;
 
 	#if CHECK_DEBUG_TM
-		printf("TempleteM[%3d][%3d]\n",dec_y, dec_x);
+		printf("TemplateM[%3d][%3d]\n",dec_y, dec_x);
 	#endif
 	// bzero(&tm, sizeof(tm));
 	memset(&tm, 0, sizeof(tm));
@@ -868,7 +868,7 @@ void init_mask()
 	mask->pm =(PMODEL **)alloc_mem(MAX_PEAK_NUM * sizeof(PMODEL *));
 }
 
-#if TEMPLETE_MATCHING_ON
+#if TEMPLATE_MATCHING_ON
 double continuous_GGF(DECODER *dec, double e, int gr)
 {
 	int lngamma(double);
@@ -940,7 +940,7 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 		}
 	}
 
-#if TEMPLETE_MATCHING_ON
+#if TEMPLATE_MATCHING_ON
 	if(y==0 && x < 3){
 
 	} else {
@@ -977,10 +977,9 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 	int *th_p;
 	IMAGE *img;
 	PMODEL *pm;
-
 	img = alloc_image(dec->width, dec->height, dec->maxval);
 
-#if TEMPLETE_MATCHING_ON
+#if TEMPLATE_MATCHING_ON
 	exam_array = (int **)alloc_2d_array(dec->height, dec->width, sizeof(int));	//最もマッチングコストが小さい画素の輝度値を保存
 	dec->w_gr = W_GR;
 #endif
@@ -991,8 +990,8 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 		for (x = 0; x < dec->width; x++) {
 			u = calc_udec(dec, y, x);
 
-#if TEMPLETE_MATCHING_ON
-			TempleteM(dec, y, x);
+#if TEMPLATE_MATCHING_ON
+			TemplateM(dec, y, x);
 #endif
 			/*#if CHECK_DEBUG
 				printf(" -> mask: %d\n", dec->mask[y][x]);
@@ -1037,6 +1036,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 			#if CHECK_DEBUG
 				printf("d[%d][%d]:%d\n", y, x, p);
 			#endif
+
 		}
 	}
 	return (img);

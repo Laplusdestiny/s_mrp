@@ -15,7 +15,7 @@ extern int mask_x[], mask_y[];
 extern int win_sample[], win_dis[];
 
 MASK *mask;
-#if TEMPLETE_MATCHING_ON
+#if TEMPLATE_MATCHING_ON
 int ***tempm_array;
 int **exam_array;
 #endif
@@ -480,7 +480,7 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 #endif
 	enc->cl_hist = (int *)alloc_mem(enc->num_class * sizeof(int));
 
-#if TEMPLETE_MATCHING_ON
+#if TEMPLATE_MATCHING_ON
 	enc->temp_num = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
 	enc->tempm_array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
 #endif
@@ -734,8 +734,8 @@ int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出
 	return (u);
 }
 
-#if TEMPLETE_MATCHING_ON
-void*** TempleteM (ENCODER *enc) {
+#if TEMPLATE_MATCHING_ON
+void*** TemplateM (ENCODER *enc) {
 	int x , y , bx , by , g , h , i , j , k , count , area1[AREA] , area_o[AREA] , *tm_array ,
 		*roff_p , *org_p , x_size = X_SIZE , sum1 , sum_o, temp_x, temp_y, break_flag=0;
 	double ave1 , ave_o , nas ;
@@ -752,7 +752,7 @@ void*** TempleteM (ENCODER *enc) {
 ////////画像の走査/////////
 ///////////////////////////
 
-printf("Calculating Templete Matching\n");
+printf("Calculating Template Matching\n");
 for(y = 0 ; y < enc->height ; y++){
 	for (x = 0; x < enc->width; x++){
 
@@ -896,7 +896,7 @@ for(y = 0 ; y < enc->height ; y++){
 }
 #endif
 
-#if TEMPLETE_MATCHING_ON
+#if TEMPLATE_MATCHING_ON
 double continuous_GGF(ENCODER *enc, double e,int w_gr){
 	int lngamma(double), cn=WEIGHT_CN, num_pmodel=enc->num_pmodel;
 	double sigma,delta_c,shape,eta,p;
@@ -962,7 +962,7 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 		}
 	}
 
-#if TEMPLETE_MATCHING_ON
+#if TEMPLATE_MATCHING_ON
 	if(y==0 && x<3){
 
 	} else {
@@ -1010,7 +1010,7 @@ int set_mask_parameter_optimize(ENCODER *enc,int y, int x, int u, int r_cl)
 		}
 	}
 
-#if TEMPLETE_MATCHING_ON
+#if TEMPLATE_MATCHING_ON
 	if(y==0 && x < 3){
 
 	} else {
@@ -2541,7 +2541,7 @@ void set_mask_parameter_optimize2(ENCODER *enc,int y, int x, int u)
 		}
 	}
 
-#if TEMPLETE_MATCHING_ON
+#if TEMPLATE_MATCHING_ON
 	mask->class[peak] = enc->class[y][x];
 	mask->weight[peak] = continuous_GGF(enc, (double)tempm_array[y][x][3] / NAS_ACCURACY, enc->w_gr) * enc->weight[y][x][cl];
 	peak++;
@@ -2557,7 +2557,7 @@ cost_t optimize_group_mult(ENCODER *enc)
 	int x, y, th1, th0, k, u, cl, gr, prd, e, base, frac, peak,m_gr,count;
 	int **trellis;
 
-#if TEMPLETE_MATCHING_ON
+#if TEMPLATE_MATCHING_ON
 	int new_gr=0, before_gr=0;
 	cost_t  w_gr_cost=0;
 #endif
@@ -2802,7 +2802,7 @@ printf ("op_group -> %d" ,(int)cost);	//しきい値毎に分散を最適化し�
 		}
 	}
 }
-#if TEMPLETE_MATCHING_ON
+#if TEMPLATE_MATCHING_ON
 		// 片側ラプラス関数の分散の決定
 		printf(" [opt w_gr]");
 		before_gr = enc->w_gr;
@@ -2924,7 +2924,7 @@ int write_header(ENCODER *enc, FILE *fp)
 	bits += putbits(fp, 3, enc->pm_accuracy);
 	bits += putbits(fp, 1, (enc->quadtree_depth < 0)? 0 : 1);
 
-#if TEMPLETE_MATCHING_ON
+#if TEMPLATE_MATCHING_ON
 	bits += putbits(fp, 4, enc->w_gr);
 	printf("w_gr: %d\n", enc->w_gr);
 #endif
@@ -4005,11 +4005,17 @@ int main(int argc, char **argv)
 #if AUTO_DEL_CL
 	num_class = 63;
 #endif
+
+#if TEMPLATE_MATCHING_ON
+	num_class++;
+#endif
+
 	printf("%s -> %s (%dx%d)\n", infile, outfile, img->width, img->height);
+
 #if AUTO_PRD_ORDER
 	// printf("M = %d, K = %d, P = %d, V = %d, A = %d, l = %d, m = %d, o = %d, f = %d\n",
-	printf("NUM_CLASS 	= %d\nMAX_PRD_ORDER 	= %d\ncoef_precision 	= %d\nnum_pmodel 	= %d\npm_accuracy 	= %d\nmax_iteration 	= %d\nf_mmse 		= %d\nf_optpred 	= %d\nquadtree_depth 	= %d\n",
-		num_class, MAX_PRD_ORDER, coef_precision, num_pmodel, pm_accuracy, max_iteration, f_mmse, f_optpred, quadtree_depth);
+	printf("NUM_CLASS 	= %d\nMAX_PRD_ORDER 	= %d\ncoef_precision 	= %d\nnum_pmodel 	= %d\npm_accuracy 	= %d\nmax_iteration 	= %d\nf_mmse 		= %d\nf_optpred 	= %d\nquadtree_depth 	= %d\nTemplateM	= %d\n",
+		num_class, MAX_PRD_ORDER, coef_precision, num_pmodel, pm_accuracy, max_iteration, f_mmse, f_optpred, quadtree_depth, TEMPLATE_MATCHING_ON);
 	#if OPENMP_ON
 		omp_set_num_threads(NUM_THREADS);
 		printf("Parallel Threads= %d\n", omp_get_max_threads());
@@ -4113,11 +4119,12 @@ int main(int argc, char **argv)
 #endif
 	save_prediction_value(enc);	//クラスごとの予測値の保存
 
-#if TEMPLETE_MATCHING_ON
+#if TEMPLATE_MATCHING_ON
 	tempm_array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
 	exam_array = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
-	TempleteM(enc);
+	TemplateM(enc);
 	enc->w_gr = W_GR;	//マッチングコストに対する重みの分散値の初期化
+	// enc->num_class++;	//1st loopでは作らなかったテンプレートマッチングを行うクラスのために1つ確保
 	#if 0
 		for( y = 0; y < enc->height ; y++ ) {
 			for( x = 0 ; x < enc->width;  x++ ) {
