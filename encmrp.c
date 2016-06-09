@@ -967,7 +967,8 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 		}
 	}
 
-#if TEMPLATE_MATCHING_ON
+// #if TEMPLATE_MATCHING_ON
+#if 0
 	if(y==0 && x<3){
 
 	} else {
@@ -1015,7 +1016,8 @@ int set_mask_parameter_optimize(ENCODER *enc,int y, int x, int u, int r_cl)
 		}
 	}
 
-#if TEMPLATE_MATCHING_ON
+#if 0
+// #if TEMPLATE_MATCHING_ON
 	if(y==0 && x < 3){
 
 	} else {
@@ -4073,6 +4075,14 @@ int main(int argc, char **argv)
 	}
 	pmlist_save = (PMODEL **)alloc_mem(enc->num_group * sizeof(PMODEL *));
 
+#if TEMPLATE_MATCHING_ON
+	tempm_array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
+	exam_array = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
+	TemplateM(enc);
+	enc->w_gr = W_GR;	//マッチングコストに対する重みの分散値の初期化
+#endif
+
+
 	/* 1st loop */
 	//単峰性確率モデルによる算術符号化
 	enc->optimize_loop = 1;
@@ -4130,27 +4140,6 @@ int main(int argc, char **argv)
 	set_prd_pels(enc);	//予測器の情報を更新
 #endif
 	save_prediction_value(enc);	//クラスごとの予測値の保存
-
-#if TEMPLATE_MATCHING_ON
-	tempm_array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
-	exam_array = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
-	TemplateM(enc);
-	enc->w_gr = W_GR;	//マッチングコストに対する重みの分散値の初期化
-	// enc->num_class++;	//1st loopでは作らなかったテンプレートマッチングを行うクラスのために1つ確保
-	#if 0
-		for( y = 0; y < enc->height ; y++ ) {
-			for( x = 0 ; x < enc->width;  x++ ) {
-				// if( y == 0 && x == 0 ) continue;
-				if( y % 32 == 0 && x % 32 == 0 ) {
-					printf("(%3d,%3d)%d\n", y, x, enc->org[y][x]);
-					for(i=0; i<5; i++){
-						printf("(%3d)[%3d][%3d] | sum: %d\n",tempm_array[y][x][i*4], tempm_array[y][x][i*4+1], tempm_array[y][x][i*4+2], tempm_array[y][x][i*4+3]);
-					}
-				}
-			}
-		}
-	#endif
-#endif
 
 	predict_region(enc, 0, 0, enc->height, enc->width);	//クラスに対応した予測値を保存
 	cost = calc_cost(enc, 0, 0, enc->height, enc->width);	//現状のコストを算出
