@@ -146,7 +146,7 @@
 #define check_x			5
 
 #define  OPENMP_ON		1
-#define NUM_THREADS		4	//depend on server threads num
+#define NUM_THREADS		8	//depend on server threads num
 
 /***** STRUCTURE ***************************/
 

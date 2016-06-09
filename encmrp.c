@@ -681,7 +681,7 @@ void predict_region(ENCODER *enc, int tly, int tlx, int bry, int brx)	//予測�
 			prd = 0;
 
 			if(coef_p[0] == TEMPLATE_FLAG){
-				prd = exam_array[y][x] << enc->coef_precision;
+				prd = exam_array[y][x];
 			} else {
 				for (k = 0; k < enc->num_nzcoef[cl]; k++) {
 					l = nzc_p[k];
@@ -713,9 +713,13 @@ void save_prediction_value(ENCODER *enc)
 				coef_p = enc->predictor[cl];
 				nzc_p = enc->nzconv[cl];
 				prd = 0;
-				for (k = 0; k < enc->num_nzcoef[cl]; k++) {
-					l = nzc_p[k];
-					prd += org_p[roff_p[l]] * (coef_p[l]);
+				if(coef_p[0] == TEMPLATE_FLAG){
+					prd = exam_array[y][x];
+				} else {
+					for (k = 0; k < enc->num_nzcoef[cl]; k++) {
+						l = nzc_p[k];
+						prd += org_p[roff_p[l]] * (coef_p[l]);
+					}
 				}
 				*psave_p++ = prd;	//クラス情報毎の予測値を一元保存
 			}
@@ -881,10 +885,10 @@ for(y = 0 ; y < enc->height ; y++){
 		ave_o = enc->tempm_array[y][x][0];
 
 		if(y==0 && x < 3){
-			exam_array[y][x] = enc->maxval > 1;	//事例がないため，輝度値の中央
+			exam_array[y][x] = (enc->maxval > 1) << enc->coef_precision;	//事例がないため，輝度値の中央
 		} else {
-			exam_array[y][x] = (int)((double)enc->org[temp_y][temp_x] - ave_o + ave1);
-			if(exam_array[y][x] < 0 || exam_array[y][x] > enc->maxval)	exam_array[y][x] = ave1;
+			exam_array[y][x] = (int)((double)enc->org[temp_y][temp_x] - ave_o + ave1) << enc->coef_precision;
+			if(exam_array[y][x] < 0 || exam_array[y][x] > enc->maxval)	exam_array[y][x] = ave1 << enc->coef_precision;
 		}
 	}//x fin
 }//y fin
@@ -1142,7 +1146,6 @@ cost_t design_predictor(ENCODER *enc, int f_mmse)
 			continue;
 		}
 #endif
-
 		nzc_p = enc->nzconv[cl];
 		for (i = 0; i < enc->prd_order; i++) {
 			for (j = 0; j <= enc->prd_order; j++) {
@@ -1232,7 +1235,7 @@ cost_t design_predictor(ENCODER *enc, int f_mmse)
 			if (enc->predictor[cl][nzc_p[j]] < enc->max_coef) enc->predictor[cl][nzc_p[j]]++;
 			mat[index[j]][enc->prd_order] = 0;
 		}
-	}
+	}//cl loop fin
 
 	free(weight);
 	free(index);
@@ -1766,6 +1769,7 @@ void set_prd_pels(ENCODER *enc)
 
 	for (cl = 0; cl < enc->num_class; cl++) {
 		k = 0;
+		if(enc->predictor[cl][0] == TEMPLATE_FLAG) continue;
 		for (i = 0; i < enc->max_prd_order; i++) {
 			if (enc->predictor[cl][i] != 0) {
 				enc->nzconv[cl][k] = i;
@@ -2555,7 +2559,8 @@ void set_mask_parameter_optimize2(ENCODER *enc,int y, int x, int u)
 		}
 	}
 
-#if TEMPLATE_MATCHING_ON
+// #if TEMPLATE_MATCHING_ON
+#if 0
 	mask->class[peak] = enc->class[y][x];
 	mask->weight[peak] = continuous_GGF(enc, (double)tempm_array[y][x][3] / NAS_ACCURACY, enc->w_gr) * enc->weight[y][x][cl];
 	peak++;
@@ -4025,7 +4030,7 @@ int main(int argc, char **argv)
 #endif
 
 	printf("%s -> %s (%dx%d)\n", infile, outfile, img->width, img->height);
-
+	printf("------------------------------------------------------------------\n");
 #if AUTO_PRD_ORDER
 	// printf("M = %d, K = %d, P = %d, V = %d, A = %d, l = %d, m = %d, o = %d, f = %d\n",
 	printf("NUM_CLASS 	= %d\nMAX_PRD_ORDER 	= %d\ncoef_precision 	= %d\nnum_pmodel 	= %d\npm_accuracy 	= %d\nmax_iteration 	= %d\nf_mmse 		= %d\nf_optpred 	= %d\nquadtree_depth 	= %d\nTemplateM	= %d\n",
@@ -4038,7 +4043,7 @@ int main(int argc, char **argv)
 	printf("M = %d, K = %d, P = %d, V = %d, A = %d\n",
 		num_class, prd_order, coef_precision, num_pmodel, pm_accuracy);
 #endif
-
+	printf("------------------------------------------------------------------\n");
 	enc = init_encoder(img, num_class, num_group, prd_order, coef_precision,
 		quadtree_depth, num_pmodel, pm_accuracy);
 	enc->pmodels = init_pmodels(enc->num_group, enc->num_pmodel,
@@ -4154,7 +4159,7 @@ int main(int argc, char **argv)
 		}
 	}
 	printf("INIT_MASK = %d\n", INIT_MASK);	//マスクサイズのパラメータ(1,9,25...) / 0であればマスクを用いた多峰性確率モデルではなく，従来の単峰性確率モデル
-	set_weight_flag(enc);
+	set_weight_flag(enc);	//各画素毎にマスクのサイズに応じた隣のブロックにかかる画素の数を算出
 
 	/* 2nd loop */
 	//マスクによる多峰性確率モデルの作成および算術符号化

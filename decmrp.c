@@ -675,10 +675,10 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 	#endif
 
 	if(dec_y ==0 && dec_x < 3){
-		exam_array[dec_y][dec_x] = dec->maxval > 1;
+		exam_array[dec_y][dec_x] = (dec->maxval > 1) << dec->coef_precision;
 	} else {
-		exam_array[dec_y][dec_x] = (int)((double)dec->org[temp_y][temp_x] - ave_o + ave1);
-		if(exam_array[dec_y][dec_x] < 0 || exam_array[dec_y][dec_x] > dec->maxval)	exam_array[dec_y][dec_x] = ave1;
+		exam_array[dec_y][dec_x] = (int)((double)dec->org[temp_y][temp_x] - ave_o + ave1) << dec->coef_precision;
+		if(exam_array[dec_y][dec_x] < 0 || exam_array[dec_y][dec_x] > dec->maxval)	exam_array[dec_y][dec_x] = ave1 << dec->coef_precision;
 	}
 
 }
@@ -692,46 +692,51 @@ int calc_prd(IMAGE *img, DECODER *dec, int cl, int y, int x)
 	prd = 0;
 	coef_p = dec->predictor[cl];
 	nzc_p = dec->nzconv[cl];
-	if (y == 0) {
-		if (x == 0) {
-			for (k = 0; k < prd_order; k++) {
-				prd += coef_p[nzc_p[k]];
-			}
-			prd *= ((img->maxval + 1) >> 1);
-		} else {
-			ry = 0;
-			for (k = 0; k < prd_order; k++) {
-				i = nzc_p[k];
-				rx = x + dyx[i].x;
-				if (rx < 0) rx = 0;
-				else if (rx >= x) rx = x - 1;
-				prd += coef_p[i] * img->val[ry][rx];
-			}
-		}
+
+	if(coef_p[0] == TEMPLATE_FLAG){
+		prd = exam_array[y][x];
 	} else {
-		if (x == 0) {
-			for (k = 0; k < prd_order; k++) {
-				i = nzc_p[k];
-				ry = y + dyx[i].y;
-				if (ry < 0) ry = 0;
-				else if (ry >= y) ry = y - 1;
-				rx = x + dyx[i].x;
-				if (rx < 0) rx = 0;
-				prd += coef_p[i] * img->val[ry][rx];
+		if (y == 0) {
+			if (x == 0) {
+				for (k = 0; k < prd_order; k++) {
+					prd += coef_p[nzc_p[k]];
+				}
+				prd *= ((img->maxval + 1) >> 1);
+			} else {
+				ry = 0;
+				for (k = 0; k < prd_order; k++) {
+					i = nzc_p[k];
+					rx = x + dyx[i].x;
+					if (rx < 0) rx = 0;
+					else if (rx >= x) rx = x - 1;
+					prd += coef_p[i] * img->val[ry][rx];
+				}
 			}
 		} else {
-			for (k = 0; k < prd_order; k++) {
-				i = nzc_p[k];
-				ry = y + dyx[i].y;
-				if (ry < 0) ry = 0;
-				rx = x + dyx[i].x;
-				if (rx < 0) rx = 0;
-				else if (rx >= img->width) rx = img->width - 1;
-				prd += coef_p[i] * img->val[ry][rx];
+			if (x == 0) {
+				for (k = 0; k < prd_order; k++) {
+					i = nzc_p[k];
+					ry = y + dyx[i].y;
+					if (ry < 0) ry = 0;
+					else if (ry >= y) ry = y - 1;
+					rx = x + dyx[i].x;
+					if (rx < 0) rx = 0;
+					prd += coef_p[i] * img->val[ry][rx];
+				}
+			} else {
+				for (k = 0; k < prd_order; k++) {
+					i = nzc_p[k];
+					ry = y + dyx[i].y;
+					if (ry < 0) ry = 0;
+					rx = x + dyx[i].x;
+					if (rx < 0) rx = 0;
+					else if (rx >= img->width) rx = img->width - 1;
+					prd += coef_p[i] * img->val[ry][rx];
+				}
 			}
 		}
 	}
-        prd = CLIP(0, dec->maxprd, prd);
+	prd = CLIP(0, dec->maxprd, prd);
 	return (prd);
 }
 
@@ -954,7 +959,7 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 			if(u < *th_p++)break;
 		}
 
-		m_prd = exam_array[y][x] << dec->coef_precision;
+		m_prd = exam_array[y][x];
 		#if CHECK_DEBUG
 			if(y == check_y && x == check_x)
 				printf("[set_mask_parameter] m_prd[%d]: %d\n", peak, m_prd);
