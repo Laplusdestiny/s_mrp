@@ -1034,7 +1034,8 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 			dec->err[y][x] = e;	//特徴量算出に用いる
 
 			#if CHECK_DEBUG
-				printf("d[%d][%d]:%d\n", y, x, p);
+				// printf("d[%d][%d]:%d\n", y, x, p);
+				printf("%d ", p);
 			#endif
 
 		}

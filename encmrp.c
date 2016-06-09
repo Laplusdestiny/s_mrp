@@ -679,9 +679,14 @@ void predict_region(ENCODER *enc, int tly, int tlx, int bry, int brx)	//予測�
 			coef_p = enc->predictor[cl];
 			nzc_p = enc->nzconv[cl];
 			prd = 0;
-			for (k = 0; k < enc->num_nzcoef[cl]; k++) {
-				l = nzc_p[k];
-				prd += org_p[roff_p[l]] * (coef_p[l]);
+
+			if(coef_p[0] == TEMPLATE_FLAG){
+				prd = exam_array[y][x] << enc->coef_precision;
+			} else {
+				for (k = 0; k < enc->num_nzcoef[cl]; k++) {
+					l = nzc_p[k];
+					prd += org_p[roff_p[l]] * (coef_p[l]);
+				}
 			}
 			org = *org_p++;
 			*prd_p++ = prd;
@@ -1129,6 +1134,13 @@ cost_t design_predictor(ENCODER *enc, int f_mmse)
 		}
 	}
 	for (cl = 0; cl < enc->num_class; cl++) {
+#if TEMPLATE_MATCHING_ON
+		if(cl == enc->num_class-1){
+			enc->predictor[cl][0] = TEMPLATE_FLAG;	//予測係数の一番最初にテンプレートマッチングかどうかのフラグを入れておく
+			continue;
+		}
+#endif
+
 		nzc_p = enc->nzconv[cl];
 		for (i = 0; i < enc->prd_order; i++) {
 			for (j = 0; j <= enc->prd_order; j++) {

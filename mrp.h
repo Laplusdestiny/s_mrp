@@ -136,6 +136,8 @@
 #define W_GR 			7
 #define WEIGHT_CN		3
 
+#define TEMPLATE_FLAG	-200
+
 #endif
 /*********DEBUG******************************/
 #define CHECK_DEBUG_TM 	0
