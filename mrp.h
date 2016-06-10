@@ -131,21 +131,21 @@
 #define X_SIZE			20
 #define NAS_ACCURACY	100
 #define MAX_DATA_SAVE	50
-#define MAX_DATA_SAVE_DOUBLE MAX_DATA_SAVE*4
+#define MAX_DATA_SAVE_DOUBLE 	MAX_DATA_SAVE*4
 #define MAX_MULTIMODAL	45
 #define W_GR 			7
 #define WEIGHT_CN		3
 
-#define TEMPLATE_FLAG	-200
+#define TEMPLATE_FLAG	1E5
 
 #endif
 /*********DEBUG******************************/
 #define CHECK_DEBUG_TM 	0
-#define CHECK_DEBUG 		1
+#define CHECK_DEBUG 		0
 #define check_y			0
 #define check_x			5
 
-#define  OPENMP_ON		1
+#define  OPENMP_ON		0
 #define NUM_THREADS		8	//depend on server threads num
 
 /***** STRUCTURE ***************************/

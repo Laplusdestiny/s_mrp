@@ -678,7 +678,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 		exam_array[dec_y][dec_x] = (dec->maxval > 1) << dec->coef_precision;
 	} else {
 		exam_array[dec_y][dec_x] = (int)((double)dec->org[temp_y][temp_x] - ave_o + ave1) << dec->coef_precision;
-		if(exam_array[dec_y][dec_x] < 0 || exam_array[dec_y][dec_x] > dec->maxval)	exam_array[dec_y][dec_x] = ave1 << dec->coef_precision;
+		if(exam_array[dec_y][dec_x] < 0 || exam_array[dec_y][dec_x] > dec->maxval)	exam_array[dec_y][dec_x] = (int)ave1 << dec->coef_precision;
 	}
 
 }

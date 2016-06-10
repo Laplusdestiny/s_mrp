@@ -87,6 +87,7 @@ void print_predictor(int **predictor, int prd_order, int num_class, int max_coef
 
 	for (cl = 0; cl < num_class; cl++) {
 		count = 0;
+		fprintf(fp, "\nClass,%d,\n", cl);
 		for (i = 0; i < max_mhd + 1; i++) {
 			for (j = 0; j < max_mhd << 1; j++) {
 				p_prd[i][j] = max_coef + 1;
