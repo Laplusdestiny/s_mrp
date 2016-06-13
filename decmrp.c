@@ -258,7 +258,10 @@ void decode_predictor(FILE *fp, DECODER *dec)
 	for (cl = 0; cl < dec->num_class; cl++) {
 		d = 0;
 		for (k = 0; k < dec->max_prd_order; k++) {
-			if (dec->predictor[cl][k] != 0) {
+			if(dec->predictor[cl][k] ==TEMPLATE_FLAG){
+				dec->nzconv[cl][d++] = TEMPLATE_FLAG;
+				d=-1;
+			} else if (dec->predictor[cl][k] != 0) {
 				dec->nzconv[cl][d++] = k;
 			}
 		}
@@ -693,7 +696,7 @@ int calc_prd(IMAGE *img, DECODER *dec, int cl, int y, int x)
 	coef_p = dec->predictor[cl];
 	nzc_p = dec->nzconv[cl];
 
-	if(coef_p[0] == TEMPLATE_FLAG){
+	if(dec->num_nzcoef[cl] == -1){
 		prd = exam_array[y][x];
 	} else {
 		if (y == 0) {
@@ -934,8 +937,7 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 			m_prd = calc_prd(img, dec, cl, y, x);
 			if (cl == r_cl) r_prd = m_prd;
 			#if CHECK_DEBUG
-				if(y == check_y && x == check_x)
-					printf("[set_mask_parameter] m_prd[%d]: %d\n", peak, m_prd);
+				// if(y == check_y && x == check_x) printf("[set_mask_parameter] m_prd[%d]: %d\n", peak, m_prd);
 			#endif
 			m_base = (dec->maxprd - m_prd + (1 << shift) / 2) >> shift;
 			mask->pm[peak] = dec->pmodels[m_gr][0] + (m_base & bmask);
@@ -945,7 +947,8 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 		}
 	}
 
-#if TEMPLATE_MATCHING_ON
+#if 0
+// #if TEMPLATE_MATCHING_ON
 	if(y==0 && x < 3){
 
 	} else {

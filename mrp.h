@@ -136,16 +136,16 @@
 #define W_GR 			7
 #define WEIGHT_CN		3
 
-#define TEMPLATE_FLAG	1E5
-
 #endif
+
+#define TEMPLATE_FLAG	1E4
 /*********DEBUG******************************/
 #define CHECK_DEBUG_TM 	0
 #define CHECK_DEBUG 		0
 #define check_y			0
 #define check_x			5
 
-#define  OPENMP_ON		0
+#define  OPENMP_ON		1
 #define NUM_THREADS		8	//depend on server threads num
 
 /***** STRUCTURE ***************************/

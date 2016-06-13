@@ -679,13 +679,23 @@ void predict_region(ENCODER *enc, int tly, int tlx, int bry, int brx)	//予測�
 			coef_p = enc->predictor[cl];
 			nzc_p = enc->nzconv[cl];
 			prd = 0;
-
-			if(nzc_p[0] == TEMPLATE_FLAG){
-				prd = exam_array[y][x];
-			} else {
-				for (k = 0; k < enc->num_nzcoef[cl]; k++) {
-					l = nzc_p[k];
-					prd += org_p[roff_p[l]] * (coef_p[l]);
+			if(enc->optimize_loop == 1){
+				if(nzc_p[0] == TEMPLATE_FLAG){
+					prd = exam_array[y][x];
+				} else {
+					for (k = 0; k < enc->num_nzcoef[cl]; k++) {
+						l = nzc_p[k];
+						prd += org_p[roff_p[l]] * (coef_p[l]);
+					}
+				}
+			} else if(enc->optimize_loop==2){
+				if(enc->num_nzcoef[cl] == -1){
+					prd = exam_array[y][x];
+				} else {
+					for(k = 0; k < enc->num_nzcoef[cl]){
+						l = nzc_p[k];
+						prd += org_p[roff_p[l]] * coef_p[l];
+					}
 				}
 			}
 			org = *org_p++;
@@ -713,7 +723,7 @@ void save_prediction_value(ENCODER *enc)
 				coef_p = enc->predictor[cl];
 				nzc_p = enc->nzconv[cl];
 				prd = 0;
-				if(nzc_p[0] == TEMPLATE_FLAG){
+				if(enc->num_nzcoef[cl] == -1){
 					prd = exam_array[y][x];
 				} else {
 					for (k = 0; k < enc->num_nzcoef[cl]; k++) {
@@ -1144,7 +1154,7 @@ cost_t design_predictor(ENCODER *enc, int f_mmse)
 #if TEMPLATE_MATCHING_ON
 		if(cl == 0){
 			nzc_p[0] = TEMPLATE_FLAG;	//nzcの頭にフラグを入れる
-			for(i=0; <enc->prd_order; i++){
+			for(i=0; i < enc->prd_order; i++){
 				enc->predictor[cl][i] = TEMPLATE_FLAG;
 			}
 			continue;
@@ -1777,7 +1787,7 @@ void set_prd_pels(ENCODER *enc)
 
 	for (cl = 0; cl < enc->num_class; cl++) {
 		k = 0;
-		if(enc->predictor[cl][0] == TEMPLATE_FLAG){
+		if(enc->nzconv[cl][0] == TEMPLATE_FLAG){
 			for(i = 0; i < enc->max_prd_order; i++){
 				enc->nzconv[cl][i] = TEMPLATE_FLAG;
 			}
@@ -2267,8 +2277,8 @@ cost_t optimize_predictor(ENCODER *enc)	//when AUTO_PRD_ORDER 1
 		num_eff = 0;
 		if (enc->cl_hist[cl] == 0) continue;
 		// if(enc->predictor[cl][0] == TEMPLATE_FLAG) continue;
-
-		if(enc->nzconv[cl][0] != TEMPLATE_FLAG){
+		printf("[%2d]: %d", cl, enc->num_nzcoef[cl]);
+		if(enc->num_nzcoef[cl] != -1){
 			for (k = 0; k < enc->num_search[cl]; k++) {
 				if (enc->num_nzcoef[cl] == 0) continue;
 				pos = (int)(((double)rand() * enc->num_nzcoef[cl]) / (RAND_MAX+1.0));	//	いじる係数をrand関数で選択
@@ -2841,7 +2851,7 @@ printf ("op_group -> %d" ,(int)cost);	//しきい値毎に分散を最適化し�
 	}
 #if TEMPLATE_MATCHING_ON
 	// 片側ラプラス関数の分散の決定
-	printf(" [opt w_gr]");
+	printf(" [opt w_gr: ");
 	before_gr = enc->w_gr;
 	min_cost = INT_MAX;
 	// enc->optimize_w_gr = 1;
@@ -2858,7 +2868,7 @@ printf ("op_group -> %d" ,(int)cost);	//しきい値毎に分散を最適化し�
 	}
 	if(new_gr >= enc->num_group) new_gr = enc->num_group-1;
 	enc->w_gr = new_gr;
-	printf("[%d]\n", enc->w_gr);
+	printf("%d]\n	", enc->w_gr);
 #endif
 	printf (" op_c -> %d" ,(int)cost);	//分散毎に確率モデルの形状を最適化した時のコスト
 
