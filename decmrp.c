@@ -261,6 +261,7 @@ void decode_predictor(FILE *fp, DECODER *dec)
 			if(dec->predictor[cl][k] ==TEMPLATE_FLAG){
 				dec->nzconv[cl][d++] = TEMPLATE_FLAG;
 				d=-1;
+				break;
 			} else if (dec->predictor[cl][k] != 0) {
 				dec->nzconv[cl][d++] = k;
 			}

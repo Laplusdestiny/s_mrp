@@ -35,7 +35,7 @@
 #define OPT_SIDEINFO		1 // 1 : side-info into consideration (standard), 0 : neglect side-info
 #define MAX_ITERATION	100	//100
 #define EXTRA_ITERATION	10
-#define AUTO_DEL_CL		1
+#define AUTO_DEL_CL		0
 #define AUTO_PRD_ORDER	1
 
 /****** MULT PEAK **************************/
@@ -141,7 +141,7 @@
 #define TEMPLATE_FLAG	1E4
 /*********DEBUG******************************/
 #define CHECK_DEBUG_TM 	0
-#define CHECK_DEBUG 		0
+#define CHECK_DEBUG 		1
 #define check_y			0
 #define check_x			5
 
