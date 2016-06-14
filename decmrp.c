@@ -252,9 +252,7 @@ void decode_predictor(FILE *fp, DECODER *dec)	//when AUTO_PRD_ORDER 1
 				} else {
 					dec->predictor[cl][k] = 0;
 				}
-				printf("%3d ", dec->predictor[cl][k]);
 			}
-			printf("\n");
 		}
 	}
 	for (cl = 0; cl < dec->num_class; cl++) {

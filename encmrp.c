@@ -678,7 +678,7 @@ void predict_region(ENCODER *enc, int tly, int tlx, int bry, int brx)	//予測�
 			nzc_p = enc->nzconv[cl];
 			prd = 0;
 			if(enc->optimize_loop == 1){
-				if(nzc_p[0] == TEMPLATE_FLAG){
+				if(nzc_p[0] == -1){
 					prd = exam_array[y][x];
 				} else {
 					for (k = 0; k < enc->num_nzcoef[cl]; k++) {
@@ -1159,7 +1159,7 @@ cost_t design_predictor(ENCODER *enc, int f_mmse)
 		nzc_p = enc->nzconv[cl];
 #if TEMPLATE_MATCHING_ON
 		if(cl == 0){
-			nzc_p[0] = TEMPLATE_FLAG;	//nzcの頭にフラグを入れる
+			nzc_p[0] = -1;	//nzcの頭にフラグを入れる
 			for(i=0; i < enc->prd_order; i++){
 				enc->predictor[cl][i] = TEMPLATE_FLAG;
 			}
@@ -1795,10 +1795,10 @@ void set_prd_pels(ENCODER *enc)
 
 	for (cl = 0; cl < enc->num_class; cl++) {
 		k = 0;
-		if(enc->nzconv[cl][0] == TEMPLATE_FLAG){
-			for(i = 0; i < enc->max_prd_order; i++){
+		if(enc->nzconv[cl][0] == -1){
+			/*for(i = 0; i < enc->max_prd_order; i++){
 				enc->nzconv[cl][i] = TEMPLATE_FLAG;
-			}
+			}*/
 			k=-1;
 		} else {
 			for (i = 0; i < enc->max_prd_order; i++) {
@@ -3301,7 +3301,6 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 			for (k = d * (d + 1); k < (d + 1) * (d + 2); k++) {
 				for (cl = 0; cl < enc->num_class; cl++) {
 					coef = enc->predictor[cl][k];
-					printf("%3d ", coef);
 					if (coef == 0) {
 						rc_encode(fp, enc->rc, 0, zrfreq, TOT_ZEROFR);
 					} else {
@@ -3313,7 +3312,6 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 						rc_encode(fp, enc->rc, sgn, 1, 2);
 					}
 				}
-				printf("\n");
 			}
 		}
 		bits = (int)enc->rc->code;
