@@ -212,7 +212,7 @@ DECODER *init_decoder(FILE *fp)
 
 #if AUTO_PRD_ORDER
 
-void decode_predictor(FILE *fp, DECODER *dec)
+void decode_predictor(FILE *fp, DECODER *dec)	//when AUTO_PRD_ORDER 1
 {
 	int k, cl, coef, sgn, d, zero_m, coef_m;
 	PMODEL *pm;
@@ -252,7 +252,9 @@ void decode_predictor(FILE *fp, DECODER *dec)
 				} else {
 					dec->predictor[cl][k] = 0;
 				}
+				printf("%3d ", dec->predictor[cl][k]);
 			}
+			printf("\n");
 		}
 	}
 	for (cl = 0; cl < dec->num_class; cl++) {

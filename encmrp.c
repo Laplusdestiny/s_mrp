@@ -3236,7 +3236,7 @@ int encode_class(FILE *fp, ENCODER *enc, int flag)
 
 #if AUTO_PRD_ORDER
 
-int encode_predictor(FILE *fp, ENCODER *enc, int flag)
+int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 {
 	int cl, coef, sgn, k, m, min_m, bits, d;
 	cost_t cost, min_cost, t_cost;
@@ -3301,6 +3301,7 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)
 			for (k = d * (d + 1); k < (d + 1) * (d + 2); k++) {
 				for (cl = 0; cl < enc->num_class; cl++) {
 					coef = enc->predictor[cl][k];
+					printf("%3d ", coef);
 					if (coef == 0) {
 						rc_encode(fp, enc->rc, 0, zrfreq, TOT_ZEROFR);
 					} else {
@@ -3312,6 +3313,7 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)
 						rc_encode(fp, enc->rc, sgn, 1, 2);
 					}
 				}
+				printf("\n");
 			}
 		}
 		bits = (int)enc->rc->code;
