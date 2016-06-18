@@ -33,7 +33,7 @@
 
 /****** OPTIMIZE ***************************/
 #define OPT_SIDEINFO		1 // 1 : side-info into consideration (standard), 0 : neglect side-info
-#define MAX_ITERATION	5	//100
+#define MAX_ITERATION	100	//100
 #define EXTRA_ITERATION	10
 #define AUTO_DEL_CL		0
 #define AUTO_PRD_ORDER	1
@@ -55,7 +55,7 @@
 #define MIN_BSIZE		(MAX_BSIZE >> QUADTREE_DEPTH)
 
 /***** CLASS *******************************/
-#define NUM_CLASS       -1
+#define NUM_CLASS       63
 #define MAX_CLASS		63
 
 /***** PREDICTOR ***************************/
@@ -126,6 +126,7 @@
 #define TEMPLATE_MATCHING_ON 	1
 #if TEMPLATE_MATCHING_ON
 
+#define TEMPLATE_CLASS_NUM	10
 #define AREA			6
 #define Y_SIZE			20
 #define X_SIZE			20
