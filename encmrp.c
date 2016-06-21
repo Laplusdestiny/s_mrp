@@ -16,7 +16,8 @@ extern int win_sample[], win_dis[];
 
 MASK *mask;
 int ***tempm_array;
-int ***exam_array;
+int **exam_array;
+// int ***exam_array;
 
 float ****calc_entropy_of_conditional_probability(PMODEL ***pmodels, int num_group,
 	int num_pmodel, int pm_accuracy, int maxval)
@@ -679,7 +680,7 @@ void predict_region(ENCODER *enc, int tly, int tlx, int bry, int brx)	//予測�
 			prd = 0;
 			if(enc->optimize_loop == 1){
 				if(nzc_p[0] == -1){
-					prd = exam_array[y][x][cl];
+					prd = exam_array[y][x];
 				} else {
 					for (k = 0; k < enc->num_nzcoef[cl]; k++) {
 						l = nzc_p[k];
@@ -688,7 +689,7 @@ void predict_region(ENCODER *enc, int tly, int tlx, int bry, int brx)	//予測�
 				}
 			} else if(enc->optimize_loop==2){
 				if(enc->num_nzcoef[cl] == -1){
-					prd = exam_array[y][x][cl];
+					prd = exam_array[y][x];
 				} else {
 					for(k = 0; k < enc->num_nzcoef[cl]; k++){
 						l = nzc_p[k];
@@ -722,7 +723,7 @@ void save_prediction_value(ENCODER *enc)
 				nzc_p = enc->nzconv[cl];
 				prd = 0;
 				if(enc->num_nzcoef[cl] == -1){
-					prd = exam_array[y][x][cl];
+					prd = exam_array[y][x];
 				} else {
 					for (k = 0; k < enc->num_nzcoef[cl]; k++) {
 						l = nzc_p[k];
@@ -753,9 +754,9 @@ int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出
 
 #if TEMPLATE_MATCHING_ON
 void*** TemplateM (ENCODER *enc) {
-	int x , y , bx , by , g , h , i , j , k , count , area1[AREA] , area_o[AREA] , *tm_array ,
+	int x , y , bx , by , g , h , i , j=0 , k , count , area1[AREA] , area_o[AREA] , *tm_array ,
 		*roff_p , *org_p , x_size = X_SIZE , sum1 , sum_o, temp_x, temp_y, break_flag=0;
-	double ave1 , ave_o , nas ;
+	double ave1=0 , ave_o , nas ;
 
 /////////////////////////
 ///////メモリ確保////////
@@ -763,7 +764,6 @@ void*** TemplateM (ENCODER *enc) {
 
 	tm_array = (int *)alloc_mem((Y_SIZE * X_SIZE * 2 + X_SIZE) * 4 * sizeof(int)) ;
 	TM_Member tm[Y_SIZE * X_SIZE * 2 + X_SIZE ];
-	// init_2d_array(exam_array, enc->height, enc->width, enc->maxval > 1);
 
 ///////////////////////////
 ////////画像の走査/////////
@@ -798,6 +798,7 @@ for(y = 0 ; y < enc->height ; y++){
 ///////////////////////////
 
 		j = 0;
+		break_flag=0;
 
 		if(y == 0 || y == 1 || y == 2){
 			x_size = 50;
@@ -805,11 +806,11 @@ for(y = 0 ; y < enc->height ; y++){
 			x_size = X_SIZE;
 		}
 		for (by = y - Y_SIZE ; by <= y ; by++) {
-			if((by < 0) || (by > enc->height))continue;
+			if ( by < 0 || by > enc->height )	continue;
 			for (bx = x - x_size ; bx <= x + x_size - 1; bx++) {
-				if((bx < 0) || (bx > enc->width))continue;
-				if(by==y && bx >= x) break_flag=1;
-				if(break_flag==1)break;
+				if ( bx < 0 || bx > enc->width )	continue;
+				if (by >= y && bx >= x)	break_flag=1;
+				if ( break_flag == 1 )	break;
 
 				roff_p = enc->roff[by][bx];
 				org_p = &enc->org[by][bx];
@@ -848,7 +849,7 @@ for(y = 0 ; y < enc->height ; y++){
 			}//bx fin
 			if(break_flag==1)break;
 		}//by fin
-		break_flag=0;
+
 /////////////////////////
 ///////ソートの実行//////
 /////////////////////////
@@ -888,17 +889,23 @@ for(y = 0 ; y < enc->height ; y++){
 			enc->tempm_array[y][x][k] = tm[k].ave_o;
 		}
 //一番マッチングコストが小さいものを予測値のひとつに加える
-		for(k=0; k<TEMPLATE_CLASS_NUM; k++){
-			temp_y = tempm_array[y][x][k*4+1];
-			temp_x = tempm_array[y][x][k*4+2];
-			ave_o = enc->tempm_array[y][x][k];
+		// for(k=0; k<TEMPLATE_CLASS_NUM; k++){
+			temp_y = tempm_array[y][x][ 1 ];
+			// temp_y = tempm_array[y][x][k*4+1];
+			temp_x = tempm_array[y][x][ 2 ];
+			// temp_x = tempm_array[y][x][k*4+2];
+			ave_o = enc->tempm_array[y][x][0];
+			// ave_o = enc->tempm_array[y][x][k];
 
-		if(y==0 && x < 3){
-			exam_array[y][x][k] = (enc->maxval > 1) << enc->coef_precision;	//事例がないため，輝度値の中央
-		} else {
-			exam_array[y][x][k] = (int)((double)enc->org[temp_y][temp_x] - ave_o + ave1) << enc->coef_precision;
-			if(exam_array[y][x][k] < 0 || exam_array[y][x] > enc->maxval)	exam_array[y][x][k] = (int)ave1 << enc->coef_precision;
-		}
+			if(y==0 && x < 3){
+				exam_array[y][x] = (enc->maxval > 1) << enc->coef_precision;	//	事例が少ないため，輝度値の中央
+			} else {
+				exam_array[y][x] = (int)((double)enc->org[temp_y][temp_x] -
+					ave_o + ave1)	 << enc->coef_precision;
+				if(exam_array[y][x] < 0 || exam_array[y][x] > enc->maxval)
+					exam_array[y][x] = (int)ave1 << enc->coef_precision;
+			}
+		// }
 	}//x fin
 }//y fin
 // printf("number of hours worked:%lf[s]\n",(float)(end - start)/CLOCKS_PER_SEC);
@@ -1151,7 +1158,8 @@ cost_t design_predictor(ENCODER *enc, int f_mmse)
 	for (cl = 0; cl < enc->num_class; cl++) {
 		nzc_p = enc->nzconv[cl];
 #if TEMPLATE_MATCHING_ON
-		if(cl < TEMPLATE_CLASS_NUM){
+		if(cl == 0){
+		// if(cl < TEMPLATE_CLASS_NUM){
 			nzc_p[0] = -1;	//nzcの頭にフラグを入れる
 			for(i=0; i < enc->prd_order; i++){
 				enc->predictor[cl][i] = TEMPLATE_FLAG;
@@ -1445,7 +1453,7 @@ void set_prdbuf(ENCODER *enc, int **prdbuf, int **errbuf,
 					prd = 0;
 					for (k = 0; k < enc->num_nzcoef[cl]; k++) {
 						if(nzc_p[k] == TEMPLATE_FLAG){
-							prd = exam_array[y][x][cl];
+							prd = exam_array[y][x];
 							break;
 						} else {
 							l = nzc_p[k];
@@ -1735,10 +1743,11 @@ cost_t optimize_class(ENCODER *enc)
 		}
 		// printf("\n");
 	}
-#if CHECK_DEBUG
-	for(y=0; y<enc->height; y++){
-		for(x=0; x<enc->width; x++){
-			printf("%d ", enc->class[y][x]);
+#if 1
+// #if CHECK_DEBUG
+	for(y=0; y<enc->height; y += blksize){
+		for(x=0; x<enc->width; x += blksize){
+			printf("%2d ", enc->class[y][x]);
 		}
 		printf("\n");
 	}
@@ -3929,7 +3938,9 @@ cost_t auto_del_class(ENCODER *enc, cost_t pre_cost)
 	}
 	if (pre_cost > min_cost) {
 		blk = 0;
-		printf("DEL_CLASS: %d\n", del_cl);
+		#if CHECK_DEBUG
+			printf("DEL_CLASS: %d\n", del_cl);
+		#endif
 		cost = opcl(enc, del_cl, &blk, 0);
 #if MULT_PEAK_MODE == 0
 		for (y = del_cl; y < enc->num_class; y++) {
@@ -4088,7 +4099,8 @@ int main(int argc, char **argv)
 #endif
 
 #if TEMPLATE_MATCHING_ON
-	num_class += TEMPLATE_CLASS_NUM;
+	num_class++;
+	// num_class += TEMPLATE_CLASS_NUM;
 #endif
 
 	printf("%s -> %s (%dx%d)\n", infile, outfile, img->width, img->height);
@@ -4097,6 +4109,9 @@ int main(int argc, char **argv)
 	// printf("M = %d, K = %d, P = %d, V = %d, A = %d, l = %d, m = %d, o = %d, f = %d\n",
 	printf("NUM_CLASS 	= %d\nMAX_PRD_ORDER 	= %d\ncoef_precision 	= %d\nnum_pmodel 	= %d\npm_accuracy 	= %d\nmax_iteration 	= %d\nf_mmse 		= %d\nf_optpred 	= %d\nquadtree_depth 	= %d\nTemplateM	= %d\n",
 		num_class, MAX_PRD_ORDER, coef_precision, num_pmodel, pm_accuracy, max_iteration, f_mmse, f_optpred, quadtree_depth, TEMPLATE_MATCHING_ON);
+	#if TEMPLATE_MATCHING_ON
+		// printf("TM_CLASS_NUM	= %d\n", TEMPLATE_CLASS_NUM);
+	#endif
 	#if OPENMP_ON
 		omp_set_num_threads(NUM_THREADS);
 		printf("Parallel Threads= %d\n", omp_get_max_threads());
@@ -4144,7 +4159,8 @@ int main(int argc, char **argv)
 
 #if TEMPLATE_MATCHING_ON
 	tempm_array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
-	exam_array = (int **)alloc_3d_array(enc->height, enc->width, TEMPLATE_CLASS_NUM, sizeof(int));
+	exam_array = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
+	// exam_array = (int ***)alloc_3d_array(enc->height, enc->width, TEMPLATE_CLASS_NUM, sizeof(int));
 	TemplateM(enc);
 	// enc->w_gr = W_GR;	//マッチングコストに対する重みの分散値の初期化
 #endif
