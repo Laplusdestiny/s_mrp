@@ -214,7 +214,7 @@ DECODER *init_decoder(FILE *fp)
 
 void decode_predictor(FILE *fp, DECODER *dec)	//when AUTO_PRD_ORDER 1
 {
-	int k, cl, coef, sgn, d, zero_m, coef_m;
+	int k, cl, coef, sgn, d, zero_m, coef_m, flg_cl=-1;
 	PMODEL *pm;
 	int b;
 
@@ -239,6 +239,7 @@ void decode_predictor(FILE *fp, DECODER *dec)	//when AUTO_PRD_ORDER 1
 		set_spmodel(pm, dec->max_coef + 1, coef_m);
 		for (k = d * (d + 1); k < (d + 1) * (d + 2); k++) {
 			for (cl = 0; cl < dec->num_class; cl++) {
+				if(cl == flg_cl)	continue;
 				coef = rc_decode(fp, dec->rc, pm, dec->max_coef + 2, dec->max_coef + 4)
 					- (dec->max_coef + 2);
 				if (coef == 1) {
@@ -248,6 +249,7 @@ void decode_predictor(FILE *fp, DECODER *dec)	//when AUTO_PRD_ORDER 1
 					if (sgn) {
 						coef = -coef;
 					}
+					if(coef == TEMPLATE_FLAG)	flg_cl = cl;
 					dec->predictor[cl][k] = coef;
 				} else {
 					dec->predictor[cl][k] = 0;

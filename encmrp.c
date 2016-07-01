@@ -2894,7 +2894,7 @@ printf ("op_group -> %d" ,(int)cost);	//しきい値毎に分散を最適化し�
 	enc->w_gr = new_gr;
 	printf("%d]\n	", enc->w_gr);
 #endif
-	printf (" op_c ->" ,(int)cost);	//分散毎に確率モデルの形状を最適化した時のコスト
+	printf (" op_c ->");	//分散毎に確率モデルの形状を最適化した時のコスト
 	// printf (" op_c -> %d" ,(int)cost);	//分散毎に確率モデルの形状を最適化した時のコスト
 
 	free(cbuf);
@@ -3241,7 +3241,7 @@ int encode_class(FILE *fp, ENCODER *enc, int flag)
 
 int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 {
-	int cl, coef, sgn, k, m, min_m, bits, d;
+	int cl, coef, sgn, k, m, min_m, bits, d, flg_cl=-1;
 	cost_t cost, min_cost, t_cost;
 	PMODEL *pm;
 	uint cumb;
@@ -3253,11 +3253,17 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 	t_cost = 0.0;
 	for (d = 0; d < enc->prd_mhd; d++) {
 		min_cost = INT_MAX;
+		flg_cl = -1;
 		for (m = min_m = 0; m < 8; m++) {
 			cost = 0.0;
 			for (k = d * (d + 1); k < (d + 1) * (d + 2); k++) {
 				for (cl = 0; cl < enc->num_class; cl++) {
 					coef = enc->predictor[cl][k];
+					if(cl == flg_cl) continue;
+					if(coef == TEMPLATE_FLAG){
+						flg_cl = cl;
+						continue;
+					}
 					if (coef < 0) coef = -coef;
 					cost += enc->coef_cost[enc->zero_m[d]][m][coef];
 				}
@@ -3269,11 +3275,17 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 		}
 		if (flag) enc->coef_m[d] = min_m;
 		min_cost = INT_MAX;
+		flg_cl = -1;
 		for (m = min_m = 0; m < NUM_ZMODEL; m++) {
 			cost = 0.0;
 			for (k = d * (d + 1); k < (d + 1) * (d + 2); k++) {
 				for (cl = 0; cl < enc->num_class; cl++) {
 					coef = enc->predictor[cl][k];
+					if(cl == flg_cl) continue;
+					if(coef == TEMPLATE_FLAG){
+						flg_cl = cl;
+						continue;
+					}
 					if (coef < 0) coef = -coef;
 					cost += enc->coef_cost[m][enc->coef_m[d]][coef];
 				}
@@ -3286,6 +3298,7 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 		if (flag) enc->zero_m[d] = min_m;
 		t_cost += min_cost;
 	}
+	flg_cl = -1;
 	bits = (int)t_cost;
 	/* Arithmetic */
 	if (fp != NULL) {
@@ -3304,8 +3317,12 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 			for (k = d * (d + 1); k < (d + 1) * (d + 2); k++) {
 				for (cl = 0; cl < enc->num_class; cl++) {
 					coef = enc->predictor[cl][k];
+					if(cl == flg_cl)continue;	//clがテンプレートマッチングをするクラスならcontinue
 					if (coef == 0) {
 						rc_encode(fp, enc->rc, 0, zrfreq, TOT_ZEROFR);
+					// } else if(coef == TEMPLATE_FLAG){
+						// putbits(fp,1, -1);
+						// flg_cl = cl;
 					} else {
 						rc_encode(fp, enc->rc, zrfreq, nzfreq, TOT_ZEROFR);
 						sgn = (coef < 0)? 1 : 0;
@@ -3313,6 +3330,9 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 						rc_encode(fp, enc->rc, pm->cumfreq[coef] - cumb,  pm->freq[coef],
 							pm->cumfreq[pm->size] - cumb);
 						rc_encode(fp, enc->rc, sgn, 1, 2);
+						if(coef == TEMPLATE_FLAG){
+							flg_cl = cl;
+						}
 					}
 				}
 			}
@@ -4248,7 +4268,7 @@ int main(int argc, char **argv)
 		printf(" %d[%d] (%d)", (int)cost, (int)sc, (int)side_cost);
 		for(cl=0; cl<enc->num_class; cl++){
 			if(enc->num_nzcoef[cl] == -1){
-				printf("[TEMPLATE CLASS: %d]" ,cl);
+				printf("[TEMP_CL: %d]" ,cl);
 				break;
 			}
 		}
