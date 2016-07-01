@@ -481,7 +481,7 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 
 #if TEMPLATE_MATCHING_ON
 	enc->temp_num = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
-	enc->tempm_array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
+	enc->tempm_array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE, sizeof(int));
 #endif
 	return (enc);
 }
@@ -807,10 +807,10 @@ for(y = 0 ; y < enc->height ; y++){
 		}
 		for (by = y - Y_SIZE ; by <= y ; by++) {
 			if ( by < 0 || by > enc->height )	continue;
-			for (bx = x - x_size ; bx <= x + x_size - 1; bx++) {
+			for (bx = x - x_size ; bx <= x + x_size ; bx++) {
 				if ( bx < 0 || bx > enc->width )	continue;
 				if (by >= y && bx >= x)	break_flag=1;
-				if ( break_flag == 1 )	break;
+				if ( break_flag )	break;
 
 				roff_p = enc->roff[by][bx];
 				org_p = &enc->org[by][bx];
@@ -847,7 +847,7 @@ for(y = 0 ; y < enc->height ; y++){
 
 				j++;
 			}//bx fin
-			if(break_flag==1)break;
+			if( break_flag )break;
 		}//by fin
 
 /////////////////////////
@@ -901,13 +901,14 @@ for(y = 0 ; y < enc->height ; y++){
 				exam_array[y][x] = (enc->maxval > 1) << enc->coef_precision;	//	事例が少ないため，輝度値の中央
 			} else {
 				exam_array[y][x] = (int)((double)enc->org[temp_y][temp_x] -
-					ave_o + ave1)	 << enc->coef_precision;
-				if(exam_array[y][x] < 0 || exam_array[y][x] > enc->maxval)
+					ave_o + ave1) << enc->coef_precision;
+				if(exam_array[y][x] < 0 || exam_array[y][x] > enc->maxprd)
 					exam_array[y][x] = (int)ave1 << enc->coef_precision;
 			}
 		// }
 	}//x fin
 }//y fin
+printf("check1\n");
 // printf("number of hours worked:%lf[s]\n",(float)(end - start)/CLOCKS_PER_SEC);
 
 
@@ -915,8 +916,8 @@ for(y = 0 ; y < enc->height ; y++){
 ////////メモリ解放///////////
 ////////////////////////////
 
-	free(tm_array);
-	return(0);
+	// free(tm_array);
+	// return(0);
 	// return(array);
 }
 #endif
@@ -1162,8 +1163,9 @@ cost_t design_predictor(ENCODER *enc, int f_mmse)
 		// if(cl < TEMPLATE_CLASS_NUM){
 			nzc_p[0] = -1;	//nzcの頭にフラグを入れる
 			for(i=0; i < enc->prd_order; i++){
-				enc->predictor[cl][i] = TEMPLATE_FLAG;
+				enc->predictor[cl][i] = 0;
 			}
+			enc->predictor[cl][0] = TEMPLATE_FLAG;
 			continue;
 		}
 #endif
@@ -1256,7 +1258,7 @@ cost_t design_predictor(ENCODER *enc, int f_mmse)
 			mat[index[j]][enc->prd_order] = 0;
 		}
 	}//cl loop fin
-
+	printf("design predictor\n");
 	free(weight);
 	free(index);
 	free(mat);
@@ -4162,6 +4164,7 @@ int main(int argc, char **argv)
 	exam_array = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
 	// exam_array = (int ***)alloc_3d_array(enc->height, enc->width, TEMPLATE_CLASS_NUM, sizeof(int));
 	TemplateM(enc);
+	printf("Template Matching fin\n");
 	// enc->w_gr = W_GR;	//マッチングコストに対する重みの分散値の初期化
 #endif
 

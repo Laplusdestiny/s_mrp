@@ -126,7 +126,7 @@
 #define TEMPLATE_MATCHING_ON 	1
 #if TEMPLATE_MATCHING_ON
 
-#define TEMPLATE_CLASS_NUM	10
+#define TEMPLATE_CLASS_NUM	1
 #define AREA			6
 #define Y_SIZE			20
 #define X_SIZE			20
@@ -135,11 +135,12 @@
 #define MAX_DATA_SAVE_DOUBLE 	MAX_DATA_SAVE*4
 #define MAX_MULTIMODAL	45
 #define W_GR 			7
-#define WEIGHT_CN		3
+#define WEIGHT_CN		2
 
 #endif
 
 #define TEMPLATE_FLAG	2 << COEF_PRECISION
+
 /*********DEBUG******************************/
 #define CHECK_DEBUG_TM 	0
 #define CHECK_DEBUG 		0

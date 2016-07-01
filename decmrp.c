@@ -577,7 +577,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 
 	for( by = dec_y - Y_SIZE; by <= dec_y; by++){
 		if( by < 0 || by > dec->height)continue;
-		for( bx = dec_x - x_size; bx <= dec_x + x_size-1; bx++){
+		for( bx = dec_x - x_size; bx <= dec_x + x_size; bx++){
 			if( bx <0 || bx > dec->width)continue;
 			if(by==dec_y && bx >= dec_x)break_flag=1;
 			if(break_flag==1)break;
@@ -682,7 +682,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 		exam_array[dec_y][dec_x] = (dec->maxval > 1) << dec->coef_precision;
 	} else {
 		exam_array[dec_y][dec_x] = (int)((double)dec->org[temp_y][temp_x] - ave_o + ave1) << dec->coef_precision;
-		if(exam_array[dec_y][dec_x] < 0 || exam_array[dec_y][dec_x] > dec->maxval)	exam_array[dec_y][dec_x] = (int)ave1 << dec->coef_precision;
+		if(exam_array[dec_y][dec_x] < 0 || exam_array[dec_y][dec_x] > dec->maxprd)	exam_array[dec_y][dec_x] = (int)ave1 << dec->coef_precision;
 	}
 
 }
