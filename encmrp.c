@@ -481,7 +481,7 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 
 #if TEMPLATE_MATCHING_ON
 	enc->temp_num = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
-	enc->tempm_array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE, sizeof(int));
+	enc->tempm_array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
 #endif
 	return (enc);
 }
@@ -762,8 +762,9 @@ void*** TemplateM (ENCODER *enc) {
 ///////メモリ確保////////
 /////////////////////////
 
-	tm_array = (int *)alloc_mem((Y_SIZE * X_SIZE * 2 + X_SIZE) * 4 * sizeof(int)) ;
-	TM_Member tm[Y_SIZE * X_SIZE * 2 + X_SIZE ];
+	tm_array = (int *)alloc_mem((Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE) * 4 * sizeof(int)) ;
+	TM_Member tm[Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE ];
+	// init_2d_array(exam_array, enc->height, enc->width, enc->maxval > 1);
 
 ///////////////////////////
 ////////画像の走査/////////
@@ -806,10 +807,10 @@ for(y = 0 ; y < enc->height ; y++){
 			x_size = X_SIZE;
 		}
 		for (by = y - Y_SIZE ; by <= y ; by++) {
-			if ( by < 0 || by > enc->height )	continue;
-			for (bx = x - x_size ; bx <= x + x_size ; bx++) {
-				if ( bx < 0 || bx > enc->width )	continue;
-				if (by >= y && bx >= x)	break_flag=1;
+			if((by < 0) || (by > enc->height))continue;
+			for (bx = x - x_size ; bx <= x + x_size  ; bx++) {
+				if((bx < 0) || (bx > enc->width))continue;
+				if(by==y && bx >= x) break_flag=1;
 				if ( break_flag )	break;
 
 				roff_p = enc->roff[by][bx];
@@ -886,26 +887,19 @@ for(y = 0 ; y < enc->height ; y++){
 		}
 
 		for(k = 0 ; k < MAX_DATA_SAVE ; k++){
-			enc->tempm_array[y][x][k] = tm[k].ave_o;
+			enc->array[y][x][k] = tm[k].ave_o;
 		}
 //一番マッチングコストが小さいものを予測値のひとつに加える
-		// for(k=0; k<TEMPLATE_CLASS_NUM; k++){
-			temp_y = tempm_array[y][x][ 1 ];
-			// temp_y = tempm_array[y][x][k*4+1];
-			temp_x = tempm_array[y][x][ 2 ];
-			// temp_x = tempm_array[y][x][k*4+2];
-			ave_o = enc->tempm_array[y][x][0];
-			// ave_o = enc->tempm_array[y][x][k];
+		temp_y = tempm_array[y][x][1];
+		temp_x = tempm_array[y][x][2];
+		ave_o = enc->array[y][x][0];
 
-			if(y==0 && x < 3){
-				exam_array[y][x] = (enc->maxval > 1) << enc->coef_precision;	//	事例が少ないため，輝度値の中央
-			} else {
-				exam_array[y][x] = (int)((double)enc->org[temp_y][temp_x] -
-					ave_o + ave1) << enc->coef_precision;
-				if(exam_array[y][x] < 0 || exam_array[y][x] > enc->maxprd)
-					exam_array[y][x] = (int)ave1 << enc->coef_precision;
-			}
-		// }
+		if(y==0 && x < 3){
+			exam_array[y][x] = (enc->maxval > 1) << enc->coef_precision;	//事例がないため，輝度値の中央
+		} else {
+			exam_array[y][x] = (int)((double)enc->org[temp_y][temp_x] - ave_o + ave1) << enc->coef_precision;
+			if(exam_array[y][x] < 0 || exam_array[y][x] > enc->maxprd)	exam_array[y][x] = (int)ave1 << enc->coef_precision;
+		}
 	}//x fin
 }//y fin
 printf("check1\n");
@@ -2906,7 +2900,8 @@ printf ("op_group -> %d" ,(int)cost);	//しきい値毎に分散を最適化し�
 	enc->w_gr = new_gr;
 	printf("%d]\n	", enc->w_gr);
 #endif
-	printf (" op_c -> %d" ,(int)cost);	//分散毎に確率モデルの形状を最適化した時のコスト
+	printf (" op_c ->");	//分散毎に確率モデルの形状を最適化した時のコスト
+	// printf (" op_c -> %d" ,(int)cost);	//分散毎に確率モデルの形状を最適化した時のコスト
 
 	free(cbuf);
 	free(dpcost);
@@ -3015,9 +3010,9 @@ int write_header(ENCODER *enc, FILE *fp)
 		enc->w_gr = 0;
 	} else if (enc->w_gr > 15){
 		enc->w_gr = 15;
-	}
-	bits += putbits(fp, 4, enc->w_gr);
-	printf("w_gr: %d\n", enc->w_gr);
+	}*/
+	// bits += putbits(fp, 4, enc->w_gr);
+	// printf("w_gr: %d\n", enc->w_gr);
 #endif
 
 	return (bits);
@@ -3253,7 +3248,7 @@ int encode_class(FILE *fp, ENCODER *enc, int flag)
 
 int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 {
-	int cl, coef, sgn, k, m, min_m, bits, d;
+	int cl, coef, sgn, k, m, min_m, bits, d, flg_cl=-1;
 	cost_t cost, min_cost, t_cost;
 	PMODEL *pm;
 	uint cumb;
@@ -3265,11 +3260,17 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 	t_cost = 0.0;
 	for (d = 0; d < enc->prd_mhd; d++) {
 		min_cost = INT_MAX;
+		flg_cl = -1;
 		for (m = min_m = 0; m < 8; m++) {
 			cost = 0.0;
 			for (k = d * (d + 1); k < (d + 1) * (d + 2); k++) {
 				for (cl = 0; cl < enc->num_class; cl++) {
 					coef = enc->predictor[cl][k];
+					if(cl == flg_cl) continue;
+					if(coef == TEMPLATE_FLAG){
+						flg_cl = cl;
+						continue;
+					}
 					if (coef < 0) coef = -coef;
 					cost += enc->coef_cost[enc->zero_m[d]][m][coef];
 				}
@@ -3281,11 +3282,17 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 		}
 		if (flag) enc->coef_m[d] = min_m;
 		min_cost = INT_MAX;
+		flg_cl = -1;
 		for (m = min_m = 0; m < NUM_ZMODEL; m++) {
 			cost = 0.0;
 			for (k = d * (d + 1); k < (d + 1) * (d + 2); k++) {
 				for (cl = 0; cl < enc->num_class; cl++) {
 					coef = enc->predictor[cl][k];
+					if(cl == flg_cl) continue;
+					if(coef == TEMPLATE_FLAG){
+						flg_cl = cl;
+						continue;
+					}
 					if (coef < 0) coef = -coef;
 					cost += enc->coef_cost[m][enc->coef_m[d]][coef];
 				}
@@ -3298,6 +3305,7 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 		if (flag) enc->zero_m[d] = min_m;
 		t_cost += min_cost;
 	}
+	flg_cl = -1;
 	bits = (int)t_cost;
 	/* Arithmetic */
 	if (fp != NULL) {
@@ -3316,8 +3324,12 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 			for (k = d * (d + 1); k < (d + 1) * (d + 2); k++) {
 				for (cl = 0; cl < enc->num_class; cl++) {
 					coef = enc->predictor[cl][k];
+					if(cl == flg_cl)continue;	//clがテンプレートマッチングをするクラスならcontinue
 					if (coef == 0) {
 						rc_encode(fp, enc->rc, 0, zrfreq, TOT_ZEROFR);
+					// } else if(coef == TEMPLATE_FLAG){
+						// putbits(fp,1, -1);
+						// flg_cl = cl;
 					} else {
 						rc_encode(fp, enc->rc, zrfreq, nzfreq, TOT_ZEROFR);
 						sgn = (coef < 0)? 1 : 0;
@@ -3325,6 +3337,9 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 						rc_encode(fp, enc->rc, pm->cumfreq[coef] - cumb,  pm->freq[coef],
 							pm->cumfreq[pm->size] - cumb);
 						rc_encode(fp, enc->rc, sgn, 1, 2);
+						if(coef == TEMPLATE_FLAG){
+							flg_cl = cl;
+						}
 					}
 				}
 			}
@@ -4164,10 +4179,8 @@ int main(int argc, char **argv)
 	exam_array = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
 	// exam_array = (int ***)alloc_3d_array(enc->height, enc->width, TEMPLATE_CLASS_NUM, sizeof(int));
 	TemplateM(enc);
-	printf("Template Matching fin\n");
 	// enc->w_gr = W_GR;	//マッチングコストに対する重みの分散値の初期化
 #endif
-
 
 	/* 1st loop */
 	//単峰性確率モデルによる算術符号化
@@ -4269,7 +4282,7 @@ int main(int argc, char **argv)
 		printf(" %d[%d] (%d)", (int)cost, (int)sc, (int)side_cost);
 		for(cl=0; cl<enc->num_class; cl++){
 			if(enc->num_nzcoef[cl] == -1){
-				printf("[TEMPLATE CLASS: %d]" ,cl);
+				printf("[TEMP_CL: %d]" ,cl);
 				break;
 			}
 		}

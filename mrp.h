@@ -262,9 +262,9 @@ typedef struct {
 #endif
 #if TEMPLATE_MATCHING_ON
 	int **temp_num;
-	int ***tempm_array;
+	int ***array;
 	int **mmc;
-	int w_gr;
+	// int w_gr;
 	// char optimize_w_gr;
 #endif
 } ENCODER;
@@ -306,10 +306,10 @@ typedef struct {
 #endif
 #if TEMPLATE_MATCHING_ON
 	int **temp_num;
-	int ***tempm_array;
+	// int ***tempm_array;
 	int ***roff;
 	int *array;
-	int w_gr;
+	// int w_gr;
 #endif
 	int **org;
 } DECODER;

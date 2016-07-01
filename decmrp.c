@@ -144,7 +144,7 @@ DECODER *init_decoder(FILE *fp)
 	dec->quadtree_depth = (getbits(fp, 1))? QUADTREE_DEPTH : -1;
 
 #if TEMPLATE_MATCHING_ON
-	dec->w_gr = getbits(fp, 4);
+	// dec->w_gr = getbits(fp, 4);
 #endif
 
 	dec->maxprd = dec->maxval << dec->coef_precision;
@@ -214,7 +214,7 @@ DECODER *init_decoder(FILE *fp)
 
 void decode_predictor(FILE *fp, DECODER *dec)	//when AUTO_PRD_ORDER 1
 {
-	int k, cl, coef, sgn, d, zero_m, coef_m;
+	int k, cl, coef, sgn, d, zero_m, coef_m, flg_cl=-1;
 	PMODEL *pm;
 	int b;
 
@@ -239,6 +239,7 @@ void decode_predictor(FILE *fp, DECODER *dec)	//when AUTO_PRD_ORDER 1
 		set_spmodel(pm, dec->max_coef + 1, coef_m);
 		for (k = d * (d + 1); k < (d + 1) * (d + 2); k++) {
 			for (cl = 0; cl < dec->num_class; cl++) {
+				if(cl == flg_cl)	continue;
 				coef = rc_decode(fp, dec->rc, pm, dec->max_coef + 2, dec->max_coef + 4)
 					- (dec->max_coef + 2);
 				if (coef == 1) {
@@ -248,6 +249,7 @@ void decode_predictor(FILE *fp, DECODER *dec)	//when AUTO_PRD_ORDER 1
 					if (sgn) {
 						coef = -coef;
 					}
+					if(coef == TEMPLATE_FLAG)	flg_cl = cl;
 					dec->predictor[cl][k] = coef;
 				} else {
 					dec->predictor[cl][k] = 0;
@@ -257,9 +259,13 @@ void decode_predictor(FILE *fp, DECODER *dec)	//when AUTO_PRD_ORDER 1
 	}
 	for (cl = 0; cl < dec->num_class; cl++) {
 		d = 0;
+
+		if(dec->predictor[cl][0] == TEMPLATE_FLAG){
+			dec->nzconv[cl][0] = -1;
+		}
+
 		for (k = 0; k < dec->max_prd_order; k++) {
-			if(dec->predictor[cl][k] ==TEMPLATE_FLAG){
-				dec->nzconv[cl][d++] = TEMPLATE_FLAG;
+			if(dec->nzconv[cl][0] == -1){
 				d=-1;
 				break;
 			} else if (dec->predictor[cl][k] != 0) {
@@ -541,8 +547,8 @@ int calc_udec(DECODER *dec, int y, int x)
 void TemplateM (DECODER *dec, int dec_y, int dec_x){
 	int bx, by, g, h, i, j, k, count, area1[AREA], area_o[AREA], *roff_p, *org_p,  x_size = X_SIZE, sum1, sum_o, temp_x, temp_y, break_flag=0;
 	double ave1, ave_o, nas;
-	int tm_array[(Y_SIZE * X_SIZE * 2 )*4] = {0};
-	TM_Member tm[Y_SIZE * X_SIZE * 2];
+	int tm_array[(Y_SIZE * (X_SIZE * 2 + 1))*4] = {0};
+	TM_Member tm[Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE ];
 	TM_Member temp;
 
 	#if CHECK_DEBUG_TM
@@ -577,10 +583,10 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 
 	for( by = dec_y - Y_SIZE; by <= dec_y; by++){
 		if( by < 0 || by > dec->height)continue;
-		for( bx = dec_x - x_size; bx <= dec_x + x_size; bx++){
+		for( bx = dec_x - x_size; bx <= dec_x + x_size  ; bx++){
 			if( bx <0 || bx > dec->width)continue;
 			if(by==dec_y && bx >= dec_x)break_flag=1;
-			if(break_flag==1)break;
+			if( break_flag )break;
 
 			roff_p = dec->roff[by][bx];
 			org_p = &dec->org[by][bx];
@@ -617,7 +623,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 			#endif
 			j++;
 		}//bx fin
-		if(break_flag==1)break;
+		if( break_flag )break;
 	}//by fin
 	break_flag=0;
 	// printf("temp_num: %d\n", j);
@@ -663,8 +669,9 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 //一番マッチングコストが小さいものを予測値のひとつに加える
 	temp_y = tempm_array[1];
 	temp_x = tempm_array[2];
+	ave_o = dec->array[0];
 	// ave_o = tm[0].ave_o;
-	sum_o = ave_o = 0;
+	/*sum_o = ave_o = 0;
 	roff_p = dec->roff[temp_y][temp_x];
 	org_p = &dec->org[temp_y][temp_x];
 	for(i=0; i<AREA; i++){
@@ -676,7 +683,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 
 	#if CHECK_DEBUG_TM
 		printf("org: %d | ave_o: %f | ave1: %f\n",dec->org[temp_y][temp_x], ave_o, ave1);
-	#endif
+	#endif*/
 
 	if(dec_y ==0 && dec_x < 3){
 		exam_array[dec_y][dec_x] = (dec->maxval > 1) << dec->coef_precision;
@@ -990,7 +997,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 
 #if TEMPLATE_MATCHING_ON
 	exam_array = (int **)alloc_2d_array(dec->height, dec->width, sizeof(int));	//最もマッチングコストが小さい画素の輝度値を保存
-	dec->w_gr = W_GR;
+	// dec->w_gr = W_GR;
 #endif
 
 	bitmask = (1 << dec->pm_accuracy) - 1;
