@@ -545,8 +545,8 @@ int calc_udec(DECODER *dec, int y, int x)
 void TemplateM (DECODER *dec, int dec_y, int dec_x){
 	int bx, by, g, h, i, j, k, count, area1[AREA], area_o[AREA], *roff_p, *org_p,  x_size = X_SIZE, sum1, sum_o, temp_x, temp_y, break_flag=0;
 	double ave1, ave_o, nas;
-	int tm_array[(Y_SIZE * X_SIZE * 2 )*4] = {0};
-	TM_Member tm[Y_SIZE * X_SIZE * 2];
+	int tm_array[(Y_SIZE * (X_SIZE * 2 + 1))*4] = {0};
+	TM_Member tm[Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE ];
 	TM_Member temp;
 
 	#if CHECK_DEBUG_TM
@@ -581,7 +581,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 
 	for( by = dec_y - Y_SIZE; by <= dec_y; by++){
 		if( by < 0 || by > dec->height)continue;
-		for( bx = dec_x - x_size; bx <= dec_x + x_size - 1 ; bx++){
+		for( bx = dec_x - x_size; bx <= dec_x + x_size  ; bx++){
 			if( bx <0 || bx > dec->width)continue;
 			if(by==dec_y && bx >= dec_x)break_flag=1;
 			if( break_flag )break;

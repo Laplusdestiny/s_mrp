@@ -761,8 +761,8 @@ void*** TemplateM (ENCODER *enc) {
 ///////メモリ確保////////
 /////////////////////////
 
-	tm_array = (int *)alloc_mem((Y_SIZE * X_SIZE * 2 + X_SIZE) * 4 * sizeof(int)) ;
-	TM_Member tm[Y_SIZE * X_SIZE * 2 + X_SIZE ];
+	tm_array = (int *)alloc_mem((Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE) * 4 * sizeof(int)) ;
+	TM_Member tm[Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE ];
 	// init_2d_array(exam_array, enc->height, enc->width, enc->maxval > 1);
 
 ///////////////////////////
@@ -806,7 +806,7 @@ for(y = 0 ; y < enc->height ; y++){
 		}
 		for (by = y - Y_SIZE ; by <= y ; by++) {
 			if((by < 0) || (by > enc->height))continue;
-			for (bx = x - x_size ; bx <= x + x_size - 1 ; bx++) {
+			for (bx = x - x_size ; bx <= x + x_size  ; bx++) {
 				if((bx < 0) || (bx > enc->width))continue;
 				if(by==y && bx >= x) break_flag=1;
 				if(break_flag == 1)break;
@@ -2280,7 +2280,7 @@ cost_t optimize_predictor(ENCODER *enc)	//when AUTO_PRD_ORDER 1
 #ifndef RAND_MAX
 #  define RAND_MAX 32767
 #endif
-printf("\n");
+
 	for (cl = 0; cl < enc->num_class; cl++) {
 		// num_nzc = enc->num_nzcoef[cl];
 		num_eff = 0;
@@ -2300,7 +2300,7 @@ printf("\n");
 			set_prd_pels(enc);
 		}
 		enc->num_search[cl] = num_eff + 3;
-		// printf("[%2d] ", cl);
+		/*printf("[%2d] ", cl);
 		if(enc->num_nzcoef[cl] == -1){
 			for(k=0; k<5; k++){
 				printf("%2d," ,enc->predictor[cl][enc->nzconv[cl][k]]);
@@ -2310,7 +2310,7 @@ printf("\n");
 				printf("%2d," ,enc->predictor[cl][enc->nzconv[cl][k]]);
 			}
 		}
-		printf("\n");
+		printf("\n");*/
 	}
 	save_prediction_value(enc);
 	predict_region(enc, 0, 0, enc->height, enc->width);
@@ -2894,7 +2894,8 @@ printf ("op_group -> %d" ,(int)cost);	//しきい値毎に分散を最適化し�
 	enc->w_gr = new_gr;
 	printf("%d]\n	", enc->w_gr);
 #endif
-	printf (" op_c -> %d" ,(int)cost);	//分散毎に確率モデルの形状を最適化した時のコスト
+	printf (" op_c ->" ,(int)cost);	//分散毎に確率モデルの形状を最適化した時のコスト
+	// printf (" op_c -> %d" ,(int)cost);	//分散毎に確率モデルの形状を最適化した時のコスト
 
 	free(cbuf);
 	free(dpcost);
@@ -4147,7 +4148,6 @@ int main(int argc, char **argv)
 	// enc->w_gr = W_GR;	//マッチングコストに対する重みの分散値の初期化
 #endif
 
-	printf("1st loop\n");
 	/* 1st loop */
 	//単峰性確率モデルによる算術符号化
 	enc->optimize_loop = 1;
