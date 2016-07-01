@@ -33,7 +33,7 @@
 
 /****** OPTIMIZE ***************************/
 #define OPT_SIDEINFO		1 // 1 : side-info into consideration (standard), 0 : neglect side-info
-#define MAX_ITERATION	5	//100
+#define MAX_ITERATION	100	//100
 #define EXTRA_ITERATION	10
 #define AUTO_DEL_CL		0
 #define AUTO_PRD_ORDER	1
@@ -260,9 +260,9 @@ typedef struct {
 #endif
 #if TEMPLATE_MATCHING_ON
 	int **temp_num;
-	int ***tempm_array;
+	int ***array;
 	int **mmc;
-	int w_gr;
+	// int w_gr;
 	// char optimize_w_gr;
 #endif
 } ENCODER;
@@ -304,10 +304,10 @@ typedef struct {
 #endif
 #if TEMPLATE_MATCHING_ON
 	int **temp_num;
-	int ***tempm_array;
+	// int ***tempm_array;
 	int ***roff;
 	int *array;
-	int w_gr;
+	// int w_gr;
 #endif
 	int **org;
 } DECODER;

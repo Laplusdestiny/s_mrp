@@ -480,7 +480,7 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 
 #if TEMPLATE_MATCHING_ON
 	enc->temp_num = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
-	enc->tempm_array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
+	enc->array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE, sizeof(int));
 #endif
 	return (enc);
 }
@@ -806,10 +806,10 @@ for(y = 0 ; y < enc->height ; y++){
 		}
 		for (by = y - Y_SIZE ; by <= y ; by++) {
 			if((by < 0) || (by > enc->height))continue;
-			for (bx = x - x_size ; bx <= x + x_size - 1; bx++) {
+			for (bx = x - x_size ; bx <= x + x_size - 1 ; bx++) {
 				if((bx < 0) || (bx > enc->width))continue;
 				if(by==y && bx >= x) break_flag=1;
-				if(break_flag==1)break;
+				if(break_flag == 1)break;
 
 				roff_p = enc->roff[by][bx];
 				org_p = &enc->org[by][bx];
@@ -846,7 +846,7 @@ for(y = 0 ; y < enc->height ; y++){
 
 				j++;
 			}//bx fin
-			if(break_flag==1)break;
+			if(break_flag == 1)break;
 		}//by fin
 		break_flag=0;
 /////////////////////////
@@ -885,18 +885,18 @@ for(y = 0 ; y < enc->height ; y++){
 		}
 
 		for(k = 0 ; k < MAX_DATA_SAVE ; k++){
-			enc->tempm_array[y][x][k] = tm[k].ave_o;
+			enc->array[y][x][k] = tm[k].ave_o;
 		}
 //一番マッチングコストが小さいものを予測値のひとつに加える
 		temp_y = tempm_array[y][x][1];
 		temp_x = tempm_array[y][x][2];
-		ave_o = enc->tempm_array[y][x][0];
+		ave_o = enc->array[y][x][0];
 
 		if(y==0 && x < 3){
 			exam_array[y][x] = (enc->maxval > 1) << enc->coef_precision;	//事例がないため，輝度値の中央
 		} else {
 			exam_array[y][x] = (int)((double)enc->org[temp_y][temp_x] - ave_o + ave1) << enc->coef_precision;
-			if(exam_array[y][x] < 0 || exam_array[y][x] > enc->maxval)	exam_array[y][x] = (int)ave1 << enc->coef_precision;
+			if(exam_array[y][x] < 0 || exam_array[y][x] > enc->maxprd)	exam_array[y][x] = (int)ave1 << enc->coef_precision;
 		}
 	}//x fin
 }//y fin
@@ -1161,8 +1161,9 @@ cost_t design_predictor(ENCODER *enc, int f_mmse)
 		if(cl == 0){
 			nzc_p[0] = -1;	//nzcの頭にフラグを入れる
 			for(i=0; i < enc->prd_order; i++){
-				enc->predictor[cl][i] = TEMPLATE_FLAG;
+				enc->predictor[cl][i] = 0;
 			}
+			enc->predictor[cl][0] = TEMPLATE_FLAG;
 			continue;
 		}
 #endif
@@ -2279,7 +2280,7 @@ cost_t optimize_predictor(ENCODER *enc)	//when AUTO_PRD_ORDER 1
 #ifndef RAND_MAX
 #  define RAND_MAX 32767
 #endif
-
+printf("\n");
 	for (cl = 0; cl < enc->num_class; cl++) {
 		// num_nzc = enc->num_nzcoef[cl];
 		num_eff = 0;
@@ -2299,7 +2300,7 @@ cost_t optimize_predictor(ENCODER *enc)	//when AUTO_PRD_ORDER 1
 			set_prd_pels(enc);
 		}
 		enc->num_search[cl] = num_eff + 3;
-		printf("[%2d] ", cl);
+		// printf("[%2d] ", cl);
 		if(enc->num_nzcoef[cl] == -1){
 			for(k=0; k<5; k++){
 				printf("%2d," ,enc->predictor[cl][enc->nzconv[cl][k]]);
@@ -2627,7 +2628,7 @@ cost_t optimize_group_mult(ENCODER *enc)
 	int x, y, th1, th0, k, u, cl, gr, prd, e, base, frac, peak,m_gr,count;
 	int **trellis;
 
-#if TEMPLATE_MATCHING_ON
+#if 0
 	int new_gr=0, before_gr=0;
 	cost_t  w_gr_cost=0;
 #endif
@@ -2871,7 +2872,8 @@ printf ("op_group -> %d" ,(int)cost);	//しきい値毎に分散を最適化し�
 			}
 		}
 	}
-#if TEMPLATE_MATCHING_ON
+#if 0
+// #if TEMPLATE_MATCHING_ON
 	// 片側ラプラス関数の分散の決定
 	printf(" [opt w_gr: ");
 	before_gr = enc->w_gr;
@@ -2996,13 +2998,13 @@ int write_header(ENCODER *enc, FILE *fp)
 	bits += putbits(fp, 1, (enc->quadtree_depth < 0)? 0 : 1);
 
 #if TEMPLATE_MATCHING_ON
-	if(enc->w_gr < 0){
+	/*if(enc->w_gr < 0){
 		enc->w_gr = 0;
 	} else if (enc->w_gr > 15){
 		enc->w_gr = 15;
-	}
-	bits += putbits(fp, 4, enc->w_gr);
-	printf("w_gr: %d\n", enc->w_gr);
+	}*/
+	// bits += putbits(fp, 4, enc->w_gr);
+	// printf("w_gr: %d\n", enc->w_gr);
 #endif
 
 	return (bits);
@@ -4142,10 +4144,10 @@ int main(int argc, char **argv)
 	tempm_array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
 	exam_array = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
 	TemplateM(enc);
-	enc->w_gr = W_GR;	//マッチングコストに対する重みの分散値の初期化
+	// enc->w_gr = W_GR;	//マッチングコストに対する重みの分散値の初期化
 #endif
 
-
+	printf("1st loop\n");
 	/* 1st loop */
 	//単峰性確率モデルによる算術符号化
 	enc->optimize_loop = 1;
