@@ -481,7 +481,7 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 
 #if TEMPLATE_MATCHING_ON
 	enc->temp_num = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
-	enc->tempm_array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
+	enc->array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
 #endif
 	return (enc);
 }
@@ -902,7 +902,6 @@ for(y = 0 ; y < enc->height ; y++){
 		}
 	}//x fin
 }//y fin
-printf("check1\n");
 // printf("number of hours worked:%lf[s]\n",(float)(end - start)/CLOCKS_PER_SEC);
 
 
@@ -910,8 +909,8 @@ printf("check1\n");
 ////////メモリ解放///////////
 ////////////////////////////
 
-	// free(tm_array);
-	// return(0);
+	free(tm_array);
+	return(0);
 	// return(array);
 }
 #endif
@@ -1252,7 +1251,6 @@ cost_t design_predictor(ENCODER *enc, int f_mmse)
 			mat[index[j]][enc->prd_order] = 0;
 		}
 	}//cl loop fin
-	printf("design predictor\n");
 	free(weight);
 	free(index);
 	free(mat);
@@ -1735,12 +1733,9 @@ cost_t optimize_class(ENCODER *enc)
 			set_prdbuf(enc, prdbuf, errbuf, y, x, blksize);
 			vbs_class(enc, prdbuf, errbuf, y, x,
 				blksize, enc->width, level, &blk);
-			// printf("%2d ", enc->class[y][x]);
 		}
-		// printf("\n");
 	}
-#if 1
-// #if CHECK_DEBUG
+#if CHECK_CLASS
 	for(y=0; y<enc->height; y += blksize){
 		for(x=0; x<enc->width; x += blksize){
 			printf("%2d ", enc->class[y][x]);
@@ -2290,9 +2285,7 @@ cost_t optimize_predictor(ENCODER *enc)	//when AUTO_PRD_ORDER 1
 		// num_nzc = enc->num_nzcoef[cl];
 		num_eff = 0;
 		if (enc->cl_hist[cl] == 0) continue;
-		// if(enc->predictor[cl][0] == TEMPLATE_FLAG) continue;
 
-		// printf("[%2d]: %d", cl, enc->num_nzcoef[cl]);
 		if(enc->num_nzcoef[cl] != -1){
 			for (k = 0; k < enc->num_search[cl]; k++) {
 				if (enc->num_nzcoef[cl] == 0) continue;
@@ -2305,7 +2298,8 @@ cost_t optimize_predictor(ENCODER *enc)	//when AUTO_PRD_ORDER 1
 			set_prd_pels(enc);
 		}
 		enc->num_search[cl] = num_eff + 3;
-		/*printf("[%2d] ", cl);
+#if CHECK_PREDICTOR
+		printf("[%2d] ", cl);
 		if(enc->num_nzcoef[cl] == -1){
 			for(k=0; k<5; k++){
 				printf("%2d," ,enc->predictor[cl][enc->nzconv[cl][k]]);
@@ -2315,7 +2309,8 @@ cost_t optimize_predictor(ENCODER *enc)	//when AUTO_PRD_ORDER 1
 				printf("%2d," ,enc->predictor[cl][enc->nzconv[cl][k]]);
 			}
 		}
-		printf("\n");*/
+		printf("\n");
+#endif
 	}
 	save_prediction_value(enc);
 	predict_region(enc, 0, 0, enc->height, enc->width);
@@ -3663,7 +3658,7 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 					pm->cumfreq[enc->maxval + 1]);
 			}
 			#if CHECK_DEBUG
-				// printf("e[%d][%d]:%d|mask:%d\n", y, x, e, enc->mask[y][x]);
+				printf("e[%d][%d]: %d\n", y, x, e);
 			#endif
 		}
 	}
@@ -4280,12 +4275,14 @@ int main(int argc, char **argv)
 		cost = optimize_class(enc);		//クラス情報の最適化
 		side_cost += sc = encode_class(NULL, enc, 1);	//クラス情報の符号量を見積もる
 		printf(" %d[%d] (%d)", (int)cost, (int)sc, (int)side_cost);
+#if CHECK_CLASS
 		for(cl=0; cl<enc->num_class; cl++){
 			if(enc->num_nzcoef[cl] == -1){
 				printf("[TEMP_CL: %d]" ,cl);
 				break;
 			}
 		}
+#endif
 #if OPTIMIZE_MASK_LOOP
 		// if (sw != 0) {
 		cost = optimize_mask(enc);

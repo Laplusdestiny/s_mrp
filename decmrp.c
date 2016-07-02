@@ -1002,6 +1002,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 
 	bitmask = (1 << dec->pm_accuracy) - 1;
 	shift = dec->coef_precision - dec->pm_accuracy;
+	printf("Start Decode Image\n");
 	for (y = 0; y < dec->height; y++) {
 		for (x = 0; x < dec->width; x++) {
 			u = calc_udec(dec, y, x);
@@ -1009,9 +1010,6 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 #if TEMPLATE_MATCHING_ON
 			TemplateM(dec, y, x);
 #endif
-			/*#if CHECK_DEBUG
-				printf(" -> mask: %d\n", dec->mask[y][x]);
-			#endif*/
 
 			if (dec->mask[y][x] == 0){
 				cl = dec->class[y][x];
@@ -1050,8 +1048,8 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 			dec->err[y][x] = e;	//特徴量算出に用いる
 
 			#if CHECK_DEBUG
-				// printf("d[%d][%d]:%d\n", y, x, p);
-				printf("%d ", p);
+				printf("d[%d][%d]: %d\n", y, x, p);
+				// printf("%d\n", (char)p);
 			#endif
 
 		}
@@ -1142,7 +1140,6 @@ int main(int argc, char **argv)
 
 	dec->rc = rc_init();
 	rc_startdec(fp, dec->rc);
-
 	decode_class(fp, dec);
 	decode_predictor(fp, dec);
 	decode_threshold(fp, dec);

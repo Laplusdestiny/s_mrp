@@ -143,7 +143,9 @@
 
 /*********DEBUG******************************/
 #define CHECK_DEBUG_TM 	0
-#define CHECK_DEBUG 		0
+#define CHECK_DEBUG 		1
+#define CHECK_CLASS		0
+#define CHECK_PREDICTOR	0
 #define check_y			0
 #define check_x			5
 
