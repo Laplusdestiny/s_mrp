@@ -755,7 +755,7 @@ int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出
 #if TEMPLATE_MATCHING_ON
 void*** TemplateM (ENCODER *enc) {
 	int x , y , bx , by , g , h , i , j=0 , k , count , area1[AREA] , area_o[AREA] , *tm_array ,
-		*roff_p , *org_p , x_size = X_SIZE , sum1 , sum_o, temp_x, temp_y, break_flag=0;
+		*roff_p , *org_p , x_size = X_SIZE , sum1 , sum_o, temp_x, temp_y, break_flag=0, **encval;
 	double ave1=0 , ave_o , nas ;
 
 /////////////////////////
@@ -764,7 +764,13 @@ void*** TemplateM (ENCODER *enc) {
 
 	tm_array = (int *)alloc_mem((Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE) * 4 * sizeof(int)) ;
 	TM_Member tm[Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE ];
+	encval = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
 	// init_2d_array(exam_array, enc->height, enc->width, enc->maxval > 1);
+	for(y=0; y<enc->height; y++){
+		for(x=0; x<enc->width; x++){
+			encval[y][x] = enc->org[y][x] << enc->coef_precision;
+		}
+	}
 
 ///////////////////////////
 ////////画像の走査/////////
@@ -778,7 +784,7 @@ for(y = 0 ; y < enc->height ; y++){
 		memset(&tm, 0, sizeof(tm));
 
 		roff_p = enc->roff[y][x];//init_ref_offsetが入っている．予測器の範囲指定と番号付け
-		org_p = &enc->org[y][x];
+		org_p = &encval[y][x];
 
 		sum1 = 0;
 		for(i=0;i < AREA; i++){//市街地距離AREA個分
@@ -814,7 +820,7 @@ for(y = 0 ; y < enc->height ; y++){
 				if ( break_flag )	break;
 
 				roff_p = enc->roff[by][bx];
-				org_p = &enc->org[by][bx];
+				org_p = &encval[by][bx];
 
 				sum_o = 0;
 				for(i=0;i < AREA; i++){//市街地距離AREA個分
@@ -895,10 +901,10 @@ for(y = 0 ; y < enc->height ; y++){
 		ave_o = enc->array[y][x][0];
 
 		if(y==0 && x < 3){
-			exam_array[y][x] = (enc->maxval > 1) << enc->coef_precision;	//事例がないため，輝度値の中央
+			exam_array[y][x] = (enc->maxprd > 1) ;	//事例がないため，輝度値の中央
 		} else {
-			exam_array[y][x] = (int)((double)enc->org[temp_y][temp_x] - ave_o + ave1) << enc->coef_precision;
-			if(exam_array[y][x] < 0 || exam_array[y][x] > enc->maxprd)	exam_array[y][x] = (int)ave1 << enc->coef_precision;
+			exam_array[y][x] = (int)((double)encval[temp_y][temp_x] - ave_o + ave1) ;
+			if(exam_array[y][x] < 0 || exam_array[y][x] > enc->maxprd)	exam_array[y][x] = (int)ave1;
 		}
 	}//x fin
 }//y fin
@@ -1735,6 +1741,22 @@ cost_t optimize_class(ENCODER *enc)
 				blksize, enc->width, level, &blk);
 		}
 	}
+#if TEMPLATE_MATCHING_ON
+	int cl;
+	for(cl=0; cl<enc->num_class; cl++){
+		if(enc->optimize_loop==1){
+			if(enc->predictor[cl][0] == TEMPLATE_FLAG){
+				enc->temp_cl = cl;
+				break;
+			}
+		} else if(enc->optimize_loop==2){
+			if(enc->nzconv[cl][0] == -1){
+				enc->temp_cl == cl;
+				break;
+			}
+		}
+	}
+#endif
 #if CHECK_CLASS
 	for(y=0; y<enc->height; y += blksize){
 		for(x=0; x<enc->width; x += blksize){
@@ -2298,7 +2320,8 @@ cost_t optimize_predictor(ENCODER *enc)	//when AUTO_PRD_ORDER 1
 			set_prd_pels(enc);
 		}
 		enc->num_search[cl] = num_eff + 3;
-#if CHECK_PREDICTOR
+// #if CHECK_PREDICTOR
+#if 0
 		printf("[%2d] ", cl);
 		if(enc->num_nzcoef[cl] == -1){
 			for(k=0; k<5; k++){
@@ -2999,15 +3022,9 @@ int write_header(ENCODER *enc, FILE *fp)
 	bits += putbits(fp, 3, enc->pm_accuracy);
 	bits += putbits(fp, 1, (enc->quadtree_depth < 0)? 0 : 1);
 
-// #if TEMPLATE_MATCHING_ON
-#if 0
-	if(enc->w_gr < 0){
-		enc->w_gr = 0;
-	} else if (enc->w_gr > 15){
-		enc->w_gr = 15;
-	}*/
-	// bits += putbits(fp, 4, enc->w_gr);
-	// printf("w_gr: %d\n", enc->w_gr);
+#if TEMPLATE_MATCHING_ON
+	bits += putbits(fp, 6, enc->temp_cl);
+	printf("TEMP_CL : %d\n", enc->temp_cl);
 #endif
 
 	return (bits);
@@ -3243,7 +3260,7 @@ int encode_class(FILE *fp, ENCODER *enc, int flag)
 
 int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 {
-	int cl, coef, sgn, k, m, min_m, bits, d, flg_cl=-1;
+	int cl, coef, sgn, k, m, min_m, bits, d;
 	cost_t cost, min_cost, t_cost;
 	PMODEL *pm;
 	uint cumb;
@@ -3255,17 +3272,12 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 	t_cost = 0.0;
 	for (d = 0; d < enc->prd_mhd; d++) {
 		min_cost = INT_MAX;
-		flg_cl = -1;
 		for (m = min_m = 0; m < 8; m++) {
 			cost = 0.0;
 			for (k = d * (d + 1); k < (d + 1) * (d + 2); k++) {
 				for (cl = 0; cl < enc->num_class; cl++) {
 					coef = enc->predictor[cl][k];
-					if(cl == flg_cl) continue;
-					if(coef == TEMPLATE_FLAG){
-						flg_cl = cl;
-						continue;
-					}
+					if(cl == enc->temp_cl) continue;
 					if (coef < 0) coef = -coef;
 					cost += enc->coef_cost[enc->zero_m[d]][m][coef];
 				}
@@ -3277,17 +3289,12 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 		}
 		if (flag) enc->coef_m[d] = min_m;
 		min_cost = INT_MAX;
-		flg_cl = -1;
 		for (m = min_m = 0; m < NUM_ZMODEL; m++) {
 			cost = 0.0;
 			for (k = d * (d + 1); k < (d + 1) * (d + 2); k++) {
 				for (cl = 0; cl < enc->num_class; cl++) {
 					coef = enc->predictor[cl][k];
-					if(cl == flg_cl) continue;
-					if(coef == TEMPLATE_FLAG){
-						flg_cl = cl;
-						continue;
-					}
+					if(cl == enc->temp_cl) continue;
 					if (coef < 0) coef = -coef;
 					cost += enc->coef_cost[m][enc->coef_m[d]][coef];
 				}
@@ -3300,8 +3307,22 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 		if (flag) enc->zero_m[d] = min_m;
 		t_cost += min_cost;
 	}
-	flg_cl = -1;
 	bits = (int)t_cost;
+#if CHECK_PREDICTOR
+	if(fp != NULL){
+		for(cl=0; cl<enc->num_class; cl++){
+			if(cl == enc->temp_cl){
+				printf("[%2d] TEMPLATE_CLASS\n", cl);
+			} else {
+				printf("[%2d]", cl);
+				for(k=0; k<enc->num_nzcoef[cl]; k++){
+					printf("%d ", enc->predictor[cl][k]);
+				}
+				printf("\n");
+			}
+		}
+	}
+#endif
 	/* Arithmetic */
 	if (fp != NULL) {
 		bits = 0;
@@ -3319,12 +3340,9 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 			for (k = d * (d + 1); k < (d + 1) * (d + 2); k++) {
 				for (cl = 0; cl < enc->num_class; cl++) {
 					coef = enc->predictor[cl][k];
-					if(cl == flg_cl)continue;	//clがテンプレートマッチングをするクラスならcontinue
+					if(cl == enc->temp_cl)continue;	//clがテンプレートマッチングをするクラスならcontinue
 					if (coef == 0) {
 						rc_encode(fp, enc->rc, 0, zrfreq, TOT_ZEROFR);
-					// } else if(coef == TEMPLATE_FLAG){
-						// putbits(fp,1, -1);
-						// flg_cl = cl;
 					} else {
 						rc_encode(fp, enc->rc, zrfreq, nzfreq, TOT_ZEROFR);
 						sgn = (coef < 0)? 1 : 0;
@@ -3332,9 +3350,6 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 						rc_encode(fp, enc->rc, pm->cumfreq[coef] - cumb,  pm->freq[coef],
 							pm->cumfreq[pm->size] - cumb);
 						rc_encode(fp, enc->rc, sgn, 1, 2);
-						if(coef == TEMPLATE_FLAG){
-							flg_cl = cl;
-						}
 					}
 				}
 			}
@@ -4457,16 +4472,17 @@ int main(int argc, char **argv)
 #if LOG_PUT_OUT_ENC
 	print_predictor(enc->predictor, enc->max_prd_order, enc->num_class, enc->max_coef, outfile);
 	print_threshold(enc->th, enc->num_group, enc->num_class, enc->pmlist, NULL, outfile);
-//		print_class(enc->class, enc->num_class, enc->height, enc->width, outfile);
+	// print_class(enc->class, enc->num_class, enc->height, enc->width, outfile);
 	print_class_color(enc->class, enc->num_class, enc->height, enc->width, outfile);
+	output_class_map(enc->class, enc->num_class, enc->height, enc->width, outfile);
 	print_block_size(enc->org, enc->qtmap, enc->quadtree_depth, enc->height, enc->width, outfile);
 	print_class_and_block(enc->class, enc->num_class, enc->qtmap, enc->quadtree_depth, enc->height, enc->width, outfile);
-  print_mask(enc->mask, enc->height, enc->width, outfile);
+	print_mask(enc->mask, enc->height, enc->width, outfile);
 	print_amp_chara(enc->predictor, enc->max_prd_order, enc->num_class, enc->height, enc->width, outfile);
 	print_rate_map(enc, outfile);
 	calc_var_upara(enc, outfile);
- 		 print_rate_compare_map(enc, outfile);
- 		 print_rate_compare_class_map(enc, outfile);
+	print_rate_compare_map(enc, outfile);
+	print_rate_compare_class_map(enc, outfile);
 #endif
 	return (0);
 }

@@ -143,11 +143,11 @@
 
 /*********DEBUG******************************/
 #define CHECK_DEBUG_TM 	0
-#define CHECK_DEBUG 		1
+#define CHECK_DEBUG 		0
 #define CHECK_CLASS		0
-#define CHECK_PREDICTOR	0
-#define check_y			0
-#define check_x			5
+#define CHECK_PREDICTOR	1
+#define check_y			100
+#define check_x			100
 
 #define  OPENMP_ON		1
 #define NUM_THREADS		8	//depend on server threads num
@@ -266,8 +266,7 @@ typedef struct {
 	int **temp_num;
 	int ***array;
 	int **mmc;
-	// int w_gr;
-	// char optimize_w_gr;
+	int temp_cl;
 #endif
 } ENCODER;
 
@@ -311,7 +310,7 @@ typedef struct {
 	// int ***tempm_array;
 	int ***roff;
 	int *array;
-	// int w_gr;
+	int temp_cl;
 #endif
 	int **org;
 } DECODER;
@@ -341,6 +340,7 @@ void rc_startdec(FILE *, RANGECODER *);
 void print_predictor(int **, int, int, int, char *);
 void print_threshold(int **, int, int, PMODEL **, int *, char *);
 void print_class(char **, int, int, int, char *);
+void output_class_map(char **, int, int, int, char *);
 void print_class_color(char **, int, int, int, char *);
 void print_class_and_block(char **, int, char ***, int, int, int, char *);
 void print_mask(char **, int, int, char *);

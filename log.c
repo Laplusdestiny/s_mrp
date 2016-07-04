@@ -174,6 +174,28 @@ void print_class(char **class, int num_class, int height, int width, char *outfi
 	return;
 }
 
+void output_class_map(char **class, int num_class, int height, int width, char *outfile)
+{
+	int i, j, step;
+	char *name;
+	char file[256];
+	FILE *fp;
+
+	name = strrchr( outfile, BS);
+	name++;
+	sprintf(file, LOG_CL_DIR"%s_class_map.csv", name);
+	fp = fileopen(file, "wb");
+	step = 255 / num_class;
+	for (i = 0; i < height; i++) {
+		for (j = 0; j < width; j++) {
+			fprintf(fp , "%d,", class[i][j]);
+		}
+		fprintf(fp, "\n");
+	}
+	fclose(fp);
+	return;
+}
+
 void print_class_color(char **class, int num_class, int height, int width, char *outfile)
 {
 	int y, x;

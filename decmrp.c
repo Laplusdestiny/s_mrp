@@ -144,7 +144,8 @@ DECODER *init_decoder(FILE *fp)
 	dec->quadtree_depth = (getbits(fp, 1))? QUADTREE_DEPTH : -1;
 
 #if TEMPLATE_MATCHING_ON
-	// dec->w_gr = getbits(fp, 4);
+	dec->temp_cl = getbits(fp, 6);
+	printf("TEMP_CL : %d\n", dec->temp_cl);
 #endif
 
 	dec->maxprd = dec->maxval << dec->coef_precision;
@@ -239,7 +240,7 @@ void decode_predictor(FILE *fp, DECODER *dec)	//when AUTO_PRD_ORDER 1
 		set_spmodel(pm, dec->max_coef + 1, coef_m);
 		for (k = d * (d + 1); k < (d + 1) * (d + 2); k++) {
 			for (cl = 0; cl < dec->num_class; cl++) {
-				if(cl == flg_cl)	continue;
+				if(cl == dec->temp_cl)	continue;
 				coef = rc_decode(fp, dec->rc, pm, dec->max_coef + 2, dec->max_coef + 4)
 					- (dec->max_coef + 2);
 				if (coef == 1) {
@@ -249,7 +250,6 @@ void decode_predictor(FILE *fp, DECODER *dec)	//when AUTO_PRD_ORDER 1
 					if (sgn) {
 						coef = -coef;
 					}
-					if(coef == TEMPLATE_FLAG)	flg_cl = cl;
 					dec->predictor[cl][k] = coef;
 				} else {
 					dec->predictor[cl][k] = 0;
@@ -260,18 +260,30 @@ void decode_predictor(FILE *fp, DECODER *dec)	//when AUTO_PRD_ORDER 1
 	for (cl = 0; cl < dec->num_class; cl++) {
 		d = 0;
 
-		if(dec->predictor[cl][0] == TEMPLATE_FLAG){
+		if(cl == dec->temp_cl){
+			dec->predictor[cl][0] = TEMPLATE_FLAG;
 			dec->nzconv[cl][0] = -1;
 		}
-
+		#if CHECK_PREDICTOR
+			printf("[%2d]", cl);
+		#endif
 		for (k = 0; k < dec->max_prd_order; k++) {
 			if(dec->nzconv[cl][0] == -1){
 				d=-1;
+				#if CHECK_PREDICTOR
+					printf("%d", dec->predictor[cl][0]);
+				#endif
 				break;
 			} else if (dec->predictor[cl][k] != 0) {
 				dec->nzconv[cl][d++] = k;
 			}
+			#if CHECK_PREDICTOR
+				printf("%d ", dec->predictor[cl][k]);
+			#endif
 		}
+		#if CHECK_PREDICTOR
+			printf("\n");
+		#endif
 		dec->num_nzcoef[cl] = d;
 	}
 	return;
@@ -545,11 +557,18 @@ int calc_udec(DECODER *dec, int y, int x)
 
 #if TEMPLATE_MATCHING_ON
 void TemplateM (DECODER *dec, int dec_y, int dec_x){
-	int bx, by, g, h, i, j, k, count, area1[AREA], area_o[AREA], *roff_p, *org_p,  x_size = X_SIZE, sum1, sum_o, temp_x, temp_y, break_flag=0;
+	int bx, by, g, h, i, j, k, count, area1[AREA], area_o[AREA], *roff_p, *org_p,  x_size = X_SIZE, sum1, sum_o, temp_x, temp_y, break_flag=0, **decval;
 	double ave1, ave_o, nas;
 	int tm_array[(Y_SIZE * (X_SIZE * 2 + 1))*4] = {0};
 	TM_Member tm[Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE ];
 	TM_Member temp;
+
+	decval = (int **)alloc_2d_array(dec->height, dec->width, sizeof(int));
+	for(i=0; i<dec->height; i++){
+		for(j=0; j<dec->width; j++){
+			decval[i][j] = dec->org[i][j];
+		}
+	}
 
 	#if CHECK_DEBUG_TM
 		printf("TemplateM[%3d][%3d]\n",dec_y, dec_x);
@@ -558,7 +577,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 	memset(&tm, 0, sizeof(tm));
 
 	roff_p = dec->roff[dec_y][dec_x];
-	org_p = &dec->org[dec_y][dec_x];
+	org_p = &decval[dec_y][dec_x];
 
 	sum1 = 0;
 	for(i=0; i<AREA; i++){
@@ -566,8 +585,8 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 		area1[i] = org_p[roff_p[i]];
 		sum1 += area1[i];
 		#if CHECK_DEBUG_TM
-				if(dec_y==check_y && dec_x==check_x)	printf("sum1: %d | area1[%d]:%d\n", sum1, i, area1[i]);
-			#endif
+			if(dec_y==check_y && dec_x==check_x)	printf("sum1: %d | area1[%d]:%d\n", sum1, i, area1[i]);
+		#endif
 	}
 	ave1 = (double)sum1 / AREA;
 		#if CHECK_DEBUG_TM
@@ -589,7 +608,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 			if( break_flag )break;
 
 			roff_p = dec->roff[by][bx];
-			org_p = &dec->org[by][bx];
+			org_p = &decval[by][bx];
 
 			sum_o = 0;
 			for(i=0; i<AREA; i++){
@@ -609,7 +628,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 			for(i=0; i<AREA; i++){
 				nas += fabs( ((double)area1[i] - ave1) - ((double)area_o[i] - ave_o));
 				#if CHECK_DEBUG_TM
-					printf("nas: %f | area1: %d | area_o: %d | ave1: %f | ave_o: %f\n", nas, area1[i], area_o[i], ave1, ave_o);
+					if(dec_y == check_y && dec_x == check_x)	printf("nas: %f | area1: %d | area_o: %d | ave1: %f | ave_o: %f\n", nas, area1[i], area_o[i], ave1, ave_o);
 				#endif
 			}
 
@@ -619,7 +638,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 			tm[j].ave_o = (int)ave_o;
 			tm[j].sum = (int)(nas * NAS_ACCURACY);
 			#if CHECK_DEBUG_TM
-			printf("B[%3d](%3d,%3d) sum: %d | ave: %d\n", tm[j].id, tm[j].by, tm[j].bx, tm[j].sum, tm[j].ave_o);
+				if(dec_y == check_y && dec_x == check_x)	printf("B[%3d](%3d,%3d) sum: %d | ave: %d\n", tm[j].id, tm[j].by, tm[j].bx, tm[j].sum, tm[j].ave_o);
 			#endif
 			j++;
 		}//bx fin
@@ -654,7 +673,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 		tm_array[k * 4 + count] = 0;
 		tm_array[k * 4 + count] = tm[k].sum;
 		#if CHECK_DEBUG_TM
-			printf("A[%3d](%3d,%3d) sum: %d | ave: %d\n", tm[k].id, tm[k].by, tm[k].bx, tm[k].sum, tm[k].ave_o);
+			if(dec_y == check_y && dec_x == check_x)	printf("A[%3d](%3d,%3d) sum: %d | ave: %d\n", tm[k].id, tm[k].by, tm[k].bx, tm[k].sum, tm[k].ave_o);
 		#endif
 	}
 
@@ -673,7 +692,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 	// ave_o = tm[0].ave_o;
 	/*sum_o = ave_o = 0;
 	roff_p = dec->roff[temp_y][temp_x];
-	org_p = &dec->org[temp_y][temp_x];
+	org_p = &decval[temp_y][temp_x];
 	for(i=0; i<AREA; i++){
 		area_o[i] = 0;
 		area_o[i] = org_p[roff_p[i]];
@@ -682,13 +701,13 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 	ave_o = (double)sum_o / AREA;
 
 	#if CHECK_DEBUG_TM
-		printf("org: %d | ave_o: %f | ave1: %f\n",dec->org[temp_y][temp_x], ave_o, ave1);
+		printf("org: %d | ave_o: %f | ave1: %f\n",decval[temp_y][temp_x], ave_o, ave1);
 	#endif*/
 
 	if(dec_y ==0 && dec_x < 3){
 		exam_array[dec_y][dec_x] = (dec->maxval > 1) << dec->coef_precision;
 	} else {
-		exam_array[dec_y][dec_x] = (int)((double)dec->org[temp_y][temp_x] - ave_o + ave1) << dec->coef_precision;
+		exam_array[dec_y][dec_x] = (int)((double)decval[temp_y][temp_x] - ave_o + ave1) << dec->coef_precision;
 		if(exam_array[dec_y][dec_x] < 0 || exam_array[dec_y][dec_x] > dec->maxprd)	exam_array[dec_y][dec_x] = (int)ave1 << dec->coef_precision;
 	}
 
