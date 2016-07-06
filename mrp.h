@@ -145,7 +145,7 @@
 #define CHECK_DEBUG_TM 	0
 #define CHECK_DEBUG 		0
 #define CHECK_CLASS		0
-#define CHECK_PREDICTOR	1
+#define CHECK_PREDICTOR	0
 #define check_y			100
 #define check_x			100
 
@@ -266,8 +266,8 @@ typedef struct {
 	int **temp_num;
 	int ***array;
 	int **mmc;
-	int temp_cl;
 #endif
+	int temp_cl;
 } ENCODER;
 
 typedef struct {
@@ -310,8 +310,8 @@ typedef struct {
 	// int ***tempm_array;
 	int ***roff;
 	int *array;
-	int temp_cl;
 #endif
+	int temp_cl;
 	int **org;
 } DECODER;
 

@@ -215,7 +215,7 @@ DECODER *init_decoder(FILE *fp)
 
 void decode_predictor(FILE *fp, DECODER *dec)	//when AUTO_PRD_ORDER 1
 {
-	int k, cl, coef, sgn, d, zero_m, coef_m, flg_cl=-1;
+	int k, cl, coef, sgn, d, zero_m, coef_m;
 	PMODEL *pm;
 	int b;
 
@@ -240,7 +240,9 @@ void decode_predictor(FILE *fp, DECODER *dec)	//when AUTO_PRD_ORDER 1
 		set_spmodel(pm, dec->max_coef + 1, coef_m);
 		for (k = d * (d + 1); k < (d + 1) * (d + 2); k++) {
 			for (cl = 0; cl < dec->num_class; cl++) {
+			#if TEMPLATE_MATCHING_ON
 				if(cl == dec->temp_cl)	continue;
+			#endif
 				coef = rc_decode(fp, dec->rc, pm, dec->max_coef + 2, dec->max_coef + 4)
 					- (dec->max_coef + 2);
 				if (coef == 1) {
@@ -259,11 +261,12 @@ void decode_predictor(FILE *fp, DECODER *dec)	//when AUTO_PRD_ORDER 1
 	}
 	for (cl = 0; cl < dec->num_class; cl++) {
 		d = 0;
-
+	#if TEMPLATE_MATCHING_ON
 		if(cl == dec->temp_cl){
 			dec->predictor[cl][0] = TEMPLATE_FLAG;
 			dec->nzconv[cl][0] = -1;
 		}
+	#endif
 		#if CHECK_PREDICTOR
 			printf("[%2d]", cl);
 		#endif
@@ -1025,9 +1028,10 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 	for (y = 0; y < dec->height; y++) {
 		for (x = 0; x < dec->width; x++) {
 			u = calc_udec(dec, y, x);
-
+			printf("check_1\n");
 #if TEMPLATE_MATCHING_ON
 			TemplateM(dec, y, x);
+			printf("check_2\n");
 #endif
 
 			if (dec->mask[y][x] == 0){
@@ -1042,6 +1046,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 				base >>= dec->pm_accuracy;
 				p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
 					- base;
+					printf("check_3-1\n");
 			}else{	//mult_peak
 
 				prd = set_mask_parameter(img, dec, y, x, u, bitmask, shift);
@@ -1050,6 +1055,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 					pm = mask->pm[0];
 					p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
 						- base;
+					printf("check_3-2\n");
 				}else{
 					pm = &dec->mult_pm;
 					set_pmodel_mult(pm,mask,dec->maxval+1);
@@ -1057,6 +1063,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 						if(y==check_y && x==check_x)printmodel(pm, dec->maxval+1);
 					#endif
 					p = rc_decode(fp, dec->rc, pm, 0, dec->maxval+1);
+					printf("check_3-3\n");
 				}
 			}
 
@@ -1065,7 +1072,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 			e = (p << 1) - prd - 1;
 			if (e < 0) e = -(e + 1);
 			dec->err[y][x] = e;	//特徴量算出に用いる
-
+			printf("check_4\n");
 			#if CHECK_DEBUG
 				printf("d[%d][%d]: %d\n", y, x, p);
 				// printf("%d\n", (char)p);
