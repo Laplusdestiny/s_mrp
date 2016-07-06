@@ -2786,7 +2786,7 @@ cost_t optimize_group_mult(ENCODER *enc)
 			}
 		}
 	}
-printf ("op_group -> %d" ,(int)cost);	//しきい値毎に分散を最適化した時のコスト算出
+printf ("[op_group] -> %d" ,(int)cost);	//しきい値毎に分散を最適化した時のコスト算出
 
 	/* optimize probability models */
 	if (enc->optimize_loop > 1 && enc->num_pmodel > 1) {
@@ -2918,7 +2918,7 @@ printf ("op_group -> %d" ,(int)cost);	//しきい値毎に分散を最適化し�
 	enc->w_gr = new_gr;
 	printf("%d]\n	", enc->w_gr);
 #endif
-	printf (" op_c ->");	//分散毎に確率モデルの形状を最適化した時のコスト
+	printf (" [op_c] ->");	//分散毎に確率モデルの形状を最適化した時のコスト
 	// printf (" op_c -> %d" ,(int)cost);	//分散毎に確率モデルの形状を最適化した時のコスト
 
 	free(cbuf);
@@ -3277,7 +3277,9 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 			for (k = d * (d + 1); k < (d + 1) * (d + 2); k++) {
 				for (cl = 0; cl < enc->num_class; cl++) {
 					coef = enc->predictor[cl][k];
+				#if TEMPLATE_MATCHING_ON
 					if(cl == enc->temp_cl) continue;
+				#endif
 					if (coef < 0) coef = -coef;
 					cost += enc->coef_cost[enc->zero_m[d]][m][coef];
 				}
@@ -3294,7 +3296,9 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 			for (k = d * (d + 1); k < (d + 1) * (d + 2); k++) {
 				for (cl = 0; cl < enc->num_class; cl++) {
 					coef = enc->predictor[cl][k];
+				#if TEMPLATE_MATCHING_ON
 					if(cl == enc->temp_cl) continue;
+				#endif
 					if (coef < 0) coef = -coef;
 					cost += enc->coef_cost[m][enc->coef_m[d]][coef];
 				}
@@ -3340,7 +3344,9 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 			for (k = d * (d + 1); k < (d + 1) * (d + 2); k++) {
 				for (cl = 0; cl < enc->num_class; cl++) {
 					coef = enc->predictor[cl][k];
+				#if TEMPLATE_MATCHING_ON
 					if(cl == enc->temp_cl)continue;	//clがテンプレートマッチングをするクラスならcontinue
+				#endif
 					if (coef == 0) {
 						rc_encode(fp, enc->rc, 0, zrfreq, TOT_ZEROFR);
 					} else {
@@ -4134,14 +4140,14 @@ int main(int argc, char **argv)
 	printf("------------------------------------------------------------------\n");
 #if AUTO_PRD_ORDER
 	// printf("M = %d, K = %d, P = %d, V = %d, A = %d, l = %d, m = %d, o = %d, f = %d\n",
-	printf("NUM_CLASS 	= %d\nMAX_PRD_ORDER 	= %d\ncoef_precision 	= %d\nnum_pmodel 	= %d\npm_accuracy 	= %d\nmax_iteration 	= %d\nf_mmse 		= %d\nf_optpred 	= %d\nquadtree_depth 	= %d\nTemplateM	= %d\n",
+	printf("NUM_CLASS 		= %d\nMAX_PRD_ORDER 	= %d\ncoef_precision 		= %d\nnum_pmodel	 	= %d\npm_accuracy	 	= %d\nmax_iteration 		= %d\nf_mmse 		= %d\nf_optpred 		= %d\nquadtree_depth 	= %d\nTemplateM		= %d\n",
 		num_class, MAX_PRD_ORDER, coef_precision, num_pmodel, pm_accuracy, max_iteration, f_mmse, f_optpred, quadtree_depth, TEMPLATE_MATCHING_ON);
 	#if TEMPLATE_MATCHING_ON
 		// printf("TM_CLASS_NUM	= %d\n", TEMPLATE_CLASS_NUM);
 	#endif
 	#if OPENMP_ON
 		omp_set_num_threads(NUM_THREADS);
-		printf("Parallel Threads= %d\n", omp_get_max_threads());
+		printf("Parallel Threads=	 %d\n", omp_get_max_threads());
 	#endif
 #else
 	printf("M = %d, K = %d, P = %d, V = %d, A = %d\n",
@@ -4199,7 +4205,7 @@ int main(int argc, char **argv)
 	for (i = j = 0; i < max_iteration; i++) {
 		printf("[%2d] cost =", i);
 		cost = design_predictor(enc, f_mmse);	//予測器の設計(クラス情報を含んで再設計)
-		printf(" %d ->", (int)cost);
+		printf(" %d ", (int)cost);
 		cost = optimize_group(enc);	//閾値に対する分散の最適化
 		printf(" %d ->", (int)cost);
 		cost = optimize_class(enc);	//クラス情報の最適化
