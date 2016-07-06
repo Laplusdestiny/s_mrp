@@ -31,7 +31,7 @@ do
 	echo `hostname` >> $LOG
 
 	date | tee -a $LOG
-	# ./ENCMRP $FLAG $IMG $MRP | tee -a $LOG
+	./ENCMRP $FLAG $IMG $MRP | tee -a $LOG
 	date | tee -a $LOG
 	./DECMRP $MRP $PGM | tee -a $LOG
 	if cmp -s $IMG $PGM;

@@ -126,7 +126,7 @@
 #define TEMPLATE_MATCHING_ON 	1
 #if TEMPLATE_MATCHING_ON
 
-#define TEMPLATE_CLASS_NUM	1
+#define AVDN			1
 #define AREA			6
 #define Y_SIZE			20
 #define X_SIZE			20
@@ -136,6 +136,7 @@
 #define MAX_MULTIMODAL	45
 #define W_GR 			7
 #define WEIGHT_CN		2
+#define TEMPLATE_CLASS_NUM	1
 
 #endif
 
@@ -197,6 +198,7 @@ typedef struct{
 	int bx;
 	int sum;
 	int ave_o;
+	int mhd;
 } TM_Member;
 
 typedef struct {

@@ -31,7 +31,7 @@ rc.o : rc.c mrp.h
 log.o : log.c common.c mrp.h
 
 clean :
-	rm -f $(ENCODER) $(DECODER) $(ENCOBJ) $(DECOBJ) core.* *~
+	rm -f $(ENCODER) $(DECODER) $(ENCOBJ) $(DECOBJ) core.* *~ nohup.out
 
 job :
 	sjob -h compute-0-20 run.sh &

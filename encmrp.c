@@ -755,8 +755,15 @@ int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出
 #if TEMPLATE_MATCHING_ON
 void*** TemplateM (ENCODER *enc) {
 	int x , y , bx , by , g , h , i , j=0 , k , count , area1[AREA] , area_o[AREA] , *tm_array ,
-		*roff_p , *org_p , x_size = X_SIZE , sum1 , sum_o, temp_x, temp_y, break_flag=0, **encval;
+		*roff_p , *org_p , x_size = X_SIZE , sum1 , sum_o, temp_x, temp_y, break_flag=0,
+		**encval, *mcost_num, max_nas=0, before_nas_num=0;
 	double ave1=0 , ave_o , nas ;
+#if AVDN
+	double dist1=0, dist_o=0, *area1_d=0, *area_o_d=0;
+	area1_d = (double * )alloc_mem(AREA * sizeof(double));
+	area_o_d = (double * )alloc_mem(AREA * sizeof(double));
+#endif
+
 
 /////////////////////////
 ///////メモリ確保////////
@@ -799,6 +806,17 @@ for(y = 0 ; y < enc->height ; y++){
 		#if CHECK_DEBUG_TM
 			if(y==check_y && x==check_x) printf("ave1: %f\n", ave1);
 		#endif
+	#if AVDN
+		dist1=0;
+		for(i=0; i<AREA; i++){
+			dist1 += ((double)area1[i] - ave1) * ((double)area1[i] - ave1);
+		}
+		dist1 = sqrt(dist1);
+
+		for(i=0; i<AREA; i++){
+			area1_d[i] = ((double)area1[i] -ave1) / dist1;
+		}
+	#endif
 
 ////////////////////////////
 //テンプレートマッチング///
@@ -806,12 +824,14 @@ for(y = 0 ; y < enc->height ; y++){
 
 		j = 0;
 		break_flag=0;
+		max_nas = 0;
 
 		if(y == 0 || y == 1 || y == 2){
 			x_size = 50;
 		}else{
 			x_size = X_SIZE;
 		}
+
 		for (by = y - Y_SIZE ; by <= y ; by++) {
 			if((by < 0) || (by > enc->height))continue;
 			for (bx = x - x_size ; bx <= x + x_size  ; bx++) {
@@ -837,10 +857,27 @@ for(y = 0 ; y < enc->height ; y++){
 					if(y==check_y && x==check_x)	printf("ave_o: %f\n", ave_o);
 				#endif
 
+				#if AVDN
+					dist_o = 0;
+					for(i=0; i<AREA; i++){
+						dist_o += ((double)area_o[i] - ave_o) * ((double)area_o[i] - ave_o);
+					}
+
+					dist_o = sqrt(dist_o);
+
+					for(i=0; i<AREA; i++){
+						area_o_d[i] = ((double)area_o[i] - ave_o) / dist_o;
+					}
+				#endif
+
 				nas = 0;
 
 				for(i = 0; i < AREA ; i++){//マッチングコストの計算
-					nas += fabs( ((double)area1[i] - ave1) - ((double)area_o[i] - ave_o) );
+					#if AVDN
+						nas += fabs(area1_d[i] - area_o_d[i]);
+					#else
+						nas += fabs( ((double)area1[i] - ave1) - ((double)area_o[i] - ave_o) );
+					#endif
 					#if CHECK_DEBUG_TM
 						if(y==check_y && x==check_x)	printf("nas: %f | area1: %d | area_o: %d | ave1: %f | ave_o: %f\n", nas, area1[i], area_o[i], ave1, ave_o);
 					#endif
@@ -851,6 +888,8 @@ for(y = 0 ; y < enc->height ; y++){
 				tm[j].bx = bx;
 				tm[j].ave_o = (int)ave_o;
 				tm[j].sum = (int)(nas * NAS_ACCURACY);
+				tm[j].mhd = abs(x-bx) + abs(y-by);
+				if(tm[j].sum > max_nas)	max_nas = tm[j].sum;
 
 				j++;
 			}//bx fin
@@ -862,6 +901,10 @@ for(y = 0 ; y < enc->height ; y++){
 /////////////////////////
 
 		enc->temp_num[y][x] = j;
+		mcost_num = (int *)alloc_mem( max_nas *sizeof(int));
+		mcost_num[] = {0};
+		before_nas_num=0;
+
 		TM_Member temp;
 		for (g = 0; g < j - 1; g++) {
 			for (h = j - 1; h > g; h--) {
@@ -872,6 +915,27 @@ for(y = 0 ; y < enc->height ; y++){
 				}
 			}
 		}
+
+		for( g = 0 ; g < j ; g++){
+			mcost_num[tm[g].sum]++;
+		}
+
+		for( g = 0 ; g < max_nas ; g++){
+			if(mcost_num[g] == 0)continue;
+			for(h=0; h<mcost_num[g]-1; h++){
+				for(i=mcost_num[g] -1; i>h; i--){
+					if(tm[i+before_nas_num-1].mhd > tm[i+before_nas_num].mhd){
+						temp= tm[h];
+						tm[h] = tm[h-1];
+						tm[h-1] = temp;
+					}
+				}
+
+			}
+			before_nas_num += mcost_num[g];
+		}
+
+		free(mcost_num);
 
 		for(k = 0 ; k < j  ; k++){
 			count = 0;

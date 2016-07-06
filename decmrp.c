@@ -145,7 +145,7 @@ DECODER *init_decoder(FILE *fp)
 
 #if TEMPLATE_MATCHING_ON
 	dec->temp_cl = getbits(fp, 6);
-	printf("TEMP_CL : %d\n", dec->temp_cl);
+	// printf("TEMP_CL : %d\n", dec->temp_cl);
 #endif
 
 	dec->maxprd = dec->maxval << dec->coef_precision;
@@ -560,17 +560,32 @@ int calc_udec(DECODER *dec, int y, int x)
 
 #if TEMPLATE_MATCHING_ON
 void TemplateM (DECODER *dec, int dec_y, int dec_x){
-	int bx, by, g, h, i, j, k, count, area1[AREA], area_o[AREA], *roff_p, *org_p,  x_size = X_SIZE, sum1, sum_o, temp_x, temp_y, break_flag=0, **decval;
+	int bx, by, g, h, i, j, k, count, area1[AREA], area_o[AREA], *roff_p, *org_p,  x_size = X_SIZE,
+		sum1, sum_o, temp_x, temp_y, break_flag=0, **decval, *tm_array;
 	double ave1, ave_o, nas;
-	int tm_array[(Y_SIZE * (X_SIZE * 2 + 1))*4] = {0};
+	// int tm_array[(Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE)*4] = {0};
 	TM_Member tm[Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE ];
 	TM_Member temp;
 
+#if AVDN
+	double dist1=0, dist_o=0, *area1_d=0, *area_o_d=0;
+	area1_d = (double *)alloc_mem(AREA * sizeof(double));
+	area_o_d = (double *)alloc_mem(AREA * sizeof(double));
+#endif
+
+	tm_array = (int *)alloc_mem((Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE) * 4 * sizeof(int));
 	decval = (int **)alloc_2d_array(dec->height, dec->width, sizeof(int));
 	for(i=0; i<dec->height; i++){
-		for(j=0; j<dec->width; j++){
-			decval[i][j] = dec->org[i][j];
+		if(i != dec_y){
+			for(j=0; j<dec->width; j++){
+				decval[i][j] = dec->org[i][j] << dec->coef_precision;
+			}
+		} else if (i==dec_y){
+			for( j = 0 ; j < dec_x ; j++ ){
+				decval[i][j] = dec->org[i][j] << dec->coef_precision;
+			}
 		}
+		if( i == dec_y)break;
 	}
 
 	#if CHECK_DEBUG_TM
@@ -596,6 +611,19 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 			if(dec_y==check_y && dec_x==check_x) printf("ave1: %f\n", ave1);
 		#endif
 
+#if AVDN
+	dist1=0;
+	for(i=0; i<AREA; i++){
+		dist1 += ((double)area1[i] - ave1) * ((double)area1[i] - ave1);
+	}
+
+	dist1 = sqrt(dist1);
+
+	for(i=0; i<AREA; i++){
+		area1_d[i] = ((double)area1[i] -ave1) / dist1;
+	}
+#endif
+
 	j=0;
 	if(dec_y == 0 || dec_y == 1 || dec_y == 2){
 		x_size = 50;
@@ -619,17 +647,32 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 				area_o[i] = org_p[roff_p[i]];
 				sum_o += area_o[i];
 				#if CHECK_DEBUG_TM
-						if(dec_y==check_y && dec_x==check_x)	printf("sum_o: %d | area_o[%d]: %d\n",sum_o, i, area_o[i]);
-					#endif
+					if(dec_y==check_y && dec_x==check_x)	printf("sum_o: %d | area_o[%d]: %d\n",sum_o, i, area_o[i]);
+				#endif
 			}
 			ave_o = (double)sum_o / AREA;
 			#if CHECK_DEBUG_TM
-					if(dec_y==check_y && dec_x==check_x)	printf("ave_o: %f\n", ave_o);
-				#endif
+				if(dec_y==check_y && dec_x==check_x)	printf("ave_o: %f\n", ave_o);
+			#endif
+		#if AVDN
+			dist_o = 0;
+			for(i=0; i<AREA; i++){
+				dist_o += ((double)area_o[i] - ave_o) * ((double)area_o[i] - ave_o);
+			}
 
+			dist_o = sqrt(dist_o);
+
+			for(i=0; i<AREA; i++){
+				area_o_d[i] = ((double)area_o[i] - ave_o) / dist_o;
+			}
+		#endif
 			nas = 0;
 			for(i=0; i<AREA; i++){
-				nas += fabs( ((double)area1[i] - ave1) - ((double)area_o[i] - ave_o));
+				#if AVDN
+					nas += fabs(area1_d[i] - area_o_d[i]);
+				#else
+					nas += fabs( ((double)area1[i] - ave1) - ((double)area_o[i] - ave_o));
+				#endif
 				#if CHECK_DEBUG_TM
 					if(dec_y == check_y && dec_x == check_x)	printf("nas: %f | area1: %d | area_o: %d | ave1: %f | ave_o: %f\n", nas, area1[i], area_o[i], ave1, ave_o);
 				#endif
@@ -708,12 +751,11 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 	#endif*/
 
 	if(dec_y ==0 && dec_x < 3){
-		exam_array[dec_y][dec_x] = (dec->maxval > 1) << dec->coef_precision;
+		exam_array[dec_y][dec_x] = (dec->maxval > 1) ;
 	} else {
-		exam_array[dec_y][dec_x] = (int)((double)decval[temp_y][temp_x] - ave_o + ave1) << dec->coef_precision;
-		if(exam_array[dec_y][dec_x] < 0 || exam_array[dec_y][dec_x] > dec->maxprd)	exam_array[dec_y][dec_x] = (int)ave1 << dec->coef_precision;
+		exam_array[dec_y][dec_x] = (int)((double)decval[temp_y][temp_x] - ave_o + ave1) ;
+		if(exam_array[dec_y][dec_x] < 0 || exam_array[dec_y][dec_x] > dec->maxprd)	exam_array[dec_y][dec_x] = (int)ave1 ;
 	}
-
 }
 #endif
 
@@ -1028,10 +1070,9 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 	for (y = 0; y < dec->height; y++) {
 		for (x = 0; x < dec->width; x++) {
 			u = calc_udec(dec, y, x);
-			printf("check_1\n");
+
 #if TEMPLATE_MATCHING_ON
 			TemplateM(dec, y, x);
-			printf("check_2\n");
 #endif
 
 			if (dec->mask[y][x] == 0){
@@ -1046,7 +1087,6 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 				base >>= dec->pm_accuracy;
 				p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
 					- base;
-					printf("check_3-1\n");
 			}else{	//mult_peak
 
 				prd = set_mask_parameter(img, dec, y, x, u, bitmask, shift);
@@ -1055,7 +1095,6 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 					pm = mask->pm[0];
 					p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
 						- base;
-					printf("check_3-2\n");
 				}else{
 					pm = &dec->mult_pm;
 					set_pmodel_mult(pm,mask,dec->maxval+1);
@@ -1063,7 +1102,6 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 						if(y==check_y && x==check_x)printmodel(pm, dec->maxval+1);
 					#endif
 					p = rc_decode(fp, dec->rc, pm, 0, dec->maxval+1);
-					printf("check_3-3\n");
 				}
 			}
 
@@ -1072,7 +1110,6 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 			e = (p << 1) - prd - 1;
 			if (e < 0) e = -(e + 1);
 			dec->err[y][x] = e;	//特徴量算出に用いる
-			printf("check_4\n");
 			#if CHECK_DEBUG
 				printf("d[%d][%d]: %d\n", y, x, p);
 				// printf("%d\n", (char)p);
