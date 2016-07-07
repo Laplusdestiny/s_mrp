@@ -130,7 +130,7 @@
 #define MANHATTAN_SORT	0
 #define AREA			6
 #define Y_SIZE			20
-#define X_SIZE			20
+#define X_SIZE			40
 #define NAS_ACCURACY	100
 #define MAX_DATA_SAVE	50
 #define MAX_DATA_SAVE_DOUBLE 	MAX_DATA_SAVE*4

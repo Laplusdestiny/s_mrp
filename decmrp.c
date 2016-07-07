@@ -16,7 +16,8 @@ extern int win_sample[], win_dis[];
 
 MASK *mask;
 int *tempm_array;
-int **exam_array;
+// int **exam_array;
+int ***exam_array;
 
 uint getbits(FILE *fp, int n)
 {
@@ -573,6 +574,10 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 	area_o_d = (double *)alloc_mem(AREA * sizeof(double));
 #endif
 
+#if MANHATTAN_SORT
+	int *mcost_num, max_nas =0, before_nas_num=0;
+#endif
+
 	tm_array = (int *)alloc_mem((Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE) * 4 * sizeof(int));
 	decval = (int **)alloc_2d_array(dec->height, dec->width, sizeof(int));
 	for(i=0; i<dec->height; i++){
@@ -602,9 +607,9 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 		area1[i] = 0;
 		area1[i] = org_p[roff_p[i]];
 		sum1 += area1[i];
-		#if CHECK_DEBUG_TM
-			if(dec_y==check_y && dec_x==check_x)	printf("sum1: %d | area1[%d]:%d\n", sum1, i, area1[i]);
-		#endif
+			#if CHECK_DEBUG_TM
+				if(dec_y==check_y && dec_x==check_x)	printf("sum1: %d | area1[%d]:%d\n", sum1, i, area1[i]);
+			#endif
 	}
 	ave1 = (double)sum1 / AREA;
 		#if CHECK_DEBUG_TM
@@ -625,6 +630,11 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 #endif
 
 	j=0;
+	break_flag=0;
+#if MANHATTAN_SORT
+	max_nas=0;
+#endif
+
 	if(dec_y == 0 || dec_y == 1 || dec_y == 2){
 		x_size = 50;
 	} else {
@@ -669,7 +679,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 			nas = 0;
 			for(i=0; i<AREA; i++){
 				#if AVDN
-					nas += fabs(area1_d[i] - area_o_d[i]);
+					nas += (area1_d[i] - area_o_d[i]) * (area1_d[i] - area_o_d[i]);
 				#else
 					nas += fabs( ((double)area1[i] - ave1) - ((double)area_o[i] - ave_o));
 				#endif
@@ -683,15 +693,21 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 			tm[j].bx = bx;
 			tm[j].ave_o = (int)ave_o;
 			tm[j].sum = (int)(nas * NAS_ACCURACY);
+			if(tm[j].sum < 0)	tm[j].sum = 0;
+			#if MANHATTAN_SORT
+				tm[j].mhd = abs(dec_x - bx) + abs( dec_y - by);
+				if(tm[j].sum > max_nas)	max_nas = tm[j].sum;
+			#endif
+
 			#if CHECK_DEBUG_TM
 				if(dec_y == check_y && dec_x == check_x)	printf("B[%3d](%3d,%3d) sum: %d | ave: %d\n", tm[j].id, tm[j].by, tm[j].bx, tm[j].sum, tm[j].ave_o);
 			#endif
+
 			j++;
 		}//bx fin
 		if( break_flag )break;
 	}//by fin
-	break_flag=0;
-	// printf("temp_num: %d\n", j);
+
 	dec->temp_num[dec_y][dec_x] = j;
 
 	for(g=0; g<j-1; g++){
@@ -703,6 +719,33 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 			}
 		}
 	}
+
+	#if MANHATTAN_SORT
+		mcost_num = (int *)alloc_mem((max_nas + 1) * sizeof(int));
+		for(i=0; i<=max_nas; i++){
+			mcost_num[i] = 0;
+		}
+
+		before_nas_num = 0;
+		for(g=0; g<j; g++){
+			mcost_num[tm[g].sum]++;
+		}
+
+		for(g=0; g<=max_nas; g++){
+			if(mcost_num[g] == 0)continue;
+			for(h=0; h<mcost_num[g]-1; h++){
+				for(i=mcost_num[g]-1 ; i>h; i--){
+					if(tm[i+before_nas_num-1].mhd > tm[i+before_nas_num].mhd){
+						temp = tm[i+before_nas_num];
+						tm[i+before_nas_num] = tm[i+before_nas_num-1];
+						tm[i+before_nas_num-1] = temp;
+					}
+				}
+			}
+			before_nas_num += mcost_num[g];
+		}
+		free(mcost_num);
+	#endif
 
 	// for(k=0; k< Y_SIZE * X_SIZE * 2 + X_SIZE; k++){
 	for(k=0; k < j; k++){
@@ -731,31 +774,33 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 		dec->array[k] = tm[k].ave_o;
 	}
 
+//マッチングコストが小さいものをTEMPLATE_CLASS_NUMの数だけ用意
+	for(i=0; i<TEMPLATE_CLASS_NUM; i++){
+		temp_y = tempm_array[i*4+1];
+		temp_x = tempm_array[i*4+2];
+		ave_o = dec->array[i];
+
+		if(dec_y == 0 && dec_x < 3){
+			exam_array[dec_y][dec_x][i] = (dec->maxprd > 1);
+		} else {
+			exam_array[dec_y][dec_x][i] = (int)((double)decval[temp_y][temp_x] - ave_o + ave1);
+			if(exam_array[dec_y][dec_x][i] < 0 || exam_array[dec_y][dec_x][i] > dec->maxprd)
+				exam_array[dec_y][dec_x][i] = (int)ave1;
+		}
+
+	}
+
 //一番マッチングコストが小さいものを予測値のひとつに加える
-	temp_y = tempm_array[1];
+	/*temp_y = tempm_array[1];
 	temp_x = tempm_array[2];
 	ave_o = dec->array[0];
-	// ave_o = tm[0].ave_o;
-	/*sum_o = ave_o = 0;
-	roff_p = dec->roff[temp_y][temp_x];
-	org_p = &decval[temp_y][temp_x];
-	for(i=0; i<AREA; i++){
-		area_o[i] = 0;
-		area_o[i] = org_p[roff_p[i]];
-		sum_o += area_o[i];
-	}
-	ave_o = (double)sum_o / AREA;
-
-	#if CHECK_DEBUG_TM
-		printf("org: %d | ave_o: %f | ave1: %f\n",decval[temp_y][temp_x], ave_o, ave1);
-	#endif*/
 
 	if(dec_y ==0 && dec_x < 3){
 		exam_array[dec_y][dec_x] = (dec->maxval > 1) ;
 	} else {
 		exam_array[dec_y][dec_x] = (int)((double)decval[temp_y][temp_x] - ave_o + ave1) ;
 		if(exam_array[dec_y][dec_x] < 0 || exam_array[dec_y][dec_x] > dec->maxprd)	exam_array[dec_y][dec_x] = (int)ave1 ;
-	}
+	}*/
 }
 #endif
 
@@ -769,7 +814,7 @@ int calc_prd(IMAGE *img, DECODER *dec, int cl, int y, int x)
 	nzc_p = dec->nzconv[cl];
 
 	if(dec->num_nzcoef[cl] == -1){
-		prd = exam_array[y][x];
+		prd = exam_array[y][x][0];
 	} else {
 		if (y == 0) {
 			if (x == 0) {
@@ -1060,7 +1105,8 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 	img = alloc_image(dec->width, dec->height, dec->maxval);
 
 #if TEMPLATE_MATCHING_ON
-	exam_array = (int **)alloc_2d_array(dec->height, dec->width, sizeof(int));	//最もマッチングコストが小さい画素の輝度値を保存
+	// exam_array = (int **)alloc_2d_array(dec->height, dec->width, sizeof(int));	//最もマッチングコストが小さい画素の輝度値を保存
+	exam_array = (int ***)alloc_3d_array(dec->height, dec->width, TEMPLATE_CLASS_NUM, sizeof(int));
 	// dec->w_gr = W_GR;
 #endif
 

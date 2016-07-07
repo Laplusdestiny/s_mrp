@@ -765,7 +765,7 @@ void*** TemplateM (ENCODER *enc) {
 #endif
 
 #if MANHATTAN_SORT
-	int *mcost_num, max_nas=0, before_nas_num=0
+	int *mcost_num, max_nas=0, before_nas_num=0;
 #endif
 
 
@@ -802,14 +802,14 @@ for(y = 0 ; y < enc->height ; y++){
 			area1[i] = 0;
 			area1[i] = org_p[roff_p[i]];
 			sum1 += area1[i];
-			#if CHECK_DEBUG_TM
-				if(y==check_y && x==check_x)	printf("sum1: %d | area1[%d]:%d\n", sum1, i, area1[i]);
-			#endif
+				#if CHECK_DEBUG_TM
+					if(y==check_y && x==check_x)	printf("sum1: %d | area1[%d]:%d\n", sum1, i, area1[i]);
+				#endif
 		}
 		ave1 = (double)sum1 / AREA;
-		#if CHECK_DEBUG_TM
-			if(y==check_y && x==check_x) printf("ave1: %f\n", ave1);
-		#endif
+			#if CHECK_DEBUG_TM
+				if(y==check_y && x==check_x) printf("ave1: %f\n", ave1);
+			#endif
 	#if AVDN
 		dist1=0;
 		for(i=0; i<AREA; i++){
@@ -880,7 +880,7 @@ for(y = 0 ; y < enc->height ; y++){
 
 				for(i = 0; i < AREA ; i++){//マッチングコストの計算
 					#if AVDN
-						nas += fabs(area1_d[i] - area_o_d[i]);
+						nas += (area1_d[i] - area_o_d[i]) * (area1_d[i] - area_o_d[i]);
 					#else
 						nas += fabs( ((double)area1[i] - ave1) - ((double)area_o[i] - ave_o) );
 					#endif
@@ -894,9 +894,12 @@ for(y = 0 ; y < enc->height ; y++){
 				tm[j].bx = bx;
 				tm[j].ave_o = (int)ave_o;
 				tm[j].sum = (int)(nas * NAS_ACCURACY);
-				tm[j].mhd = abs(x-bx) + abs(y-by);
+				if(tm[j].sum < 0)	tm[j].sum = 0;
+
 				#if MANHATTAN_SORT
+					tm[j].mhd = abs(x-bx) + abs(y-by);
 					if(tm[j].sum > max_nas)	max_nas = tm[j].sum;
+					// printf("(%3d,%3d)max_nas: %d | sum:%d\n", y, x, max_nas, tm[j].sum);
 				#endif
 
 				j++;
@@ -921,8 +924,8 @@ for(y = 0 ; y < enc->height ; y++){
 			}
 		}
 	#if MANHATTAN_SORT
-		mcost_num = (int *)alloc_mem( max_nas *sizeof(int));
-		for(i=0; i< max_nas; i++){
+		mcost_num = (int *)alloc_mem( (max_nas + 1) *sizeof(int));
+		for(i=0; i <= max_nas; i++){
 			mcost_num[i] = 0;
 		}
 		// mcost_num = memset(mcost_num, 0, sizeof(memset));
@@ -931,7 +934,7 @@ for(y = 0 ; y < enc->height ; y++){
 			mcost_num[tm[g].sum]++;
 		}
 
-		for( g = 0 ; g < max_nas ; g++){
+		for( g = 0 ; g <= max_nas ; g++){
 			if(mcost_num[g] == 0)continue;
 			for(h=0; h<mcost_num[g]-1; h++){
 				for(i=mcost_num[g] -1; i>h; i--){
@@ -971,7 +974,8 @@ for(y = 0 ; y < enc->height ; y++){
 		for(k = 0 ; k < MAX_DATA_SAVE ; k++){
 			enc->array[y][x][k] = tm[k].ave_o;
 		}
-//一番マッチングコストが小さいものを予測値のひとつに加える
+
+//マッチングコストが小さいものをTEMPLATE_CLASS_NUMの数だけ用意
 		for(i=0; i<TEMPLATE_CLASS_NUM; i++){
 			temp_y = tempm_array[y][x][i*4 + 1];
 			temp_x = tempm_array[y][x][i*4 + 2];
@@ -984,6 +988,8 @@ for(y = 0 ; y < enc->height ; y++){
 				if(exam_array[y][x][i] < 0 || exam_array[y][x][i] > enc->maxprd)	exam_array[y][x][i] = (int)ave1;
 			}
 		}
+
+//一番マッチングコストが小さいものを予測値のひとつに加える
 		/*temp_y = tempm_array[y][x][1];
 		temp_x = tempm_array[y][x][2];
 		ave_o = enc->array[y][x][0];
@@ -1829,8 +1835,8 @@ cost_t optimize_class(ENCODER *enc)
 				blksize, enc->width, level, &blk);
 		}
 	}
-#if 0
-// #if TEMPLATE_MATCHING_ON
+// #if 0
+#if TEMPLATE_MATCHING_ON
 	int cl;
 	for(cl=0; cl<enc->num_class; cl++){
 		if(enc->optimize_loop==1){
@@ -1840,7 +1846,7 @@ cost_t optimize_class(ENCODER *enc)
 			}
 		} else if(enc->optimize_loop==2){
 			if(enc->nzconv[cl][0] == -1){
-				enc->temp_cl == cl;
+				enc->temp_cl = cl;
 				break;
 			}
 		}
@@ -4236,7 +4242,7 @@ int main(int argc, char **argv)
 	#endif
 	#if OPENMP_ON
 		omp_set_num_threads(NUM_THREADS);
-		printf("Parallel Threads 		=%d\n", omp_get_max_threads());
+		printf("Parallel Threads 	= %d\n", omp_get_max_threads());
 	#endif
 #else
 	printf("M = %d, K = %d, P = %d, V = %d, A = %d\n",
