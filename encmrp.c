@@ -16,8 +16,8 @@ extern int win_sample[], win_dis[];
 
 MASK *mask;
 int ***tempm_array;
-int **exam_array;
-// int ***exam_array;
+// int **exam_array;
+int ***exam_array;
 
 float ****calc_entropy_of_conditional_probability(PMODEL ***pmodels, int num_group,
 	int num_pmodel, int pm_accuracy, int maxval)
@@ -615,7 +615,7 @@ void set_cost_rate(ENCODER *enc)	//分散ごとの確率モデルにおける符
 		i = (enc->maxprd - k + (1 << shift) / 2) >> shift;
 		enc->fconv[k] = (i & mask);
 		enc->bconv[k] = (i >> enc->pm_accuracy);
-		// printf("i:%d | fconv:%d | bconv:%d\n",i, enc->fconv[k], enc->bconv[k]);
+		 // printf("[%5d]i:%d | fconv:%d | bconv:%d\n", k, i, enc->fconv[k], enc->bconv[k]);
 	}
 	num_spm = 1 << enc->pm_accuracy;
 
@@ -680,7 +680,7 @@ void predict_region(ENCODER *enc, int tly, int tlx, int bry, int brx)	//予測�
 			prd = 0;
 			if(enc->optimize_loop == 1){
 				if(nzc_p[0] == -1){
-					prd = exam_array[y][x];
+					prd = exam_array[y][x][0];
 				} else {
 					for (k = 0; k < enc->num_nzcoef[cl]; k++) {
 						l = nzc_p[k];
@@ -689,7 +689,7 @@ void predict_region(ENCODER *enc, int tly, int tlx, int bry, int brx)	//予測�
 				}
 			} else if(enc->optimize_loop==2){
 				if(enc->num_nzcoef[cl] == -1){
-					prd = exam_array[y][x];
+					prd = exam_array[y][x][0];
 				} else {
 					for(k = 0; k < enc->num_nzcoef[cl]; k++){
 						l = nzc_p[k];
@@ -723,7 +723,7 @@ void save_prediction_value(ENCODER *enc)
 				nzc_p = enc->nzconv[cl];
 				prd = 0;
 				if(enc->num_nzcoef[cl] == -1){
-					prd = exam_array[y][x];
+					prd = exam_array[y][x][0];
 				} else {
 					for (k = 0; k < enc->num_nzcoef[cl]; k++) {
 						l = nzc_p[k];
@@ -756,12 +756,16 @@ int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出
 void*** TemplateM (ENCODER *enc) {
 	int x , y , bx , by , g , h , i , j=0 , k , count , area1[AREA] , area_o[AREA] , *tm_array ,
 		*roff_p , *org_p , x_size = X_SIZE , sum1 , sum_o, temp_x, temp_y, break_flag=0,
-		**encval, *mcost_num, max_nas=0, before_nas_num=0;
+		**encval;
 	double ave1=0 , ave_o , nas ;
 #if AVDN
 	double dist1=0, dist_o=0, *area1_d=0, *area_o_d=0;
 	area1_d = (double * )alloc_mem(AREA * sizeof(double));
 	area_o_d = (double * )alloc_mem(AREA * sizeof(double));
+#endif
+
+#if MANHATTAN_SORT
+	int *mcost_num, max_nas=0, before_nas_num=0
 #endif
 
 
@@ -772,7 +776,7 @@ void*** TemplateM (ENCODER *enc) {
 	tm_array = (int *)alloc_mem((Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE) * 4 * sizeof(int)) ;
 	TM_Member tm[Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE ];
 	encval = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
-	// init_2d_array(exam_array, enc->height, enc->width, enc->maxval > 1);
+
 	for(y=0; y<enc->height; y++){
 		for(x=0; x<enc->width; x++){
 			encval[y][x] = enc->org[y][x] << enc->coef_precision;
@@ -783,10 +787,10 @@ void*** TemplateM (ENCODER *enc) {
 ////////画像の走査/////////
 ///////////////////////////
 
-printf("Calculating Template Matching\n");
+printf("Calculating Template Matching\r");
 for(y = 0 ; y < enc->height ; y++){
 	for (x = 0; x < enc->width; x++){
-
+		if(y==0 && x==0) continue;
 		// bzero(&tm, sizeof(tm));
 		memset(&tm, 0, sizeof(tm));
 
@@ -824,7 +828,9 @@ for(y = 0 ; y < enc->height ; y++){
 
 		j = 0;
 		break_flag=0;
-		max_nas = 0;
+		#if MANHATTAN_SORT
+			max_nas = 0;
+		#endif
 
 		if(y == 0 || y == 1 || y == 2){
 			x_size = 50;
@@ -889,7 +895,9 @@ for(y = 0 ; y < enc->height ; y++){
 				tm[j].ave_o = (int)ave_o;
 				tm[j].sum = (int)(nas * NAS_ACCURACY);
 				tm[j].mhd = abs(x-bx) + abs(y-by);
-				if(tm[j].sum > max_nas)	max_nas = tm[j].sum;
+				#if MANHATTAN_SORT
+					if(tm[j].sum > max_nas)	max_nas = tm[j].sum;
+				#endif
 
 				j++;
 			}//bx fin
@@ -901,9 +909,6 @@ for(y = 0 ; y < enc->height ; y++){
 /////////////////////////
 
 		enc->temp_num[y][x] = j;
-		mcost_num = (int *)alloc_mem( max_nas *sizeof(int));
-		mcost_num[] = {0};
-		before_nas_num=0;
 
 		TM_Member temp;
 		for (g = 0; g < j - 1; g++) {
@@ -915,7 +920,13 @@ for(y = 0 ; y < enc->height ; y++){
 				}
 			}
 		}
-
+	#if MANHATTAN_SORT
+		mcost_num = (int *)alloc_mem( max_nas *sizeof(int));
+		for(i=0; i< max_nas; i++){
+			mcost_num[i] = 0;
+		}
+		// mcost_num = memset(mcost_num, 0, sizeof(memset));
+		before_nas_num=0;
 		for( g = 0 ; g < j ; g++){
 			mcost_num[tm[g].sum]++;
 		}
@@ -925,9 +936,9 @@ for(y = 0 ; y < enc->height ; y++){
 			for(h=0; h<mcost_num[g]-1; h++){
 				for(i=mcost_num[g] -1; i>h; i--){
 					if(tm[i+before_nas_num-1].mhd > tm[i+before_nas_num].mhd){
-						temp= tm[h];
-						tm[h] = tm[h-1];
-						tm[h-1] = temp;
+						temp= tm[i+before_nas_num];
+						tm[i+before_nas_num] = tm[i+before_nas_num-1];
+						tm[i+before_nas_num-1] = temp;
 					}
 				}
 
@@ -936,6 +947,7 @@ for(y = 0 ; y < enc->height ; y++){
 		}
 
 		free(mcost_num);
+	#endif
 
 		for(k = 0 ; k < j  ; k++){
 			count = 0;
@@ -960,7 +972,19 @@ for(y = 0 ; y < enc->height ; y++){
 			enc->array[y][x][k] = tm[k].ave_o;
 		}
 //一番マッチングコストが小さいものを予測値のひとつに加える
-		temp_y = tempm_array[y][x][1];
+		for(i=0; i<TEMPLATE_CLASS_NUM; i++){
+			temp_y = tempm_array[y][x][i*4 + 1];
+			temp_x = tempm_array[y][x][i*4 + 2];
+			ave_o = enc->array[y][x][i];
+
+			if(y == 0 && x< 3){
+				exam_array[y][x][i] = (enc->maxprd > 1);
+			} else {
+				exam_array[y][x][i] = (int)((double)encval[temp_y][temp_x] - ave_o + ave1);
+				if(exam_array[y][x][i] < 0 || exam_array[y][x][i] > enc->maxprd)	exam_array[y][x][i] = (int)ave1;
+			}
+		}
+		/*temp_y = tempm_array[y][x][1];
 		temp_x = tempm_array[y][x][2];
 		ave_o = enc->array[y][x][0];
 
@@ -969,11 +993,11 @@ for(y = 0 ; y < enc->height ; y++){
 		} else {
 			exam_array[y][x] = (int)((double)encval[temp_y][temp_x] - ave_o + ave1) ;
 			if(exam_array[y][x] < 0 || exam_array[y][x] > enc->maxprd)	exam_array[y][x] = (int)ave1;
-		}
+		}*/
 	}//x fin
 }//y fin
 // printf("number of hours worked:%lf[s]\n",(float)(end - start)/CLOCKS_PER_SEC);
-
+printf("Calculating Template Matching Fin\n");
 
 /////////////////////////////
 ////////メモリ解放///////////
@@ -1517,7 +1541,7 @@ void set_prdbuf(ENCODER *enc, int **prdbuf, int **errbuf,
 					prd = 0;
 					for (k = 0; k < enc->num_nzcoef[cl]; k++) {
 						if(nzc_p[k] == TEMPLATE_FLAG){
-							prd = exam_array[y][x];
+							prd = exam_array[y][x][0];
 							break;
 						} else {
 							l = nzc_p[k];
@@ -1805,7 +1829,8 @@ cost_t optimize_class(ENCODER *enc)
 				blksize, enc->width, level, &blk);
 		}
 	}
-#if TEMPLATE_MATCHING_ON
+#if 0
+// #if TEMPLATE_MATCHING_ON
 	int cl;
 	for(cl=0; cl<enc->num_class; cl++){
 		if(enc->optimize_loop==1){
@@ -4204,14 +4229,14 @@ int main(int argc, char **argv)
 	printf("------------------------------------------------------------------\n");
 #if AUTO_PRD_ORDER
 	// printf("M = %d, K = %d, P = %d, V = %d, A = %d, l = %d, m = %d, o = %d, f = %d\n",
-	printf("NUM_CLASS 		= %d\nMAX_PRD_ORDER 	= %d\ncoef_precision 		= %d\nnum_pmodel	 	= %d\npm_accuracy	 	= %d\nmax_iteration 		= %d\nf_mmse 		= %d\nf_optpred 		= %d\nquadtree_depth 	= %d\nTemplateM		= %d\n",
+	printf("NUM_CLASS 		= %d\nMAX_PRD_ORDER 	= %d\ncoef_precision 		= %d\nnum_pmodel	 	= %d\npm_accuracy	 	= %d\nmax_iteration 		= %d\nf_mmse 			= %d\nf_optpred 		= %d\nquadtree_depth 		= %d\nTemplateM		= %d\n",
 		num_class, MAX_PRD_ORDER, coef_precision, num_pmodel, pm_accuracy, max_iteration, f_mmse, f_optpred, quadtree_depth, TEMPLATE_MATCHING_ON);
 	#if TEMPLATE_MATCHING_ON
 		// printf("TM_CLASS_NUM	= %d\n", TEMPLATE_CLASS_NUM);
 	#endif
 	#if OPENMP_ON
 		omp_set_num_threads(NUM_THREADS);
-		printf("Parallel Threads=	 %d\n", omp_get_max_threads());
+		printf("Parallel Threads 		=%d\n", omp_get_max_threads());
 	#endif
 #else
 	printf("M = %d, K = %d, P = %d, V = %d, A = %d\n",
@@ -4256,8 +4281,8 @@ int main(int argc, char **argv)
 
 #if TEMPLATE_MATCHING_ON
 	tempm_array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
-	exam_array = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
-	// exam_array = (int ***)alloc_3d_array(enc->height, enc->width, TEMPLATE_CLASS_NUM, sizeof(int));
+	// exam_array = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
+	exam_array = (int ***)alloc_3d_array(enc->height, enc->width, TEMPLATE_CLASS_NUM, sizeof(int));
 	TemplateM(enc);
 	// enc->w_gr = W_GR;	//マッチングコストに対する重みの分散値の初期化
 #endif
@@ -4325,7 +4350,6 @@ int main(int argc, char **argv)
 	predict_region(enc, 0, 0, enc->height, enc->width);	//クラスに対応した予測値を保存
 	cost = calc_cost(enc, 0, 0, enc->height, enc->width);	//現状のコストを算出
 	printf("cost = %d\n", (int)cost);
-
 
 /* init mask */
 	init_mask();	//MASK構造体のメモリ確保

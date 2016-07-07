@@ -127,6 +127,7 @@
 #if TEMPLATE_MATCHING_ON
 
 #define AVDN			1
+#define MANHATTAN_SORT	0
 #define AREA			6
 #define Y_SIZE			20
 #define X_SIZE			20
@@ -136,7 +137,7 @@
 #define MAX_MULTIMODAL	45
 #define W_GR 			7
 #define WEIGHT_CN		2
-#define TEMPLATE_CLASS_NUM	1
+#define TEMPLATE_CLASS_NUM	2
 
 #endif
 
