@@ -593,7 +593,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 		if( i == dec_y)break;
 	}
 
-	#if CHECK_DEBUG_TM
+	#if CHECK_TM
 		printf("TemplateM[%3d][%3d]\n",dec_y, dec_x);
 	#endif
 	// bzero(&tm, sizeof(tm));
@@ -607,12 +607,12 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 		area1[i] = 0;
 		area1[i] = org_p[roff_p[i]];
 		sum1 += area1[i];
-			#if CHECK_DEBUG_TM
+			#if CHECK_TM
 				if(dec_y==check_y && dec_x==check_x)	printf("sum1: %d | area1[%d]:%d\n", sum1, i, area1[i]);
 			#endif
 	}
 	ave1 = (double)sum1 / AREA;
-		#if CHECK_DEBUG_TM
+		#if CHECK_TM
 			if(dec_y==check_y && dec_x==check_x) printf("ave1: %f\n", ave1);
 		#endif
 
@@ -656,12 +656,12 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 				area_o[i] = 0;
 				area_o[i] = org_p[roff_p[i]];
 				sum_o += area_o[i];
-				#if CHECK_DEBUG_TM
+				#if CHECK_TM
 					if(dec_y==check_y && dec_x==check_x)	printf("sum_o: %d | area_o[%d]: %d\n",sum_o, i, area_o[i]);
 				#endif
 			}
 			ave_o = (double)sum_o / AREA;
-			#if CHECK_DEBUG_TM
+			#if CHECK_TM
 				if(dec_y==check_y && dec_x==check_x)	printf("ave_o: %f\n", ave_o);
 			#endif
 		#if AVDN
@@ -683,7 +683,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 				#else
 					nas += fabs( ((double)area1[i] - ave1) - ((double)area_o[i] - ave_o));
 				#endif
-				#if CHECK_DEBUG_TM
+				#if CHECK_TM
 					if(dec_y == check_y && dec_x == check_x)	printf("nas: %f | area1: %d | area_o: %d | ave1: %f | ave_o: %f\n", nas, area1[i], area_o[i], ave1, ave_o);
 				#endif
 			}
@@ -699,7 +699,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 				if(tm[j].sum > max_nas)	max_nas = tm[j].sum;
 			#endif
 
-			#if CHECK_DEBUG_TM
+			#if CHECK_TM
 				if(dec_y == check_y && dec_x == check_x)	printf("B[%3d](%3d,%3d) sum: %d | ave: %d\n", tm[j].id, tm[j].by, tm[j].bx, tm[j].sum, tm[j].ave_o);
 			#endif
 
@@ -761,7 +761,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 		count++;
 		tm_array[k * 4 + count] = 0;
 		tm_array[k * 4 + count] = tm[k].sum;
-		#if CHECK_DEBUG_TM
+		#if CHECK_TM
 			if(dec_y == check_y && dec_x == check_x)	printf("A[%3d](%3d,%3d) sum: %d | ave: %d\n", tm[k].id, tm[k].by, tm[k].bx, tm[k].sum, tm[k].ave_o);
 		#endif
 	}
@@ -1144,7 +1144,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 				}else{
 					pm = &dec->mult_pm;
 					set_pmodel_mult(pm,mask,dec->maxval+1);
-					#if CHECK_DEBUG
+					#if CHECK_PMODEL
 						if(y==check_y && x==check_x)printmodel(pm, dec->maxval+1);
 					#endif
 					p = rc_decode(fp, dec->rc, pm, 0, dec->maxval+1);
@@ -1157,8 +1157,8 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 			if (e < 0) e = -(e + 1);
 			dec->err[y][x] = e;	//特徴量算出に用いる
 			#if CHECK_DEBUG
-				printf("d[%d][%d]: %d\n", y, x, p);
-				// printf("%d\n", (char)p);
+				// printf("d[%d][%d]: %d\n", y, x, p);
+				printf("%d\n", p);
 			#endif
 
 		}

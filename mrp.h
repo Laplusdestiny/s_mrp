@@ -33,7 +33,7 @@
 
 /****** OPTIMIZE ***************************/
 #define OPT_SIDEINFO		1 // 1 : side-info into consideration (standard), 0 : neglect side-info
-#define MAX_ITERATION	100	//100
+#define MAX_ITERATION	5	//100
 #define EXTRA_ITERATION	10
 #define AUTO_DEL_CL		0
 #define AUTO_PRD_ORDER	1
@@ -130,7 +130,7 @@
 #define MANHATTAN_SORT	0
 #define AREA			6
 #define Y_SIZE			20
-#define X_SIZE			40
+#define X_SIZE			40	//調査結果より
 #define NAS_ACCURACY	100
 #define MAX_DATA_SAVE	50
 #define MAX_DATA_SAVE_DOUBLE 	MAX_DATA_SAVE*4
@@ -144,12 +144,13 @@
 #define TEMPLATE_FLAG	2 << COEF_PRECISION
 
 /*********DEBUG******************************/
-#define CHECK_DEBUG_TM 	0
-#define CHECK_DEBUG 		0
+#define CHECK_TM 		0
+#define CHECK_DEBUG 		1
+#define CHECK_PMODEL	1
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
-#define check_y			100
-#define check_x			100
+#define check_y			70
+#define check_x			81
 
 #define  OPENMP_ON		1
 #define NUM_THREADS		8	//depend on server threads num

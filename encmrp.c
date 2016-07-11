@@ -647,9 +647,9 @@ void set_pmodel_mult_cost(MASK *mask,int size, int e)
 	for (p = 0; p < mask->num_peak; p++){
 		base = mask->base[p];
 		pm = mask->pm[p];
-		/*#if CHECK_DEBUG_TM
-			printf("mask->freq: %d | mask->weight[%d]: %d | base+e: %d | pm: %d\n", mask->freq, p, mask->weight[p], base+e, pm->freq[base+e]);
-		#endif*/
+		#if CHECK_TM
+			// printf("mask->freq: %d | mask->weight[%d]: %d | base+e: %d | pm: %d\n", mask->freq, p, mask->weight[p], base+e, pm->freq[base+e]);
+		#endif
 		mask->freq += (mask->weight[p] * (pm->freq[base + e] - MIN_FREQ)) >> W_SHIFT;
 		mask->cumfreq += (mask->weight[p] * (pm->cumfreq[base + size] - pm->cumfreq[base])) >> W_SHIFT;
 	}
@@ -762,10 +762,12 @@ void*** TemplateM (ENCODER *enc) {
 	double dist1=0, dist_o=0, *area1_d=0, *area_o_d=0;
 	area1_d = (double * )alloc_mem(AREA * sizeof(double));
 	area_o_d = (double * )alloc_mem(AREA * sizeof(double));
+	printf("AVDN	ON\n");
 #endif
 
 #if MANHATTAN_SORT
 	int *mcost_num, max_nas=0, before_nas_num=0;
+	printf("MANHATTAN_SORT	ON\n");
 #endif
 
 
@@ -802,12 +804,12 @@ for(y = 0 ; y < enc->height ; y++){
 			area1[i] = 0;
 			area1[i] = org_p[roff_p[i]];
 			sum1 += area1[i];
-				#if CHECK_DEBUG_TM
+				#if CHECK_TM
 					if(y==check_y && x==check_x)	printf("sum1: %d | area1[%d]:%d\n", sum1, i, area1[i]);
 				#endif
 		}
 		ave1 = (double)sum1 / AREA;
-			#if CHECK_DEBUG_TM
+			#if CHECK_TM
 				if(y==check_y && x==check_x) printf("ave1: %f\n", ave1);
 			#endif
 	#if AVDN
@@ -853,38 +855,37 @@ for(y = 0 ; y < enc->height ; y++){
 					area_o[i] = 0;
 					area_o[i] = org_p[roff_p[i]];
 					sum_o += area_o[i];
-					#if CHECK_DEBUG_TM
+					#if CHECK_TM
 						if(y==check_y && x==check_x)	printf("sum_o: %d | area_o[%d]: %d\n",sum_o, i, area_o[i]);
 					#endif
 				}
 
 				ave_o = (double)sum_o / AREA;
-				#if CHECK_DEBUG_TM
+				#if CHECK_TM
 					if(y==check_y && x==check_x)	printf("ave_o: %f\n", ave_o);
 				#endif
 
-				#if AVDN
-					dist_o = 0;
-					for(i=0; i<AREA; i++){
-						dist_o += ((double)area_o[i] - ave_o) * ((double)area_o[i] - ave_o);
-					}
-
-					dist_o = sqrt(dist_o);
-
-					for(i=0; i<AREA; i++){
-						area_o_d[i] = ((double)area_o[i] - ave_o) / dist_o;
-					}
-				#endif
+			#if AVDN
+				dist_o = 0;
+				for(i=0; i<AREA; i++){
+					dist_o += ((double)area_o[i] - ave_o) * ((double)area_o[i] - ave_o);
+				}
+				dist_o = sqrt(dist_o);
+				for(i=0; i<AREA; i++){
+					area_o_d[i] = ((double)area_o[i] - ave_o) / dist_o;
+				}
+			#endif
 
 				nas = 0;
 
 				for(i = 0; i < AREA ; i++){//マッチングコストの計算
 					#if AVDN
-						nas += (area1_d[i] - area_o_d[i]) * (area1_d[i] - area_o_d[i]);
+						nas += fabs(area1_d[i] - area_o_d[i]);
+						// nas += (area1_d[i] - area_o_d[i]) * (area1_d[i] - area_o_d[i]);
 					#else
 						nas += fabs( ((double)area1[i] - ave1) - ((double)area_o[i] - ave_o) );
 					#endif
-					#if CHECK_DEBUG_TM
+					#if CHECK_TM
 						if(y==check_y && x==check_x)	printf("nas: %f | area1: %d | area_o: %d | ave1: %f | ave_o: %f\n", nas, area1[i], area_o[i], ave1, ave_o);
 					#endif
 				}
@@ -3765,7 +3766,7 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 			}else{
 				pm = &enc->mult_pm;
 				set_pmodel_mult(pm,mask,enc->maxval+1);
-				#if CHECK_DEBUG
+				#if CHECK_PMODEL
 					if(y==check_y && x==check_x) printmodel(pm,enc->maxval+1);
 				#endif
 				rc_encode(fp, enc->rc
@@ -3774,7 +3775,7 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 					pm->cumfreq[enc->maxval + 1]);
 			}
 			#if CHECK_DEBUG
-				printf("e[%d][%d]: %d\n", y, x, e);
+				// printf("e[%d][%d]: %d\n", y, x, e);
 			#endif
 		}
 	}
@@ -4066,7 +4067,7 @@ cost_t auto_del_class(ENCODER *enc, cost_t pre_cost)
 	}
 	if (pre_cost > min_cost) {
 		blk = 0;
-		#if CHECK_DEBUG
+		#if CHECK_CLASS
 			printf("DEL_CLASS: %d\n", del_cl);
 		#endif
 		cost = opcl(enc, del_cl, &blk, 0);
