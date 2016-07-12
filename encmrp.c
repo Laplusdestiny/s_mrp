@@ -2457,7 +2457,7 @@ cost_t optimize_predictor(ENCODER *enc)	//when AUTO_PRD_ORDER 1
 #else
 
 #if OPTIMIZE_MASK_LOOP
-void optimize_coef(ENCODER *enc, int cl, int pos1, int pos2)	//ここは使用されないはず(宣言次第)
+void optimize_coef(ENCODER *enc, int cl, int pos1, int pos2)	//if OPTIMIZE_MASK_LOOP 1
 {
 #define SEARCH_RANGE 11
 #define SUBSEARCH_RANGE 3
@@ -2554,7 +2554,9 @@ void optimize_coef(ENCODER *enc, int cl, int pos1, int pos2)	//ここは使用�
 		for (y = 0; y < enc->height; y++) {
 			class_p = enc->class[y];
 			for (x = 0; x < enc->width; x++) {
-				if (cl == *class_p++) {
+				if (cl == enc->temp_cl){
+					enc->prd_class[y][x][cl] = exam_array[y][x][0];
+				} else if (cl == *class_p++) {
 					roff_p = enc->roff[y][x];
 					org_p = &enc->org[y][x];
 //					enc->prd[y][x] += org_p[roff_p[pos1]] * i

@@ -146,7 +146,7 @@ DECODER *init_decoder(FILE *fp)
 
 #if TEMPLATE_MATCHING_ON
 	dec->temp_cl = getbits(fp, 6);
-	// printf("TEMP_CL : %d\n", dec->temp_cl);
+	printf("TEMP_CL : %d\n", dec->temp_cl);
 #endif
 
 	dec->maxprd = dec->maxval << dec->coef_precision;
