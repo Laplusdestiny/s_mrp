@@ -271,12 +271,13 @@ void decode_predictor(FILE *fp, DECODER *dec)	//when AUTO_PRD_ORDER 1
 		#if CHECK_PREDICTOR
 			printf("[%2d]", cl);
 		#endif
+
 		for (k = 0; k < dec->max_prd_order; k++) {
 			if(dec->nzconv[cl][0] == -1){
 				d=-1;
-				#if CHECK_PREDICTOR
-					printf("%d", dec->predictor[cl][0]);
-				#endif
+						#if CHECK_PREDICTOR
+							printf("%d", dec->predictor[cl][0]);
+						#endif
 				break;
 			} else if (dec->predictor[cl][k] != 0) {
 				dec->nzconv[cl][d++] = k;
@@ -607,12 +608,12 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 		area1[i] = 0;
 		area1[i] = org_p[roff_p[i]];
 		sum1 += area1[i];
-			#if CHECK_TM
+			#if CHECK_TM_DETAIL
 				if(dec_y==check_y && dec_x==check_x)	printf("sum1: %d | area1[%d]:%d\n", sum1, i, area1[i]);
 			#endif
 	}
 	ave1 = (double)sum1 / AREA;
-		#if CHECK_TM
+		#if CHECK_TM_DETAIL
 			if(dec_y==check_y && dec_x==check_x) printf("ave1: %f\n", ave1);
 		#endif
 
@@ -656,12 +657,12 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 				area_o[i] = 0;
 				area_o[i] = org_p[roff_p[i]];
 				sum_o += area_o[i];
-				#if CHECK_TM
+				#if CHECK_TM_DETAIL
 					if(dec_y==check_y && dec_x==check_x)	printf("sum_o: %d | area_o[%d]: %d\n",sum_o, i, area_o[i]);
 				#endif
 			}
 			ave_o = (double)sum_o / AREA;
-			#if CHECK_TM
+			#if CHECK_TM_DETAIL
 				if(dec_y==check_y && dec_x==check_x)	printf("ave_o: %f\n", ave_o);
 			#endif
 		#if AVDN
@@ -680,10 +681,16 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 			for(i=0; i<AREA; i++){
 				#if AVDN
 					nas += (area1_d[i] - area_o_d[i]) * (area1_d[i] - area_o_d[i]);
+					#if CHECK_TM_DETAIL
+						if(dec_y == check_y && dec_x == check_x)	printf("nas: %f | area1: %f | area_o: %f\n", nas, area1_d[i], area_o_d[i]);
+					#endif
 				#else
 					nas += fabs( ((double)area1[i] - ave1) - ((double)area_o[i] - ave_o));
+					#if CHECK_TM_DETAIL
+						if(dec_y == check_y && dec_x == check_x)	printf("nas: %f | area1: %d | area_o: %d | ave1: %f | ave_o: %f\n", nas, area1[i], area_o[i], ave1, ave_o);
+					#endif
 				#endif
-				#if CHECK_TM
+				#if CHECK_TM_DETAIL
 					if(dec_y == check_y && dec_x == check_x)	printf("nas: %f | area1: %d | area_o: %d | ave1: %f | ave_o: %f\n", nas, area1[i], area_o[i], ave1, ave_o);
 				#endif
 			}
@@ -787,6 +794,9 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 			if(exam_array[dec_y][dec_x][i] < 0 || exam_array[dec_y][dec_x][i] > dec->maxprd)
 				exam_array[dec_y][dec_x][i] = (int)ave1;
 		}
+		#if CHECK_TM
+			if(dec_y == check_y && dec_x == check_x)	printf("exam_array[%d]: %d[%3d] | (%3d,%3d) ave1: %f | ave_o: %f\n", i, exam_array[dec_y][dec_x][i], decval[temp_y][temp_x], temp_y, temp_x, ave1, ave_o);
+		#endif
 
 	}
 
@@ -1054,7 +1064,7 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 			m_prd = calc_prd(img, dec, cl, y, x);
 			if (cl == r_cl) r_prd = m_prd;
 			#if CHECK_DEBUG
-				// if(y == check_y && x == check_x) printf("[set_mask_parameter] m_prd[%d]: %d\n", peak, m_prd);
+				if(y == check_y && x == check_x) printf("[set_mask_parameter] m_prd[%d]: %d[%2d] | weight: %d\n", peak, m_prd, cl, mask->weight[peak]);
 			#endif
 			m_base = (dec->maxprd - m_prd + (1 << shift) / 2) >> shift;
 			mask->pm[peak] = dec->pmodels[m_gr][0] + (m_base & bmask);

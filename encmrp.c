@@ -804,12 +804,12 @@ for(y = 0 ; y < enc->height ; y++){
 			area1[i] = 0;
 			area1[i] = org_p[roff_p[i]];
 			sum1 += area1[i];
-				#if CHECK_TM
+				#if CHECK_TM_DETAIL
 					if(y==check_y && x==check_x)	printf("sum1: %d | area1[%d]:%d\n", sum1, i, area1[i]);
 				#endif
 		}
 		ave1 = (double)sum1 / AREA;
-			#if CHECK_TM
+			#if CHECK_TM_DETAIL
 				if(y==check_y && x==check_x) printf("ave1: %f\n", ave1);
 			#endif
 	#if AVDN
@@ -855,13 +855,13 @@ for(y = 0 ; y < enc->height ; y++){
 					area_o[i] = 0;
 					area_o[i] = org_p[roff_p[i]];
 					sum_o += area_o[i];
-					#if CHECK_TM
+					#if CHECK_TM_DETAIL
 						if(y==check_y && x==check_x)	printf("sum_o: %d | area_o[%d]: %d\n",sum_o, i, area_o[i]);
 					#endif
 				}
 
 				ave_o = (double)sum_o / AREA;
-				#if CHECK_TM
+				#if CHECK_TM_DETAIL
 					if(y==check_y && x==check_x)	printf("ave_o: %f\n", ave_o);
 				#endif
 
@@ -882,12 +882,16 @@ for(y = 0 ; y < enc->height ; y++){
 					#if AVDN
 						nas += fabs(area1_d[i] - area_o_d[i]);
 						// nas += (area1_d[i] - area_o_d[i]) * (area1_d[i] - area_o_d[i]);
+						#if CHECK_TM_DETAIL
+							if(y==check_y && x==check_x)	printf("nas: %f | area1: %f | area_o: %f\n", nas, area1_d[i], area_o_d[i]);
+						#endif
 					#else
 						nas += fabs( ((double)area1[i] - ave1) - ((double)area_o[i] - ave_o) );
+						#if CHECK_TM_DETAIL
+							if(y==check_y && x==check_x)	printf("nas: %f | area1: %d | area_o: %d | ave1: %f | ave_o: %f\n", nas, area1[i], area_o[i], ave1, ave_o);
+						#endif
 					#endif
-					#if CHECK_TM
-						if(y==check_y && x==check_x)	printf("nas: %f | area1: %d | area_o: %d | ave1: %f | ave_o: %f\n", nas, area1[i], area_o[i], ave1, ave_o);
-					#endif
+
 				}
 
 				tm[j].id = j;
@@ -901,6 +905,10 @@ for(y = 0 ; y < enc->height ; y++){
 					tm[j].mhd = abs(x-bx) + abs(y-by);
 					if(tm[j].sum > max_nas)	max_nas = tm[j].sum;
 					// printf("(%3d,%3d)max_nas: %d | sum:%d\n", y, x, max_nas, tm[j].sum);
+				#endif
+
+				#if CHECK_TM
+					if(y == check_y && x == check_x)	printf("B[%3d](%3d,%3d) sum: %d | ave: %d\n", tm[k].id, tm[k].by, tm[k].bx, tm[k].sum, tm[k].ave_o);
 				#endif
 
 				j++;
@@ -966,6 +974,9 @@ for(y = 0 ; y < enc->height ; y++){
 			count++;
 			tm_array[k * 4 + count] = 0;
 			tm_array[k * 4 + count] = tm[k].sum;
+			#if CHECK_TM
+				if(y == check_y && x == check_x)	printf("A[%3d](%3d,%3d) sum: %d | ave: %d\n", tm[k].id, tm[k].by, tm[k].bx, tm[k].sum, tm[k].ave_o);
+			#endif
 		}
 
 		for(k = 0 ; k < MAX_DATA_SAVE_DOUBLE ; k++){
@@ -988,6 +999,9 @@ for(y = 0 ; y < enc->height ; y++){
 				exam_array[y][x][i] = (int)((double)encval[temp_y][temp_x] - ave_o + ave1);
 				if(exam_array[y][x][i] < 0 || exam_array[y][x][i] > enc->maxprd)	exam_array[y][x][i] = (int)ave1;
 			}
+			#if CHECK_TM
+				if(y==check_y && x==check_x)	printf("exam_array[%d]: %d[%3d] | (%3d,%3d) ave1: %f | ave_o: %f\n", i, exam_array[y][x][i], encval[temp_y][temp_x], temp_y, temp_x, ave1, ave_o);
+			#endif
 		}
 
 //一番マッチングコストが小さいものを予測値のひとつに加える
@@ -1069,7 +1083,7 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 			m_prd = enc->prd_class[y][x][cl];
 			m_prd = CLIP(0, enc->maxprd, m_prd);
 			#if CHECK_DEBUG
-				// if( y == check_y && x == check_x)	printf("[set_mask_parameter] m_prd[%d]: %d\n", peak, m_prd);
+				if( y == check_y && x == check_x)	printf("[set_mask_parameter] m_prd[%d]: %d[%2d] | weight: %d\n", peak, m_prd, cl, mask->weight[peak]);
 			#endif
 			// if(peak==0)m_prd = 1000;
 			// else m_prd = 10000;
@@ -2143,7 +2157,9 @@ void optimize_coef(ENCODER *enc, int cl, int pos, int *num_eff)	//係数を少�
 		for (y = 0; y < enc->height; y++) {
 			class_p = enc->class[y];
 			for (x = 0; x < enc->width; x++) {
-				if (cl == *class_p++) {
+				if (cl == enc->temp_cl ){
+					enc->prd_class[y][x][cl] = exam_array[y][x][0];
+				} else if (cl == *class_p++) {
 					org_p = &enc->org[y][x];
 					roff_p = enc->roff[y][x];
 					enc->prd[y][x] += org_p[roff_p[pos]] * diff[j];
@@ -2163,7 +2179,9 @@ void optimize_coef(ENCODER *enc, int cl, int pos, int *num_eff)	//係数を少�
 		for (y = 0; y < enc->height; y++) {
 			class_p = enc->class[y];
 			for (x = 0; x < enc->width; x++) {
-				if (cl == *class_p++) {
+				if (cl == enc->temp_cl){
+					enc->prd_class[y][x][cl] = exam_array[y][x][0];
+				} else if (cl == *class_p++) {
 					org_p = &enc->org[y][x];
 					roff_p = enc->roff[y][x];
 					enc->prd[y][x] += (org_p[roff_p[pos]] - org_p[roff_p[i]]) * diff[j];

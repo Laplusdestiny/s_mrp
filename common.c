@@ -300,9 +300,10 @@ PMODEL ***init_pmodels(int num_group, int num_pmodel, int pm_accuracy,
 /****/
 void printmodel(PMODEL *pm, int size)
 {
-	int Q = 2000;
+	int Q = 3000;	//2000
 	int i, j, num;
 
+	printf("print pmodel\n");
 	for (i = 0; i < size; i++) {
 		num = pm->freq[i] / Q + 1;
 		printf("[%3d] ", i);
