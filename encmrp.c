@@ -1083,16 +1083,13 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 			m_prd = enc->prd_class[y][x][cl];
 			m_prd = CLIP(0, enc->maxprd, m_prd);
 			#if CHECK_DEBUG
-				if( y == check_y && x == check_x)	printf("[set_mask_parameter] m_prd[%d]: %d[%2d] | weight: %d\n", peak, m_prd, cl, mask->weight[peak]);
+				// if( y == check_y && x == check_x)	printf("[set_mask_parameter] m_prd[%d]: %d[%2d] | weight: %d\n", peak, m_prd, cl, mask->weight[peak]);
 			#endif
-			// if(peak==0)m_prd = 1000;
-			// else m_prd = 10000;
-			// if (y==8&&x== 8) 	printf("(%d,%d) class[%d] = %d weight[%d] =%lf m_prd =%d\n ",x,y,peak,mask->class[peak],peak,mask->weight[peak],m_prd);
+
 			mask->base[peak] = enc->bconv[m_prd];
 			m_frac = enc->fconv[m_prd];
 			mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
 			peak++;
-			// if(y%16==0 && x%16==0)printf("(%3d, %3d)mask\nclass: %d\nweight: %d\nbase[%d]: %d\npm[%d]: %d\n", y, x, mask->class[peak], mask->weight[peak], peak, mask->base[peak], peak, mask->pm[peak]);
 		}
 	}
 
@@ -1953,8 +1950,8 @@ void set_prd_pels(ENCODER *enc)
 Coef Modification
 *****************************************************************************/
 #if OPTIMIZE_MASK_LOOP
-void optimize_coef(ENCODER *enc, int cl, int pos, int *num_eff)	//係数を少し変えて
-{
+void optimize_coef(ENCODER *enc, int cl, int pos, int *num_eff)
+{					//if AUTO_PRD_ORDER 1 / OPTIMIZE_MASK_LOOP 1
 #define S_RANGE 2		//Search Range  ex. 2 -> +-1
 #define SUBS_RANGE 2	//Search Range of One Coef Modification
 	cost_t *cbuf, *cbuf_p, *cbuf_p2, c_base, *coef_cost_p1, *coef_cost_p2;
@@ -2200,7 +2197,7 @@ void optimize_coef(ENCODER *enc, int cl, int pos, int *num_eff)	//係数を少�
 
 
 #else
-//non OPTIMIZE_MASK_LOOP
+//if AUTO_PRD_ORDER	1 / OPTIMIZE_MASK_LOOP	0
 void optimize_coef(ENCODER *enc, int cl, int pos, int *num_eff)
 {
 #define S_RANGE 2		//Search Range  ex. 2 -> +-1
@@ -2412,7 +2409,7 @@ void optimize_coef(ENCODER *enc, int cl, int pos, int *num_eff)
 
 cost_t optimize_predictor(ENCODER *enc)	//when AUTO_PRD_ORDER 1
 {
-	int cl, pos, k, num_eff;
+	int cl, pos, k, num_eff, y, x;
 #ifndef RAND_MAX
 #  define RAND_MAX 32767
 #endif
@@ -2431,11 +2428,18 @@ cost_t optimize_predictor(ENCODER *enc)	//when AUTO_PRD_ORDER 1
 				set_prd_pels(enc);
 			}
 		} else {
+			for(y=0; y<enc->height; y++){
+				for(x=0; x<enc->width; x++){
+					if(enc->class[y][x] == cl){
+						enc->prd_class[y][x][cl] = exam_array[y][x][0];
+					}
+				}
+			}
 			set_prd_pels(enc);
 		}
 		enc->num_search[cl] = num_eff + 3;
-// #if CHECK_PREDICTOR
-#if 0
+
+#if CHECK_PREDICTOR
 		printf("[%2d] ", cl);
 		if(enc->num_nzcoef[cl] == -1){
 			for(k=0; k<5; k++){
@@ -2448,17 +2452,18 @@ cost_t optimize_predictor(ENCODER *enc)	//when AUTO_PRD_ORDER 1
 		}
 		printf("\n");
 #endif
+
 	}
 	save_prediction_value(enc);
 	predict_region(enc, 0, 0, enc->height, enc->width);
 	return (calc_cost(enc, 0, 0, enc->height, enc->width));
 }
 
-#else
+#else 	//AUTO_PRD_ORDER	0
 
 #if OPTIMIZE_MASK_LOOP
-void optimize_coef(ENCODER *enc, int cl, int pos1, int pos2)	//if OPTIMIZE_MASK_LOOP 1
-{
+void optimize_coef(ENCODER *enc, int cl, int pos1, int pos2)
+{		//if AUTO_PRD_ORDER	0 / OPTIMIZE_MASK_LOOP 1
 #define SEARCH_RANGE 11
 #define SUBSEARCH_RANGE 3
 	cost_t cbuf[SEARCH_RANGE * SUBSEARCH_RANGE], *cbuf_p;
@@ -2573,8 +2578,8 @@ void optimize_coef(ENCODER *enc, int cl, int pos1, int pos2)	//if OPTIMIZE_MASK_
 
 #else
 
-void optimize_coef(ENCODER *enc, int cl, int pos1, int pos2)	//ここは使用されないはず(宣言次第)
-{
+void optimize_coef(ENCODER *enc, int cl, int pos1, int pos2)
+{				//if AUTO_PRD_ORDER	0 / OPTIMIZE_MASK_LOOP 0
 #define SEARCH_RANGE 11
 #define SUBSEARCH_RANGE 3
 	cost_t cbuf[SEARCH_RANGE * SUBSEARCH_RANGE], *cbuf_p;

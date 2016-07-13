@@ -126,7 +126,7 @@
 #define TEMPLATE_MATCHING_ON 	1
 #if TEMPLATE_MATCHING_ON
 
-#define AVDN			1
+#define AVDN			0
 #define MANHATTAN_SORT	0
 #define AREA			6
 #define Y_SIZE			20
@@ -144,7 +144,7 @@
 #define TEMPLATE_FLAG	2 << COEF_PRECISION
 
 /*********DEBUG******************************/
-#define CHECK_TM 		1
+#define CHECK_TM 		0
 #define CHECK_TM_DETAIL	0
 #define CHECK_DEBUG 		1
 #define CHECK_PMODEL	0

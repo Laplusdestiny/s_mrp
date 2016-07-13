@@ -291,6 +291,9 @@ void decode_predictor(FILE *fp, DECODER *dec)	//when AUTO_PRD_ORDER 1
 		#endif
 		dec->num_nzcoef[cl] = d;
 	}
+	#if CHECK_DEBUG
+		printf("Decoded Predictor\n");
+	#endif
 	return;
 }
 
@@ -372,6 +375,9 @@ void decode_threshold(FILE *fp, DECODER *dec)
 			dec->pm_idx[gr] = rc_decode(fp, dec->rc, pm, 0, pm->size);
 		}
 	}
+	#if CHECK_DEBUG
+		printf("Decoded Threshold\n");
+	#endif
 	return;
 }
 
@@ -502,6 +508,9 @@ void decode_class(FILE *fp, DECODER *dec)
 				blksize, dec->width, level);
 		}
 	}
+	#if CHECK_DEBUG
+		printf("Decoded Class Info\n");
+	#endif
 	return;
 }
 
