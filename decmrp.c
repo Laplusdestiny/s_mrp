@@ -503,7 +503,7 @@ void decode_class(FILE *fp, DECODER *dec)
 	}
 	for (y = 0; y < dec->height; y += blksize) {
 		for (x = 0; x < dec->width; x += blksize) {
-			printf("(%3d,%3d)\n", y, x);
+			// printf("(%3d,%3d)\n", y, x);
 			decode_qtindex(fp, dec, cpm, y, x,
 				blksize, dec->width, level);
 		}
@@ -809,6 +809,9 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 
 	}
 
+	free(tm_array);
+	free(decval);
+
 //一番マッチングコストが小さいものを予測値のひとつに加える
 	/*temp_y = tempm_array[1];
 	temp_x = tempm_array[2];
@@ -820,6 +823,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 		exam_array[dec_y][dec_x] = (int)((double)decval[temp_y][temp_x] - ave_o + ave1) ;
 		if(exam_array[dec_y][dec_x] < 0 || exam_array[dec_y][dec_x] > dec->maxprd)	exam_array[dec_y][dec_x] = (int)ave1 ;
 	}*/
+
 }
 #endif
 
