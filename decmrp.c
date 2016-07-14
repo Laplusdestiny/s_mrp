@@ -710,6 +710,11 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 			tm[j].ave_o = (int)ave_o;
 			tm[j].sum = (int)(nas * NAS_ACCURACY);
 			if(tm[j].sum < 0)	tm[j].sum = 0;
+
+			#if AVDN
+				tm[j].s_devian = dist_o;
+			#endif
+
 			#if MANHATTAN_SORT
 				tm[j].mhd = abs(dec_x - bx) + abs( dec_y - by);
 				if(tm[j].sum > max_nas)	max_nas = tm[j].sum;
@@ -796,10 +801,18 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 		temp_x = tempm_array[i*4+2];
 		ave_o = dec->array[i];
 
+		#if AVDN
+			dist_o = tm[i].s_devian;
+		#endif
+
 		if(dec_y == 0 && dec_x < 3){
 			exam_array[dec_y][dec_x][i] = (dec->maxprd > 1);
 		} else {
-			exam_array[dec_y][dec_x][i] = (int)((double)decval[temp_y][temp_x] - ave_o + ave1);
+			#if AVDN
+				exam_array[dec_y][dec_x][i] = (int)( ((double)decval[temp_y][temp_x] - ave_o) * dist1 / dist_o + ave1);
+			#else
+				exam_array[dec_y][dec_x][i] = (int)((double)decval[temp_y][temp_x] - ave_o + ave1);
+			#endif
 			if(exam_array[dec_y][dec_x][i] < 0 || exam_array[dec_y][dec_x][i] > dec->maxprd)
 				exam_array[dec_y][dec_x][i] = (int)ave1;
 		}

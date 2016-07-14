@@ -901,6 +901,10 @@ for(y = 0 ; y < enc->height ; y++){
 				tm[j].sum = (int)(nas * NAS_ACCURACY);
 				if(tm[j].sum < 0)	tm[j].sum = 0;
 
+				#if AVDN
+					tm[j].s_devian = dist_o;
+				#endif
+
 				#if MANHATTAN_SORT
 					tm[j].mhd = abs(x-bx) + abs(y-by);
 					if(tm[j].sum > max_nas)	max_nas = tm[j].sum;
@@ -908,7 +912,7 @@ for(y = 0 ; y < enc->height ; y++){
 				#endif
 
 				#if CHECK_TM
-					if(y == check_y && x == check_x)	printf("B[%3d](%3d,%3d) sum: %d | ave: %d\n", tm[k].id, tm[k].by, tm[k].bx, tm[k].sum, tm[k].ave_o);
+					if(y == check_y && x == check_x)	printf("B[%3d](%3d,%3d) sum: %d | ave: %d\n", tm[j].id, tm[j].by, tm[j].bx, tm[j].sum, tm[j].ave_o);
 				#endif
 
 				j++;
@@ -992,11 +996,18 @@ for(y = 0 ; y < enc->height ; y++){
 			temp_y = tempm_array[y][x][i*4 + 1];
 			temp_x = tempm_array[y][x][i*4 + 2];
 			ave_o = enc->array[y][x][i];
+			#if AVDN
+				dist_o = tm[i].s_devian;
+			#endif
 
 			if(y == 0 && x< 3){
 				exam_array[y][x][i] = (enc->maxprd > 1);
 			} else {
-				exam_array[y][x][i] = (int)((double)encval[temp_y][temp_x] - ave_o + ave1);
+				#if AVDN
+					exam_array[y][x][i] = (int)( ((double)encval[temp_y][temp_x] - ave_o) * dist1 / dist_o + ave1);
+				#else
+					exam_array[y][x][i] = (int)((double)encval[temp_y][temp_x] - ave_o + ave1);
+				#endif
 				if(exam_array[y][x][i] < 0 || exam_array[y][x][i] > enc->maxprd)	exam_array[y][x][i] = (int)ave1;
 			}
 			#if CHECK_TM
@@ -4261,14 +4272,14 @@ int main(int argc, char **argv)
 	printf("------------------------------------------------------------------\n");
 #if AUTO_PRD_ORDER
 	// printf("M = %d, K = %d, P = %d, V = %d, A = %d, l = %d, m = %d, o = %d, f = %d\n",
-	printf("NUM_CLASS 		= %d\nMAX_PRD_ORDER 	= %d\ncoef_precision 		= %d\nnum_pmodel	 	= %d\npm_accuracy	 	= %d\nmax_iteration 		= %d\nf_mmse 			= %d\nf_optpred 		= %d\nquadtree_depth 		= %d\nTemplateM		= %d\n",
+	printf("NUM_CLASS\t= %d\nMAX_PRD_ORDER\t= %d\ncoef_precision\t= %d\nnum_pmodel\t= %d\npm_accuracy\t= %d\nmax_iteration\t= %d\nf_mmse\t\t= %d\nf_optpred\t= %d\nquadtree_depth\t= %d\nTemplateM\t= %d\n",
 		num_class, MAX_PRD_ORDER, coef_precision, num_pmodel, pm_accuracy, max_iteration, f_mmse, f_optpred, quadtree_depth, TEMPLATE_MATCHING_ON);
 	#if TEMPLATE_MATCHING_ON
 		// printf("TM_CLASS_NUM	= %d\n", TEMPLATE_CLASS_NUM);
 	#endif
 	#if OPENMP_ON
 		omp_set_num_threads(NUM_THREADS);
-		printf("Parallel Threads 	= %d\n", omp_get_max_threads());
+		printf("Parallel Threads= %d\n", omp_get_max_threads());
 	#endif
 #else
 	printf("M = %d, K = %d, P = %d, V = %d, A = %d\n",
