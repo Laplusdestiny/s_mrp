@@ -880,8 +880,8 @@ for(y = 0 ; y < enc->height ; y++){
 
 				for(i = 0; i < AREA ; i++){//マッチングコストの計算
 					#if AVDN
-						nas += fabs(area1_d[i] - area_o_d[i]);
-						// nas += (area1_d[i] - area_o_d[i]) * (area1_d[i] - area_o_d[i]);
+						// nas += fabs(area1_d[i] - area_o_d[i]);
+						nas += (area1_d[i] - area_o_d[i]) * (area1_d[i] - area_o_d[i]);
 						#if CHECK_TM_DETAIL
 							if(y==check_y && x==check_x)	printf("nas: %f | area1: %f | area_o: %f\n", nas, area1_d[i], area_o_d[i]);
 						#endif
@@ -912,7 +912,7 @@ for(y = 0 ; y < enc->height ; y++){
 				#endif
 
 				#if CHECK_TM
-					if(y == check_y && x == check_x)	printf("B[%3d](%3d,%3d) sum: %d | ave: %d\n", tm[j].id, tm[j].by, tm[j].bx, tm[j].sum, tm[j].ave_o);
+					if(y == check_y && x == check_x)	printf("B[%3d](%3d,%3d) sum: %d | ave: %d | devian: %f\n", tm[j].id, tm[j].by, tm[j].bx, tm[j].sum, tm[j].ave_o, tm[j].s_devian);
 				#endif
 
 				j++;
@@ -979,7 +979,7 @@ for(y = 0 ; y < enc->height ; y++){
 			tm_array[k * 4 + count] = 0;
 			tm_array[k * 4 + count] = tm[k].sum;
 			#if CHECK_TM
-				if(y == check_y && x == check_x)	printf("A[%3d](%3d,%3d) sum: %d | ave: %d\n", tm[k].id, tm[k].by, tm[k].bx, tm[k].sum, tm[k].ave_o);
+				if(y == check_y && x == check_x)	printf("A[%3d](%3d,%3d) sum: %d | ave: %d | devian: %f\n", tm[k].id, tm[k].by, tm[k].bx, tm[k].sum, tm[k].ave_o, tm[k].s_devian);
 			#endif
 		}
 

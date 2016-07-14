@@ -690,6 +690,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 			for(i=0; i<AREA; i++){
 				#if AVDN
 					nas += (area1_d[i] - area_o_d[i]) * (area1_d[i] - area_o_d[i]);
+					// nas += fabs(area1_d[i] - area_o_d[i]);
 					#if CHECK_TM_DETAIL
 						if(dec_y == check_y && dec_x == check_x)	printf("nas: %f | area1: %f | area_o: %f\n", nas, area1_d[i], area_o_d[i]);
 					#endif
@@ -721,7 +722,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 			#endif
 
 			#if CHECK_TM
-				if(dec_y == check_y && dec_x == check_x)	printf("B[%3d](%3d,%3d) sum: %d | ave: %d\n", tm[j].id, tm[j].by, tm[j].bx, tm[j].sum, tm[j].ave_o);
+				if(dec_y == check_y && dec_x == check_x)	printf("B[%3d](%3d,%3d) sum: %d | ave: %d | devian: %f\n", tm[j].id, tm[j].by, tm[j].bx, tm[j].sum, tm[j].ave_o, tm[j].s_devian);
 			#endif
 
 			j++;
@@ -783,7 +784,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 		tm_array[k * 4 + count] = 0;
 		tm_array[k * 4 + count] = tm[k].sum;
 		#if CHECK_TM
-			if(dec_y == check_y && dec_x == check_x)	printf("A[%3d](%3d,%3d) sum: %d | ave: %d\n", tm[k].id, tm[k].by, tm[k].bx, tm[k].sum, tm[k].ave_o);
+			if(dec_y == check_y && dec_x == check_x)	printf("A[%3d](%3d,%3d) sum: %d | ave: %d | devian: %f\n", tm[k].id, tm[k].by, tm[k].bx, tm[k].sum, tm[k].ave_o, tm[k].s_devian);
 		#endif
 	}
 
