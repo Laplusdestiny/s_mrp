@@ -4,6 +4,7 @@ CC = gcc
 ifeq ($(CC), icc)
   CFLAG = -O3 -ip -axsse4.1 -msse3 -g -unroll
 else
+  # CFLAG = -funroll-loops -Wall -g -fopenmp
   CFLAG = -O3 -funroll-loops -Wall -g -fopenmp
 endif
 

@@ -209,6 +209,9 @@ DECODER *init_decoder(FILE *fp)
 	dec->temp_num = (int **)alloc_2d_array(dec->height, dec->width, sizeof(int));
 #endif
 	dec->org = (int **)alloc_2d_array(dec->height, dec->width, sizeof(int));
+#if CHECK_DEBUG
+	printf("Decoded Header\n");
+#endif
 	return (dec);
 }
 
@@ -405,7 +408,6 @@ void decode_qtindex(FILE *fp, DECODER *dec, PMODEL *cpm,
 
 		pm = &dec->spm;
 		i = rc_decode(fp, dec->rc, pm, ctx, ctx + 2) - ctx;
-
 		if (i == 1) {
 			qtmap[y][x] = 1;
 			blksize >>= 1;
@@ -421,7 +423,6 @@ void decode_qtindex(FILE *fp, DECODER *dec, PMODEL *cpm,
 		}
 	}
 	i = rc_decode(fp, dec->rc, cpm, 0, cpm->size);
-
 	mtf_classlabel(dec->class, dec->mtfbuf, tly, tlx,
 		blksize, width, dec->num_class);
 	for (cl = 0; cl < dec->num_class; cl++) {
@@ -450,7 +451,6 @@ void decode_class(FILE *fp, DECODER *dec)
 		level = 0;
 		blksize = BASE_BSIZE;
 	}
-
 	pm = &dec->spm;
 	if (dec->quadtree_depth > 0) {
 		set_spmodel(pm, 7, -1);
@@ -498,12 +498,12 @@ void decode_class(FILE *fp, DECODER *dec)
 		if (cpm->freq[i] <= 0) cpm->freq[i] = 1;
 		cpm->cumfreq[i + 1] = cpm->cumfreq[i] + cpm->freq[i];
 	}
-
 	for (i = 0; i < dec->num_class; i++) {
 		dec->mtfbuf[i] = i;
 	}
 	for (y = 0; y < dec->height; y += blksize) {
 		for (x = 0; x < dec->width; x += blksize) {
+			printf("(%3d,%3d)\n", y, x);
 			decode_qtindex(fp, dec, cpm, y, x,
 				blksize, dec->width, level);
 		}

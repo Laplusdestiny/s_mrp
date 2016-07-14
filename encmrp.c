@@ -1083,7 +1083,7 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 			m_prd = enc->prd_class[y][x][cl];
 			m_prd = CLIP(0, enc->maxprd, m_prd);
 			#if CHECK_DEBUG
-				// if( y == check_y && x == check_x)	printf("[set_mask_parameter] m_prd[%d]: %d[%2d] | weight: %d\n", peak, m_prd, cl, mask->weight[peak]);
+				if( y == check_y && x == check_x)	printf("[set_mask_parameter] m_prd[%d]: %d[%2d] | weight: %d\n", peak, m_prd, cl, mask->weight[peak]);
 			#endif
 
 			mask->base[peak] = enc->bconv[m_prd];
