@@ -55,7 +55,7 @@
 #define MIN_BSIZE		(MAX_BSIZE >> QUADTREE_DEPTH)
 
 /***** CLASS *******************************/
-#define NUM_CLASS       63
+#define NUM_CLASS 		-1	//負の値にすると画像サイズに依存したクラス数
 #define MAX_CLASS		63
 
 /***** PREDICTOR ***************************/
@@ -146,7 +146,7 @@
 /*********DEBUG******************************/
 #define CHECK_TM 		0
 #define CHECK_TM_DETAIL	0
-#define CHECK_DEBUG 		1
+#define CHECK_DEBUG 		0
 #define CHECK_PMODEL	0
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
