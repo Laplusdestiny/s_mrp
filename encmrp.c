@@ -793,6 +793,7 @@ printf("Calculating Template Matching\r");
 for(y = 0 ; y < enc->height ; y++){
 	for (x = 0; x < enc->width; x++){
 		if(y==0 && x==0) continue;
+
 		// bzero(&tm, sizeof(tm));
 		memset(&tm, 0, sizeof(tm));
 

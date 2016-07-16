@@ -177,9 +177,12 @@ void print_class(char **class, int num_class, int height, int width, char *outfi
 void output_class_map(char **class, int num_class, int height, int width, char *outfile)
 {
 	int i, j, step;
+	int count_class[num_class];
 	char *name;
 	char file[256];
 	FILE *fp;
+
+	memset(&count_class, 0, sizeof(count_class));
 
 	name = strrchr( outfile, BS);
 	name++;
@@ -189,8 +192,13 @@ void output_class_map(char **class, int num_class, int height, int width, char *
 	for (i = 0; i < height; i++) {
 		for (j = 0; j < width; j++) {
 			fprintf(fp , "%d,", class[i][j]);
+			count_class[(int)class[i][j]]++;
 		}
 		fprintf(fp, "\n");
+	}
+	fprintf(fp, "\n\n\nClass Histgram\n");
+	for(i=0; i<num_class; i++){
+		fprintf(fp, "%d,%d\n", i, count_class[i]);
 	}
 	fclose(fp);
 	return;
