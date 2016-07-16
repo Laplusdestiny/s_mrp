@@ -633,6 +633,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 	}
 
 	dist1 = sqrt(dist1);
+	if(dist1 == 0) dist1 = 1;
 
 	for(i=0; i<AREA; i++){
 		area1_d[i] = ((double)area1[i] -ave1) / dist1;
@@ -681,6 +682,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 			}
 
 			dist_o = sqrt(dist_o);
+			if(dist_o == 0)	dist_o = 1;
 
 			for(i=0; i<AREA; i++){
 				area_o_d[i] = ((double)area_o[i] - ave_o) / dist_o;
