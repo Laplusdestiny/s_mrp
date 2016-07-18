@@ -1075,6 +1075,36 @@ double continuous_GGF(ENCODER *enc, double e,int w_gr){
 	return(p);
 }
 
+int temp_mask_parameter(ENCODER *enc, int y, int x, int u, int peak, int cl, int weight_all)
+{
+	int i, m_gr, m_prd, m_frac;
+	double weight[TEMPLATE_CLASS_NUM], sum_weight = 0, weight_coef=0;
+
+	for(i=0; i<TEMPLATE_CLASS_NUM; i++){
+		weight[i] = continuous_GGF(enc, (double)tempm_array[y][x][i*4+3] / NAS_ACCURACY, enc->w_gr);
+		sum_weight += weight[i];
+	}
+	weight_coef = (double)weight_all / sum_weight;
+
+	for(i=0; i<TEMPLATE_CLASS_NUM; i++){
+		mask->class[peak] = cl;
+		mask->weight[peak] = (int)(weight[i] * weight_coef);
+		m_gr = enc->uquant[cl][u];
+		m_prd = enc->prd_class[y][x][cl];
+		m_prd = CLIP(0, enc->maxprd, m_prd);
+		#if CHECK_DEBUG
+			if( y == check_y && x == check_x)	printf("[	set_mask_parameter] m_prd[%d]: %d[%2d] | weight: %d\n", 	peak, m_prd, cl, mask->weight[peak]);
+		#endif
+
+		mask->base[peak] = enc->bconv[m_prd];
+		m_frac = enc->fconv[m_prd];
+		mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
+		peak++;
+	}
+
+	return(peak);
+}
+
 #endif
 
 void set_mask_parameter(ENCODER *enc,int y, int x, int u)
@@ -1102,19 +1132,23 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 
 	for(cl = peak = 0; cl < enc->num_class; cl++){
 		if (count_cl[cl]!=0){
-			mask->class[peak] = cl;		//マスクにかかる領域毎のクラスを保存
-			mask->weight[peak] = ( (count_cl[cl] << W_SHIFT) / sample);	//各ピーク毎の重み
-			m_gr = enc->uquant[cl][u];
-			m_prd = enc->prd_class[y][x][cl];
-			m_prd = CLIP(0, enc->maxprd, m_prd);
-			#if CHECK_DEBUG
-				if( y == check_y && x == check_x)	printf("[set_mask_parameter] m_prd[%d]: %d[%2d] | weight: %d\n", peak, m_prd, cl, mask->weight[peak]);
-			#endif
+			if(cl == enc->temp_cl){
+				peak = temp_mask_parameter(enc, y, x, u, peak, cl, (count_cl[cl] << W_SHIFT) / sample);
+			} else {
+				mask->class[peak] = cl;		//マスクにかかる領域毎のクラスを保存
+				mask->weight[peak] = ( (count_cl[cl] << W_SHIFT) / sample);	//	各ピーク毎の重み
+				m_gr = enc->uquant[cl][u];
+				m_prd = enc->prd_class[y][x][cl];
+				m_prd = CLIP(0, enc->maxprd, m_prd);
+				#if CHECK_DEBUG
+					if( y == check_y && x == check_x)	printf("[	set_mask_parameter] m_prd[%d]: %d[%2d] | weight: %d\n", 	peak, m_prd, cl, mask->weight[peak]);
+				#endif
 
-			mask->base[peak] = enc->bconv[m_prd];
-			m_frac = enc->fconv[m_prd];
-			mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
-			peak++;
+				mask->base[peak] = enc->bconv[m_prd];
+				m_frac = enc->fconv[m_prd];
+				mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
+				peak++;
+			}
 		}
 	}
 
@@ -1154,16 +1188,21 @@ int set_mask_parameter_optimize(ENCODER *enc,int y, int x, int u, int r_cl)
 
 	for(cl = peak = 0; cl < enc->num_class; cl++){
 		if (enc->weight[y][x][cl] != 0){
-			mask->class[peak] = cl;
-			mask->weight[peak] = enc->weight[y][x][cl];
-			m_prd = enc->prd_class[y][x][cl];
-			m_prd = CLIP(0, enc->maxprd, m_prd);
-			mask->base[peak] = enc->bconv[m_prd];
-			m_frac = enc->fconv[m_prd];
-			m_gr = enc->uquant[cl][u];
-			if (cl == r_cl)	 r_peak = peak;	//当該ブロックのピーク番号
-			mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
-			peak++;
+			if(cl == enc->temp_cl){
+				peak = temp_mask_parameter(enc, y, x, u, peak, cl, enc->weight[y][x][cl]);
+				if(cl == r_cl)	r_peak = peak;
+			} else {
+				mask->class[peak] = cl;
+				mask->weight[peak] = enc->weight[y][x][cl];
+				m_prd = enc->prd_class[y][x][cl];
+				m_prd = CLIP(0, enc->maxprd, m_prd);
+				mask->base[peak] = enc->bconv[m_prd];
+				m_frac = enc->fconv[m_prd];
+				m_gr = enc->uquant[cl][u];
+				if (cl == r_cl)	 r_peak = peak;	//当該ブロックのピーク番号
+				mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
+				peak++;
+			}
 		}
 	}
 
@@ -1875,6 +1914,7 @@ cost_t optimize_class(ENCODER *enc)
 // #if 0
 #if TEMPLATE_MATCHING_ON
 	int cl;
+	enc->temp_cl = -1;
 	for(cl=0; cl<enc->num_class; cl++){
 		if(enc->optimize_loop==1){
 			if(enc->predictor[cl][0] == TEMPLATE_FLAG){
@@ -2797,8 +2837,7 @@ cost_t optimize_group_mult(ENCODER *enc)
 	int x, y, th1, th0, k, u, cl, gr, prd, e, base, frac, peak,m_gr,count;
 	int **trellis;
 
-// #if TEMPLATE_MATCHING_ON
-#if 0
+#if TEMPLATE_MATCHING_ON
 	int new_gr=0, before_gr=0;
 	cost_t  w_gr_cost=0;
 #endif
@@ -3042,27 +3081,22 @@ printf ("[op_group] -> %d" ,(int)cost);	//しきい値毎に分散を最適化�
 			}
 		}
 	}
-#if 0
-// #if TEMPLATE_MATCHING_ON
+#if TEMPLATE_MATCHING_ON
 	// 片側ラプラス関数の分散の決定
 	printf(" [opt w_gr: ");
 	before_gr = enc->w_gr;
 	min_cost = INT_MAX;
-	// enc->optimize_w_gr = 1;
-	// #pragma omp parallel
-	// {
-		for(gr=0; gr<enc->num_group; gr++){
-			enc->w_gr = gr;
-			w_gr_cost = calc_cost2(enc, 0, 0, enc->height, enc->width);
-			if(w_gr_cost < min_cost){
-				new_gr = gr;
-				min_cost = w_gr_cost;
-			}
+	for(gr=0; gr<enc->num_group; gr++){
+		enc->w_gr = gr;
+		w_gr_cost = calc_cost2(enc, 0, 0, enc->height, enc->width);
+		if(w_gr_cost < min_cost){
+			new_gr = gr;
+			min_cost = w_gr_cost;
 		}
-	// }
+	}
 	if(new_gr >= enc->num_group) new_gr = enc->num_group-1;
 	enc->w_gr = new_gr;
-	printf("%d]\n	", enc->w_gr);
+	printf("%d]", enc->w_gr);
 #endif
 	printf (" [op_c] ->");	//分散毎に確率モデルの形状を最適化した時のコスト
 	// printf (" op_c -> %d" ,(int)cost);	//分散毎に確率モデルの形状を最適化した時のコスト
