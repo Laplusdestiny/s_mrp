@@ -630,6 +630,9 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 	dist1=0;
 	for(i=0; i<AREA; i++){
 		dist1 += ((double)area1[i] - ave1) * ((double)area1[i] - ave1);
+		#if CHECK_TM_DETAIL
+			if(dec_y == check_y && dec_x == check_x )	printf("dist1: %f | area1: %d | ave1: %f\n", dist1, area1[i], ave1);
+		#endif
 	}
 
 	dist1 = sqrt(dist1);
@@ -637,6 +640,9 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 
 	for(i=0; i<AREA; i++){
 		area1_d[i] = ((double)area1[i] -ave1) / dist1;
+		#if CHECK_TM_DETAIL
+			if(dec_y == check_y && dec_x == check_x )	printf("area1_d: %f | area1: %d | ave1: %f | dist1: %f\n", area1_d[i], area1[i], ave1, dist1);
+		#endif
 	}
 #endif
 
@@ -679,6 +685,9 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 			dist_o = 0;
 			for(i=0; i<AREA; i++){
 				dist_o += ((double)area_o[i] - ave_o) * ((double)area_o[i] - ave_o);
+				#if CHECK_TM_DETAIL
+					if(dec_y == check_y && dec_x == check_x)	printf("dist_o: %f | area_o: %d | ave_o: %f\n", dist_o, area_o[i], ave_o);
+				#endif
 			}
 
 			dist_o = sqrt(dist_o);
@@ -686,6 +695,9 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 
 			for(i=0; i<AREA; i++){
 				area_o_d[i] = ((double)area_o[i] - ave_o) / dist_o;
+				#if CHECK_TM_DETAIL
+					if(dec_y == check_y && dec_x == check_x)	printf("area_o_d: %f | area_o: %d | ave_o: %f | dist_o: %f\n", area_o_d[i], area_o[i], ave_o, dist_o);
+				#endif
 			}
 		#endif
 			nas = 0;

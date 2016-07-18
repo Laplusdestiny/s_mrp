@@ -810,9 +810,7 @@ for(y = 0 ; y < enc->height ; y++){
 				#endif
 		}
 		ave1 = (double)sum1 / AREA;
-			#if CHECK_TM_DETAIL
-				if(y==check_y && x==check_x) printf("ave1: %f\n", ave1);
-			#endif
+
 	#if AVDN
 		dist1=0;
 		for(i=0; i<AREA; i++){
@@ -823,9 +821,6 @@ for(y = 0 ; y < enc->height ; y++){
 		}
 		dist1 = sqrt(dist1);
 		if(dist1 == 0) dist1 = 1;
-		#if CHECK_TM_DETAIL
-			if(y==check_y && x==check_x)	printf("sqrt(dist1): %f\n", dist1);
-		#endif
 
 		for(i=0; i<AREA; i++){
 			area1_d[i] = ((double)area1[i] -ave1) / dist1;
@@ -872,9 +867,6 @@ for(y = 0 ; y < enc->height ; y++){
 				}
 
 				ave_o = (double)sum_o / AREA;
-				#if CHECK_TM_DETAIL
-					if(y==check_y && x==check_x)	printf("ave_o: %f\n", ave_o);
-				#endif
 
 			#if AVDN
 				dist_o = 0;
@@ -886,9 +878,7 @@ for(y = 0 ; y < enc->height ; y++){
 				}
 				dist_o = sqrt(dist_o);
 				if(dist_o == 0)	dist_o = 1;
-				#if CHECK_TM_DETAIL
-					if(y==check_y && x==check_x)	printf("sqrt(dist_o): %f\n", dist_o);
-				#endif
+
 				for(i=0; i<AREA; i++){
 					area_o_d[i] = ((double)area_o[i] - ave_o) / dist_o;
 					#if CHECK_TM_DETAIL
@@ -1035,6 +1025,9 @@ for(y = 0 ; y < enc->height ; y++){
 				if(y==check_y && x==check_x)	printf("exam_array[%d]: %d[%3d] | (%3d,%3d) ave1: %f | ave_o: %f\n", i, exam_array[y][x][i], encval[temp_y][temp_x], temp_y, temp_x, ave1, ave_o);
 			#endif
 		}
+		#if CHECK_TM
+			if(y==check_y && x==check_x)	printf("(%3d,%3d)org: %d\n", y, x, encval[y][x]);
+		#endif
 
 //一番マッチングコストが小さいものを予測値のひとつに加える
 		/*temp_y = tempm_array[y][x][1];

@@ -198,7 +198,7 @@ void output_class_map(char **class, int num_class, int height, int width, char *
 	}
 	fprintf(fp, "\n\n\nClass Histgram\n");
 	for(i=0; i<num_class; i++){
-		fprintf(fp, "%d,%d\n", i, count_class[i]);
+		fprintf(fp, "%d,%d,%f%%\n", i, count_class[i], (double)count_class[i] * 100 / (height * width));
 	}
 	fclose(fp);
 	return;
