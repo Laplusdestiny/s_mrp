@@ -1053,9 +1053,7 @@ printf("Calculating Template Matching Fin\n");
 	return(0);
 	// return(array);
 }
-#endif
 
-#if TEMPLATE_MATCHING_ON
 double continuous_GGF(ENCODER *enc, double e,int w_gr){
 	int lngamma(double), cn=WEIGHT_CN, num_pmodel=enc->num_pmodel;
 	double sigma,delta_c,shape,eta,p;
@@ -1090,10 +1088,11 @@ int temp_mask_parameter(ENCODER *enc, int y, int x, int u, int peak, int cl, int
 		mask->class[peak] = cl;
 		mask->weight[peak] = (int)(weight[i] * weight_coef);
 		m_gr = enc->uquant[cl][u];
-		m_prd = enc->prd_class[y][x][cl];
+		m_prd = exam_array[y][x][i];
+		// m_prd = enc->prd_class[y][x][cl];
 		m_prd = CLIP(0, enc->maxprd, m_prd);
 		#if CHECK_DEBUG
-			if( y == check_y && x == check_x)	printf("[	set_mask_parameter] m_prd[%d]: %d[%2d] | weight: %d\n", 	peak, m_prd, cl, mask->weight[peak]);
+			if( y == check_y && x == check_x)	printf("[set_mask_parameter] m_prd[%d]: %d[%2d] | weight: %d\n", peak, m_prd, cl, mask->weight[peak]);
 		#endif
 
 		mask->base[peak] = enc->bconv[m_prd];
@@ -1141,7 +1140,7 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 				m_prd = enc->prd_class[y][x][cl];
 				m_prd = CLIP(0, enc->maxprd, m_prd);
 				#if CHECK_DEBUG
-					if( y == check_y && x == check_x)	printf("[	set_mask_parameter] m_prd[%d]: %d[%2d] | weight: %d\n", 	peak, m_prd, cl, mask->weight[peak]);
+					if( y == check_y && x == check_x)	printf("[set_mask_parameter] m_prd[%d]: %d[%2d] | weight: %d\n", 	peak, m_prd, cl, mask->weight[peak]);
 				#endif
 
 				mask->base[peak] = enc->bconv[m_prd];
@@ -2838,7 +2837,7 @@ cost_t optimize_group_mult(ENCODER *enc)
 	int **trellis;
 
 #if TEMPLATE_MATCHING_ON
-	int new_gr=0, before_gr=0;
+	int new_gr=0;
 	cost_t  w_gr_cost=0;
 #endif
 
@@ -3083,8 +3082,7 @@ printf ("[op_group] -> %d" ,(int)cost);	//しきい値毎に分散を最適化�
 	}
 #if TEMPLATE_MATCHING_ON
 	// 片側ラプラス関数の分散の決定
-	printf(" [opt w_gr: ");
-	before_gr = enc->w_gr;
+	// before_gr = enc->w_gr;
 	min_cost = INT_MAX;
 	for(gr=0; gr<enc->num_group; gr++){
 		enc->w_gr = gr;
@@ -3096,7 +3094,7 @@ printf ("[op_group] -> %d" ,(int)cost);	//しきい値毎に分散を最適化�
 	}
 	if(new_gr >= enc->num_group) new_gr = enc->num_group-1;
 	enc->w_gr = new_gr;
-	printf("%d]", enc->w_gr);
+	printf(" [opt w_gr: %d]", enc->w_gr);
 #endif
 	printf (" [op_c] ->");	//分散毎に確率モデルの形状を最適化した時のコスト
 	// printf (" op_c -> %d" ,(int)cost);	//分散毎に確率モデルの形状を最適化した時のコスト
@@ -3204,7 +3202,9 @@ int write_header(ENCODER *enc, FILE *fp)
 
 #if TEMPLATE_MATCHING_ON
 	bits += putbits(fp, 6, enc->temp_cl);
-	printf("TEMP_CL : %d\n", enc->temp_cl);
+	printf("TEMP_CL : %d | ", enc->temp_cl);
+	bits += putbits(fp, 4, enc->w_gr);
+	printf("w_gr: %d\n", enc->w_gr);
 #endif
 
 	return (bits);
@@ -4312,8 +4312,8 @@ int main(int argc, char **argv)
 #endif
 
 #if TEMPLATE_MATCHING_ON
-	num_class++;
-	// num_class += TEMPLATE_CLASS_NUM;
+	// num_class++;
+	num_class += TEMPLATE_CLASS_NUM;
 #endif
 
 	printf("%s -> %s (%dx%d)\n", infile, outfile, img->width, img->height);
@@ -4375,7 +4375,7 @@ int main(int argc, char **argv)
 	// exam_array = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
 	exam_array = (int ***)alloc_3d_array(enc->height, enc->width, TEMPLATE_CLASS_NUM, sizeof(int));
 	TemplateM(enc);
-	// enc->w_gr = W_GR;	//マッチングコストに対する重みの分散値の初期化
+	enc->w_gr = W_GR;	//マッチングコストに対する重みの分散値の初期化
 #endif
 
 	/* 1st loop */

@@ -37,5 +37,8 @@ clean :
 job :
 	sjob -h compute-0-20 run.sh &
 
+job25 : 
+	sjob -h c25 run.sh &
+
 cleanlog :
 	rm -rf Log/*

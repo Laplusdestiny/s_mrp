@@ -127,7 +127,7 @@
 #if TEMPLATE_MATCHING_ON
 
 #define AVDN			1
-#define MANHATTAN_SORT	0
+#define MANHATTAN_SORT	1
 #define AREA			6
 #define Y_SIZE			20
 #define X_SIZE			40	//調査結果より
@@ -146,12 +146,12 @@
 /*********DEBUG******************************/
 #define CHECK_TM 		0
 #define CHECK_TM_DETAIL	0
-#define CHECK_DEBUG 		0
+#define CHECK_DEBUG 		1
 #define CHECK_PMODEL	0
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
-#define check_y			174
-#define check_x			1
+#define check_y			0
+#define check_x			706
 
 #define  OPENMP_ON		1
 #define NUM_THREADS		8	//depend on server threads num
@@ -274,6 +274,7 @@ typedef struct {
 	int **mmc;
 #endif
 	int temp_cl;
+	int w_gr;
 } ENCODER;
 
 typedef struct {
@@ -319,6 +320,7 @@ typedef struct {
 #endif
 	int temp_cl;
 	int **org;
+	int w_gr;
 } DECODER;
 
 /***** FUNC - common.c ****************************/

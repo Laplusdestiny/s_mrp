@@ -874,25 +874,21 @@ void init_log_sheet(ENCODER *enc, char *outfile)
 	sprintf(date, "%4d/%2d/%2d_%2d:%2d",
 		1900 + lst->tm_year, 1 + lst->tm_mon, lst->tm_mday, lst->tm_hour, lst->tm_min);
 
-    if ((fp = fopen(LOG_LIST, "rb")) == NULL) {
-	fp = fileopen(LOG_LIST, "wb");
-	fprintf(fp, "Date,Input,Height,Width,Init_Class,Use_Class,Prd_Order,\
-Header[bits],Class[bits],Predictor[bits],Threshold[bits],\
-Pred. Errors[bits],Total info.[bits],Coding Rate[bits/pel], ,");
+	if ((fp = fopen(LOG_LIST, "rb")) == NULL) {
+		fp = fileopen(LOG_LIST, "wb");
+		fprintf(fp, "Date,Input,Height,Width,Init_Class,Use_Class,Prd_Order,\
+			Header[bits],Class[bits],Predictor[bits],Threshold[bits],\
+			Pred. Errors[bits],Total info.[bits],Coding Rate[bits/pel], ,");
 
-	fprintf(fp, "Auto_Del_CL,\
-Auto_Set_Coef,\
-BASE_BSIZE,\
-QUADTREE_DEPTH,MIN_BSIZE,MAX_BSIZE,\
-COEF_PRECISION,PM_ACCURACY,NUM_GROUP,UPEL_DIST,\
-CTX_WEIGHT,");
+		fprintf(fp, "Auto_Del_CL,	Auto_Set_Coef,BASE_BSIZE,QUADTREE_DEPTH,\
+			MIN_BSIZE,MAX_BSIZE,COEF_PRECISION,PM_ACCURACY,NUM_GROUP,\
+			UPEL_DIST,CTX_WEIGHT,TEMPLATE_MATCHING,AVDN,MANHATTAN_SORT");
+		fprintf(fp, "\n");
+		fclose(fp);
+	}
 
-	fprintf(fp, "\n");
-	fclose(fp);
-    }
-
-    fp = fileopen(LOG_LIST, "ab");
-    fprintf(fp, "%s,%s,%d,%d,%d,", date, name, enc->height, enc->width, enc->num_class);
+	fp = fileopen(LOG_LIST, "ab");
+	fprintf(fp, "%s,%s,%d,%d,%d,", date, name, enc->height, enc->width, enc->num_class);
 	fclose(fp);
 
 	return;
@@ -932,6 +928,22 @@ void finish_log_sheet(ENCODER *enc, int header_info, int class_info, int pred_in
 		}
 	}else {
 		fprintf(fp, "Non,");
+	}
+
+	if(TEMPLATE_MATCHING_ON){
+		fprintf(fp, "ON,");
+
+		if(AVDN){
+			fprintf(fp, "ON,");
+		} else {
+			fprintf(fp, "OFF,");
+		}
+
+		if(MANHATTAN_SORT){
+			fprintf(fp, "ON,");
+		} else {
+			fprintf(fp, "OFF,");
+		}
 	}
 
 	fprintf(fp, "\n");

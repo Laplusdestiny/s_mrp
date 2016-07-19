@@ -146,7 +146,9 @@ DECODER *init_decoder(FILE *fp)
 
 #if TEMPLATE_MATCHING_ON
 	dec->temp_cl = getbits(fp, 6);
-	printf("TEMP_CL : %d\n", dec->temp_cl);
+	printf("TEMP_CL : %d | ", dec->temp_cl);
+	dec->w_gr = getbits(fp, 4);
+	printf("w_gr: %d\n", dec->w_gr);
 #endif
 
 	dec->maxprd = dec->maxval << dec->coef_precision;
@@ -1067,6 +1069,38 @@ double continuous_GGF(DECODER *dec, double e, int gr)
 
 	return(p);
 }
+
+int temp_mask_parameter(DECODER *dec, int y, int x , int u, int peak, int cl, int weight_all, int bmask, int shift, int r_cl)
+{
+	int i, m_gr, m_prd, m_base, *th_p;
+	double weight[TEMPLATE_CLASS_NUM], sum_weight=0, weight_coef=0;
+
+	for(i=0; i<TEMPLATE_CLASS_NUM; i++){
+		weight[i] = continuous_GGF(dec, (double)tempm_array[i*4+3] / NAS_ACCURACY, dec->w_gr);
+		sum_weight += weight[i];
+	}
+	weight_coef = (double)weight_all / sum_weight;
+
+	for(i=0; i<TEMPLATE_CLASS_NUM; i++){
+		mask->class[peak] = cl;
+		mask->weight[peak] = (int)(weight[i] * weight_coef);
+		th_p = dec->th[cl];
+		for(m_gr = 0; m_gr < dec->num_group - 1; m_gr++){
+			if( u < *th_p++)	break;
+		}
+
+		m_prd = exam_array[y][x][i];
+		#if CHECK_DEBUG
+			if(y == check_y && x == check_x) printf("[set_mask_parameter] 	m_prd[%d]: %d[%2d] | weight: %d\n", peak, m_prd, cl, mask->weight[peak]);
+		#endif
+		m_base = (dec->maxprd - m_prd + (1 << shift) / 2 ) >> shift;
+		mask->pm[peak] = dec->pmodels[m_gr][0] + (m_base & bmask);
+		m_base >>= dec->pm_accuracy;
+		mask->base[peak] = m_base;
+		peak++;
+	}
+	return(peak);
+}
 #endif
 
 int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, int shift)
@@ -1095,23 +1129,28 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 	r_cl = dec->class[y][x]; 	//当該ブロックのクラス番号
 	for(cl = peak = 0; cl < dec->num_class; cl++){
 		if (count_cl[cl]!=0){
-			mask->class[peak] = cl;	//コメントアウトされていた？
-			mask->weight[peak] = ( (count_cl[cl] << W_SHIFT) / sample);
-			th_p = dec->th[cl];
-			for (m_gr = 0; m_gr < dec->num_group - 1; m_gr++) {
-				if (u < *th_p++) break;
-			}
+			if(cl == dec->temp_cl){
+				peak = temp_mask_parameter(dec, y, x, u, peak, cl, (count_cl[cl] << W_SHIFT) / sample, bmask, shift, r_cl);
+				if( cl == r_cl)	r_prd = exam_array[y][x][0];
+			} else {
+				mask->class[peak] = cl;	//コメントアウトされていた？
+				mask->weight[peak] = ( (count_cl[cl] << W_SHIFT) / sample);
+				th_p = dec->th[cl];
+				for (m_gr = 0; m_gr < dec->num_group - 1; m_gr++) {
+					if (u < *th_p++) break;
+				}
 
-			m_prd = calc_prd(img, dec, cl, y, x);
-			if (cl == r_cl) r_prd = m_prd;
-			#if CHECK_DEBUG
-				if(y == check_y && x == check_x) printf("[set_mask_parameter] m_prd[%d]: %d[%2d] | weight: %d\n", peak, m_prd, cl, mask->weight[peak]);
-			#endif
-			m_base = (dec->maxprd - m_prd + (1 << shift) / 2) >> shift;
-			mask->pm[peak] = dec->pmodels[m_gr][0] + (m_base & bmask);
-			m_base >>= dec->pm_accuracy;
-			mask->base[peak] = m_base;
-			peak++;
+				m_prd = calc_prd(img, dec, cl, y, x);
+				if (cl == r_cl) r_prd = m_prd;
+				#if CHECK_DEBUG
+					if(y == check_y && x == check_x) printf("[set_mask_parameter] 	m_prd[%d]: %d[%2d] | weight: %d\n", peak, m_prd, cl, mask->	weight[peak]);
+				#endif
+				m_base = (dec->maxprd - m_prd + (1 << shift) / 2) >> shift;
+				mask->pm[peak] = dec->pmodels[m_gr][0] + (m_base & bmask);
+				m_base >>= dec->pm_accuracy;
+				mask->base[peak] = m_base;
+				peak++;
+			}
 		}
 	}
 
