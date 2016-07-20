@@ -297,7 +297,6 @@ PMODEL ***init_pmodels(int num_group, int num_pmodel, int pm_accuracy,
 	return (pmodels);
 }
 
-/****/
 void printmodel(PMODEL *pm, int size)
 {
 	int Q = 3000;	//2000

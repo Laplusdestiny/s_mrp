@@ -1154,33 +1154,6 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 		}
 	}
 
-#if 0
-// #if TEMPLATE_MATCHING_ON
-	if(y==0 && x < 3){
-
-	} else {
-		cl = dec->class[y][x];
-		mask->class[peak] = cl;
-		// printf("%d\n", tempm_array[3]);
-		mask->weight[peak] = continuous_GGF(dec, (double)tempm_array[3] / NAS_ACCURACY, dec->w_gr) *( (count_cl[cl] << W_SHIFT) / sample);
-		// if(y==0 && x==1)printf("weight: %d\n",mask->weight[peak]);
-		th_p = dec->th[cl];
-		for(m_gr = 0; m_gr < dec->num_group - 1; m_gr++){
-			if(u < *th_p++)break;
-		}
-
-		m_prd = exam_array[y][x];
-		#if CHECK_DEBUG
-			if(y == check_y && x == check_x)
-				printf("[set_mask_parameter] m_prd[%d]: %d\n", peak, m_prd);
-		#endif
-		m_base = (dec->maxprd - m_prd + (1 << shift) / 2) >> shift;
-		mask->pm[peak] = dec->pmodels[m_gr][0] + (m_base & bmask);
-		m_base >>= dec->pm_accuracy;
-		mask->base[peak] = m_base;
-		peak++;
-	}
-#endif
 	mask->num_peak = peak;	//ピークの数
 	return(r_prd);	//r_prdは当該ブロックのクラスによる予測値
 }
@@ -1213,16 +1186,36 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 
 			if (dec->mask[y][x] == 0){
 				cl = dec->class[y][x];
-				th_p = dec->th[cl];
-				for (gr = 0; gr < dec->num_group - 1; gr++) {
-					if (u < *th_p++) break;
+				if(cl == dec->temp_cl){
+					prd = set_mask_parameter(img, dec, y, x, u, bitmask, shift);
+					/*if (mask->num_peak == 1){	// single_peak
+						base = mask->base[0];
+						pm = mask->pm[0];
+						p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
+							- base;
+					}else{*/
+					pm = &dec->mult_pm;
+					set_pmodel_mult(pm,mask,dec->maxval+1);
+					#if CHECK_PMODEL
+						if(y==check_y && x==check_x)	printmodel(pm, dec	->maxval+1);
+					#endif
+					p = rc_decode(fp, dec->rc, pm, 0, dec->maxval+1);
+					// }
+				} else {
+					th_p = dec->th[cl];
+					for (gr = 0; gr < dec->num_group - 1; gr++) {
+						if (u < *th_p++) break;
+					}
+					prd = calc_prd(img, dec, cl, y, x);
+					base = (dec->maxprd - prd + (1 << shift) / 2) >> shift;
+					pm = dec->pmodels[gr][0] + (base & bitmask);
+					base >>= dec->pm_accuracy;
+					#if CHECK_PMODEL
+						if(y==check_y && x==check_x)	printmodel(pm, dec->maxval	+1);
+					#endif
+					p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
+						- base;
 				}
-				prd = calc_prd(img, dec, cl, y, x);
-				base = (dec->maxprd - prd + (1 << shift) / 2) >> shift;
-				pm = dec->pmodels[gr][0] + (base & bitmask);
-				base >>= dec->pm_accuracy;
-				p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
-					- base;
 			}else{	//mult_peak
 
 				prd = set_mask_parameter(img, dec, y, x, u, bitmask, shift);
@@ -1235,7 +1228,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 					pm = &dec->mult_pm;
 					set_pmodel_mult(pm,mask,dec->maxval+1);
 					#if CHECK_PMODEL
-						if(y==check_y && x==check_x)printmodel(pm, dec->maxval+1);
+						if(y==check_y && x==check_x)	printmodel(pm, dec->maxval+1);
 					#endif
 					p = rc_decode(fp, dec->rc, pm, 0, dec->maxval+1);
 				}

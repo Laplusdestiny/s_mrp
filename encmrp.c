@@ -3846,7 +3846,6 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 					pm->cumfreq[base + e] - cumbase,
 					pm->freq[base + e],
 					pm->cumfreq[base + enc->maxval + 1] - cumbase);
-				// if((y%100 == 0)&&(x%100 == 0)) printf("(y=%d,x=%d)peak 1",y,x);
 			}else{
 				pm = &enc->mult_pm;
 				set_pmodel_mult(pm,mask,enc->maxval+1);
@@ -3858,9 +3857,6 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 					pm->freq[e],
 					pm->cumfreq[enc->maxval + 1]);
 			}
-			#if CHECK_DEBUG
-				// printf("e[%d][%d]: %d\n", y, x, e);
-			#endif
 		}
 	}
 	rc_finishenc(fp, enc->rc);
