@@ -3622,8 +3622,7 @@ int encode_threshold(FILE *fp, ENCODER *enc, int flag)
 			k = 0;
 			for (gr = 1; gr < enc->num_group; gr++) {
 				i = enc->th[cl][gr - 1] - k;
-				p = (double)pm->freq[i]
-				/ (pm->cumfreq[pm->size - k]);
+				p = (double)pm->freq[i] / (pm->cumfreq[pm->size - k]);
 				cost += -log(p);
 				k += i;
 				if (k > MAX_UPARA) break;

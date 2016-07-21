@@ -1188,19 +1188,19 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 				cl = dec->class[y][x];
 				if(cl == dec->temp_cl){
 					prd = set_mask_parameter(img, dec, y, x, u, bitmask, shift);
-					/*if (mask->num_peak == 1){	// single_peak
+					if (mask->num_peak == 1){	// single_peak
 						base = mask->base[0];
 						pm = mask->pm[0];
 						p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
 							- base;
-					}else{*/
-					pm = &dec->mult_pm;
-					set_pmodel_mult(pm,mask,dec->maxval+1);
-					#if CHECK_PMODEL
-						if(y==check_y && x==check_x)	printmodel(pm, dec	->maxval+1);
-					#endif
-					p = rc_decode(fp, dec->rc, pm, 0, dec->maxval+1);
-					// }
+					}else{
+						pm = &dec->mult_pm;
+						set_pmodel_mult(pm,mask,dec->maxval+1);
+						#if CHECK_PMODEL
+							if(y==check_y && x==check_x)	printmodel(pm, dec		->maxval+1);
+						#endif
+						p = rc_decode(fp, dec->rc, pm, 0, dec->maxval+1);
+					}
 				} else {
 					th_p = dec->th[cl];
 					for (gr = 0; gr < dec->num_group - 1; gr++) {

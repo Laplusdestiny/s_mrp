@@ -311,6 +311,7 @@ void printmodel(PMODEL *pm, int size)
 		}
 		printf(" (%4d 回)\n", pm->freq[i]);
 	}
+	printf("cumfreq: %d\n", pm->cumfreq[size-1]);
 
 	return;
 }
