@@ -1145,8 +1145,10 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 	for(cl = peak = 0; cl < dec->num_class; cl++){
 		if (count_cl[cl]!=0){
 			if(cl == dec->temp_cl){
-				peak = temp_mask_parameter(dec, y, x, u, peak, cl, (count_cl[cl] << W_SHIFT) / sample, bmask, shift, r_cl);
-				if( cl == r_cl)	r_prd = exam_array[y][x][0];
+				#if TEMPLATE_MATCHING_ON
+					peak = temp_mask_parameter(dec, y, x, u, peak, cl, (count_cl[cl] << W_SHIFT) / sample, bmask, shift, r_cl);
+					if( cl == r_cl)	r_prd = exam_array[y][x][0];
+				#endif
 			} else {
 				mask->class[peak] = cl;	//コメントアウトされていた？
 				mask->weight[peak] = ( (count_cl[cl] << W_SHIFT) / sample);

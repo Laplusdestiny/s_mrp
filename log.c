@@ -930,7 +930,7 @@ void finish_log_sheet(ENCODER *enc, int header_info, int class_info, int pred_in
 	}else {
 		fprintf(fp, "Non,");
 	}
-
+#if TEMPLATE_MATCHING_ON
 	if(TEMPLATE_MATCHING_ON){
 		fprintf(fp, "ON,");
 
@@ -948,7 +948,7 @@ void finish_log_sheet(ENCODER *enc, int header_info, int class_info, int pred_in
 
 		fprintf(fp, "%d*%d,", X_SIZE*2+1, Y_SIZE);
 	}
-
+#endif
 	fprintf(fp, "\n");
 	fclose(fp);
 

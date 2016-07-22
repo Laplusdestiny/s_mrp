@@ -322,8 +322,7 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 	}
 	enc->prd_mhd = enc->ord2mhd[enc->max_prd_order - 1] + 1;
 #endif
-	enc->th = (int **)alloc_2d_array(enc->num_class, enc->num_group,
-		sizeof(int));
+	enc->th = (int **)alloc_2d_array(enc->num_class, enc->num_group, sizeof(int));
 	for (i = 0; i < enc->num_class; i++) {
 		for (j = 0; j < enc->max_prd_order; j++) {
 			enc->predictor[i][j] = 0;
@@ -657,7 +656,7 @@ void set_pmodel_mult_cost(MASK *mask,int size, int e)
 }
 
 
-void predict_region(ENCODER *enc, int tly, int tlx, int bry, int brx)	//予測値の再計算
+void predict_region(ENCODER *enc, int tly, int tlx, int bry, int brx)	//予測値，予測誤差の再計算
 {
 	int x, y, k, l, cl, prd, org;
 	int *coef_p, *nzc_p;
@@ -701,7 +700,7 @@ void predict_region(ENCODER *enc, int tly, int tlx, int bry, int brx)	//予測�
 			*prd_p++ = prd;
 			prd = CLIP(0, enc->maxprd, prd);
 			prd >>= (enc->coef_precision - 1);
-			if(y==check_y)printf("prd(%d,%d): %d\n", y, x, prd);
+			// if(y==check_y)printf("prd(%d,%d): %d\n", y, x, prd);
 			*err_p++ = enc->econv[org][prd];
 		}
 	}
@@ -1139,9 +1138,11 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 
 	for(cl = peak = 0; cl < enc->num_class; cl++){
 		if (count_cl[cl]!=0){
+		#if TEMPLATE_MATCHING_ON
 			if(cl == enc->temp_cl){
 				peak = temp_mask_parameter(enc, y, x, u, peak, cl, (count_cl[cl] << W_SHIFT) / sample);
 			} else {
+		#endif
 				mask->class[peak] = cl;		//マスクにかかる領域毎のクラスを保存
 				mask->weight[peak] = ( (count_cl[cl] << W_SHIFT) / sample);	//	各ピーク毎の重み
 				m_gr = enc->uquant[cl][u];
@@ -1155,7 +1156,9 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 				m_frac = enc->fconv[m_prd];
 				mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
 				peak++;
+		#if TEMPLATE_MATCHING_ON
 			}
+		#endif
 		}
 	}
 
@@ -1170,10 +1173,12 @@ int set_mask_parameter_optimize(ENCODER *enc,int y, int x, int u, int r_cl)
 
 	for(cl = peak = 0; cl < enc->num_class; cl++){
 		if (enc->weight[y][x][cl] != 0){
+		#if TEMPLATE_MATCHING_ON
 			if(cl == enc->temp_cl){
 				peak = temp_mask_parameter(enc, y, x, u, peak, cl, enc->weight[y][x][cl]);
 				if(cl == r_cl)	r_peak = peak - (TEMPLATE_CLASS_NUM - 1);	//マッチングコストが一番小さい事例のピーク番号
 			} else {
+		#endif
 				mask->class[peak] = cl;
 				mask->weight[peak] = enc->weight[y][x][cl];
 				m_prd = enc->prd_class[y][x][cl];
@@ -1184,7 +1189,9 @@ int set_mask_parameter_optimize(ENCODER *enc,int y, int x, int u, int r_cl)
 				if (cl == r_cl)	 r_peak = peak;	//当該ブロックのピーク番号
 				mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
 				peak++;
+		#if TEMPLATE_MATCHING_ON
 			}
+		#endif
 		}
 	}
 
@@ -2206,9 +2213,12 @@ void optimize_coef(ENCODER *enc, int cl, int pos, int *num_eff)
 		for (y = 0; y < enc->height; y++) {
 			class_p = enc->class[y];
 			for (x = 0; x < enc->width; x++) {
+			#if TEMPLATE_MATCHING_ON
 				if (cl == enc->temp_cl){
 					enc->prd_class[y][x][cl] = exam_array[y][x][0];
-				} else if (cl == *class_p++) {
+				} else
+			#endif
+				if (cl == *class_p++) {
 					org_p = &enc->org[y][x];
 					roff_p = enc->roff[y][x];
 					enc->prd[y][x] += (org_p[roff_p[pos]] - org_p[roff_p[i]]) * diff[j];
@@ -3422,10 +3432,10 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 			cost = 0.0;
 			for (k = d * (d + 1); k < (d + 1) * (d + 2); k++) {
 				for (cl = 0; cl < enc->num_class; cl++) {
+					#if TEMPLATE_MATCHING_ON
+						if(cl == enc->temp_cl) continue;
+					#endif
 					coef = enc->predictor[cl][k];
-				#if TEMPLATE_MATCHING_ON
-					if(cl == enc->temp_cl) continue;
-				#endif
 					if (coef < 0) coef = -coef;
 					cost += enc->coef_cost[enc->zero_m[d]][m][coef];
 				}
@@ -3441,10 +3451,10 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 			cost = 0.0;
 			for (k = d * (d + 1); k < (d + 1) * (d + 2); k++) {
 				for (cl = 0; cl < enc->num_class; cl++) {
-					coef = enc->predictor[cl][k];
 				#if TEMPLATE_MATCHING_ON
 					if(cl == enc->temp_cl) continue;
 				#endif
+					coef = enc->predictor[cl][k];
 					if (coef < 0) coef = -coef;
 					cost += enc->coef_cost[m][enc->coef_m[d]][coef];
 				}
@@ -3489,10 +3499,10 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 			cumb = pm->freq[0];
 			for (k = d * (d + 1); k < (d + 1) * (d + 2); k++) {
 				for (cl = 0; cl < enc->num_class; cl++) {
-					coef = enc->predictor[cl][k];
 				#if TEMPLATE_MATCHING_ON
 					if(cl == enc->temp_cl)continue;	//clがテンプレートマッチングをするクラスならcontinue
 				#endif
+					coef = enc->predictor[cl][k];
 					if (coef == 0) {
 						rc_encode(fp, enc->rc, 0, zrfreq, TOT_ZEROFR);
 					} else {
@@ -3800,8 +3810,8 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 	/* Arithmetic */
 	for (y = 0; y < enc->height; y++) {
 		for (x = 0; x < enc->width; x++) {
-			// u = enc->upara[y][x];
-			u = calc_uenc(enc, y, x);
+			u = enc->upara[y][x];
+			// u = calc_uenc(enc, y, x);
 			set_mask_parameter(enc,y,x,u);
 			e = enc->encval[y][x];
 			if (mask->num_peak == 1){
@@ -3824,7 +3834,7 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 					pm->cumfreq[enc->maxval + 1]);
 			}
 			#if CHECK_DEBUG
-				printf("e[%3d][%3d]: %d | err: %d\n", y, x, e, enc->err[y][x]);
+				// printf("e[%3d][%3d]: %d | err: %d\n", y, x, e, enc->err[y][x]);
 			#endif
 		}
 	}
