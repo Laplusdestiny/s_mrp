@@ -530,6 +530,9 @@ int calc_udec(DECODER *dec, int y, int x)
 			ry = y + dyx[k].y;
 			rx = x + dyx[k].x;
 			u += err[ry][rx] * (*wt_p++);
+			#if CHECK_DEBUG
+				if(y==check_y && x==check_x)	printf("[1]u: %d | err: %d(%d,%d) | wt_p: %d\n", u, err[ry][rx], ry, rx, wt_p[k]);
+			#endif
 		}
 	} else if (y == 0) {
 		if (x == 0) {
@@ -543,6 +546,9 @@ int calc_udec(DECODER *dec, int y, int x)
 				if (rx < 0) rx = 0;
 				else if (rx >= x) rx = x - 1;
 				u += err[ry][rx] * (*wt_p++);
+				#if CHECK_DEBUG
+					if(y==check_y && x==check_x)	printf("[2]u: %d | err: %d(%d,%d) | wt_p: %d\n", u, err[ry][rx], ry, rx, wt_p[k]);
+				#endif
 			}
 		}
 	} else {
@@ -554,6 +560,9 @@ int calc_udec(DECODER *dec, int y, int x)
 				rx = x + dyx[k].x;
 				if (rx < 0) rx = 0;
 				u += err[ry][rx] * (*wt_p++);
+				#if CHECK_DEBUG
+					if(y==check_y && x==check_x)	printf("[3]u: %d | err: %d(%d,%d) | wt_p: %d\n", u, err[ry][rx], ry, rx, wt_p[k]);
+				#endif
 			}
 		} else {
 			for (k = 0; k < NUM_UPELS; k++) {
@@ -563,11 +572,17 @@ int calc_udec(DECODER *dec, int y, int x)
 				if (rx < 0) rx = 0;
 				else if (rx >= dec->width) rx = dec->width - 1;
 				u += err[ry][rx] * (*wt_p++);
+				#if CHECK_DEBUG
+					if(y==check_y && x==check_x-1)	printf("[4]u: %d | err: %d(%d,%d) | wt_p: %d\n", u, err[ry][rx], ry, rx, wt_p[k]);
+				#endif
 			}
 		}
 	}
 	u >>= 6;
 	if (u > MAX_UPARA) u = MAX_UPARA;
+	#if CHECK_DEBUG
+		if(y==check_y && x==check_x)	printf("u: %d\n", u);
+	#endif
 	return (u);
 }
 
@@ -1091,7 +1106,7 @@ int temp_mask_parameter(DECODER *dec, int y, int x , int u, int peak, int cl, in
 
 		m_prd = exam_array[y][x][i];
 		#if CHECK_DEBUG
-			if(y == check_y && x == check_x) printf("[set_mask_parameter] 	m_prd[%d]: %d[%2d] | weight: %d\n", peak, m_prd, cl, mask->weight[peak]);
+			if(y == check_y && x == check_x) printf("[set_mask_parameter] 	m_prd[%d]: %d[%2d] | weight: %d | u: %d | gr: %d\n", peak, m_prd, cl, mask->weight[peak], u, m_gr);
 		#endif
 		m_base = (dec->maxprd - m_prd + (1 << shift) / 2 ) >> shift;
 		mask->pm[peak] = dec->pmodels[m_gr][0] + (m_base & bmask);
@@ -1143,7 +1158,7 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 				m_prd = calc_prd(img, dec, cl, y, x);
 				if (cl == r_cl) r_prd = m_prd;
 				#if CHECK_DEBUG
-					if(y == check_y && x == check_x) printf("[set_mask_parameter] 	m_prd[%d]: %d[%2d] | weight: %d\n", peak, m_prd, cl, mask->	weight[peak]);
+					if(y == check_y && x == check_x) printf("[set_mask_parameter] 	m_prd[%d]: %d[%2d] | weight: %d | u: %d | gr: %d\n", peak, m_prd, cl, mask->	weight[peak], u, m_gr);
 				#endif
 				m_base = (dec->maxprd - m_prd + (1 << shift) / 2) >> shift;
 				mask->pm[peak] = dec->pmodels[m_gr][0] + (m_base & bmask);
@@ -1240,8 +1255,8 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 			if (e < 0) e = -(e + 1);
 			dec->err[y][x] = e;	//特徴量算出に用いる
 			#if CHECK_DEBUG
-				// printf("d[%d][%d]: %d\n", y, x, p);
-				printf("%d\n", p);
+				printf("d[%d][%d]: %d(%d) | err: %d\n", y, x, p, prd, e);
+				// printf("%d\n", p);
 			#endif
 
 		}

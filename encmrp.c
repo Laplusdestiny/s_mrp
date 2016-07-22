@@ -701,6 +701,7 @@ void predict_region(ENCODER *enc, int tly, int tlx, int bry, int brx)	//予測�
 			*prd_p++ = prd;
 			prd = CLIP(0, enc->maxprd, prd);
 			prd >>= (enc->coef_precision - 1);
+			if(y==check_y)printf("prd(%d,%d): %d\n", y, x, prd);
 			*err_p++ = enc->econv[org][prd];
 		}
 	}
@@ -745,10 +746,17 @@ int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出
 
 	u = 0;
 	for (k =0; k < NUM_UPELS; k++) {
-		u += err_p[*roff_p++] * (*wt_p++);
+		// u += err_p[*roff_p++] * (*wt_p++);
+		u += err_p[roff_p[k]] * wt_p[k];
+		#if CHECK_DEBUG
+			if(y==check_y && x==check_x)	printf("u: %d | err: %d(%3d) | wt_p: %d\n", u, err_p[k], roff_p[k], wt_p[k]);
+		#endif
 	}
 	u >>= 6;
 	if (u > MAX_UPARA) u = MAX_UPARA;
+	#if CHECK_DEBUG
+		if(y==check_y && x==check_x)	printf("u: %d\n", u);
+	#endif
 	return (u);
 }
 
@@ -1092,7 +1100,7 @@ int temp_mask_parameter(ENCODER *enc, int y, int x, int u, int peak, int cl, int
 		// m_prd = enc->prd_class[y][x][cl];
 		m_prd = CLIP(0, enc->maxprd, m_prd);
 		#if CHECK_DEBUG
-			if( y == check_y && x == check_x)	printf("[set_mask_parameter] m_prd[%d]: %d[%2d] | weight: %d\n", peak, m_prd, cl, mask->weight[peak]);
+			if( y == check_y && x == check_x)	printf("[set_mask_parameter] m_prd[%d]: %d[%2d] | weight: %d | u: %d | gr: %d\n", peak, m_prd, cl, mask->weight[peak], u, m_gr);
 		#endif
 
 		mask->base[peak] = enc->bconv[m_prd];
@@ -1140,7 +1148,7 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 				m_prd = enc->prd_class[y][x][cl];
 				m_prd = CLIP(0, enc->maxprd, m_prd);
 				#if CHECK_DEBUG
-					if( y == check_y && x == check_x)	printf("[set_mask_parameter] m_prd[%d]: %d[%2d] | weight: %d\n", 	peak, m_prd, cl, mask->weight[peak]);
+					if( y == check_y && x == check_x)	printf("[set_mask_parameter] m_prd[%d]: %d[%2d] | weight: %d | u: %d | gr: %d\n", 	peak, m_prd, cl, mask->weight[peak], u, m_gr);
 				#endif
 
 				mask->base[peak] = enc->bconv[m_prd];
@@ -1151,32 +1159,7 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 		}
 	}
 
-// #if TEMPLATE_MATCHING_ON
-#if 0
-	if(y==0 && x<3){
-
-	} else {
-		cl = enc->class[y][x];
-		// if(y==0 && x==1)printf("%d\n", tempm_array[y][x][3]);
-		mask->weight[peak] = continuous_GGF(enc, (double)tempm_array[y][x][3] / NAS_ACCURACY, enc->w_gr) * ( (count_cl[cl] << W_SHIFT) / sample);
-		// if(y==0 && x==1)printf("weight: %d\n",mask->weight[peak]);
-		m_gr = enc->uquant[cl][u];
-		m_prd = exam_array[y][x] << enc->coef_precision;
-		m_prd = CLIP(0, enc->maxprd, m_prd);
-		#if CHECK_DEBUG
-			// if( y == check_y && x == check_x)	printf("[set_mask_parameter]m_prd[%d]: %d\n", peak, m_prd);
-		#endif
-		mask->base[peak] = enc->bconv[m_prd];
-		m_frac = enc->fconv[m_prd];
-		mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
-		peak++;
-	}
-#endif
-
-	// if (y==8&&x== 8) printf("********\n");
 	mask->num_peak = peak;	//ピークの数
-	// if (peak != 1) printf ("mask->num_peak =%d" ,mask->num_peak);
-	// printf("(y, x) = (%d, %d), mask->class[0] = %d\n", y, x, mask->class[0]);
 }
 
 int set_mask_parameter_optimize(ENCODER *enc,int y, int x, int u, int r_cl)
@@ -1189,7 +1172,7 @@ int set_mask_parameter_optimize(ENCODER *enc,int y, int x, int u, int r_cl)
 		if (enc->weight[y][x][cl] != 0){
 			if(cl == enc->temp_cl){
 				peak = temp_mask_parameter(enc, y, x, u, peak, cl, enc->weight[y][x][cl]);
-				if(cl == r_cl)	r_peak = peak;
+				if(cl == r_cl)	r_peak = peak - (TEMPLATE_CLASS_NUM - 1);	//マッチングコストが一番小さい事例のピーク番号
 			} else {
 				mask->class[peak] = cl;
 				mask->weight[peak] = enc->weight[y][x][cl];
@@ -1205,23 +1188,6 @@ int set_mask_parameter_optimize(ENCODER *enc,int y, int x, int u, int r_cl)
 		}
 	}
 
-#if 0
-// #if TEMPLATE_MATCHING_ON
-	if(y==0 && x < 3){
-
-	} else {
-		mask->class[peak] = cl = enc->class[y][x];
-		mask->weight[peak] = continuous_GGF(enc, (double)tempm_array[y][x][3] / NAS_ACCURACY, enc->w_gr) * enc->weight[y][x][cl];
-		m_prd = exam_array[y][x] << enc->coef_precision;
-		m_prd = CLIP(0, enc->maxprd, m_prd);
-		mask->base[peak] = enc->bconv[m_prd];
-		m_frac = enc->fconv[m_prd];
-		m_gr = enc->uquant[cl][u];
-		// if(cl == r_cl) r_peak = peak;
-		mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
-		peak++;
-	}
-#endif
 	mask->num_peak = peak;	//ピークの数
 	return(r_peak);
 }
@@ -3834,7 +3800,8 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 	/* Arithmetic */
 	for (y = 0; y < enc->height; y++) {
 		for (x = 0; x < enc->width; x++) {
-			u = enc->upara[y][x];
+			// u = enc->upara[y][x];
+			u = calc_uenc(enc, y, x);
 			set_mask_parameter(enc,y,x,u);
 			e = enc->encval[y][x];
 			if (mask->num_peak == 1){
@@ -3856,6 +3823,9 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 					pm->freq[e],
 					pm->cumfreq[enc->maxval + 1]);
 			}
+			#if CHECK_DEBUG
+				printf("e[%3d][%3d]: %d | err: %d\n", y, x, e, enc->err[y][x]);
+			#endif
 		}
 	}
 	rc_finishenc(fp, enc->rc);

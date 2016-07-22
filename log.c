@@ -882,7 +882,8 @@ void init_log_sheet(ENCODER *enc, char *outfile)
 
 		fprintf(fp, "Auto_Del_CL,	Auto_Set_Coef,BASE_BSIZE,QUADTREE_DEPTH,\
 			MIN_BSIZE,MAX_BSIZE,COEF_PRECISION,PM_ACCURACY,NUM_GROUP,\
-			UPEL_DIST,CTX_WEIGHT,TEMPLATE_MATCHING,AVDN,MANHATTAN_SORT");
+			UPEL_DIST,CTX_WEIGHT,TEMPLATE_MATCHING,AVDN,MANHATTAN_SORT,\
+			Search Window,");
 		fprintf(fp, "\n");
 		fclose(fp);
 	}
@@ -944,6 +945,8 @@ void finish_log_sheet(ENCODER *enc, int header_info, int class_info, int pred_in
 		} else {
 			fprintf(fp, "OFF,");
 		}
+
+		fprintf(fp, "%d*%d,", X_SIZE*2+1, Y_SIZE);
 	}
 
 	fprintf(fp, "\n");
