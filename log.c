@@ -1020,3 +1020,93 @@ int set_directory(void)
 	return (0);
 }
 #endif
+
+void TemplateM_Log_Output(ENCODER *enc, char *outfile, int ***tempm_array, int ***exam_array){
+	int y, x, k;
+	FILE *fp;
+	char *name, file[256];
+
+	name = strrchr(outfile, BS);
+	name++;
+	sprintf(file, LOG_TEMP_DIR"%s_temp.csv", name);
+	if ((fp = fopen(file, "rb")) != NULL) {
+		if(remove(file) != 0){
+			printf("Remove Error!!![%s]\n", file);
+		}
+	}
+	fp = fileopen(file, "wb");
+	fprintf(fp, "Y_SIZE,X_SIZE,AREA,MAX_DATA_SAVE,MAX_DATA_SAVE_DOUBLE,MAX_MULTIMODAL\n");
+	fprintf(fp, "%d,%d,%d,%d,%d,%d\n\n",
+		Y_SIZE, X_SIZE, AREA, MAX_DATA_SAVE, MAX_DATA_SAVE_DOUBLE, MAX_MULTIMODAL);
+	fprintf(fp, "NAS_ACCURACY,TEMPLATE_CLASS_NUM\n");
+	fprintf(fp, "%d,%d\n", NAS_ACCURACY, TEMPLATE_CLASS_NUM);
+
+	fprintf(fp, "\n");
+	for(y=0; y<enc->height; y++){
+		for(x=0; x<enc->width; x++){
+			for(k=0; k<MAX_DATA_SAVE_DOUBLE; k++){
+				fprintf(fp, "%d,", tempm_array[y][x][k]);
+			}
+			for(k=0; k<MAX_DATA_SAVE; k++){
+				fprintf(fp, "%d,", enc->array[y][x][k]);
+			}
+			for(k=0; k<TEMPLATE_CLASS_NUM; k++){
+				fprintf(fp, "%d,", exam_array[y][x][k]);
+			}
+			fprintf(fp,"\n");
+		}
+	}
+	fclose(fp);
+	return;
+}
+
+void Template_log_input(ENCODER *enc, char *outfile, int ***tempm_array, int ***exam_array){
+	int y, x, k, y_size, x_size, area, max_data_save, max_data_save_double, max_multimodal,
+		nas_accuracy, template_class_num;
+	FILE *fp;
+	char *name, file[256];
+
+	name = strrchr(outfile, BS);
+	name++;
+	sprintf(file, LOG_TEMP_DIR"%s_temp.csv", name);
+	if (( fp = fopen(file, "rb")) != NULL){
+		printf("[%s] is NOT exist\n", outfile);
+		exit(1);
+	}
+	fp = fileopen(file, "rb");
+	fscanf(fp, "%d,%d,%d,%d,%d,%d\n", y_size, x_size, area, max_data_save, max_data_save_double,
+			max_multimodal);
+	if(y_size != Y_SIZE || x_size != X_SIZE || area != AREA || max_data_save != MAX_DATA_SAVE ||
+		max_data_save_double != MAX_DATA_SAVE_DOUBLE || max_multimodal != MAX_MULTIMODAL){
+
+		printf("Parameter is NOT coincide!!!\n");
+		exit(1);
+	}
+
+	fscanf(fp, "%d,%d\n", nas_accuracy, template_class_num);
+	if(nas_accuracy != NAS_ACCURACY || template_class_num != TEMPLATE_CLASS_NUM){
+		printf("Parameter is NOT coincide!!!\n");
+		exit(1);
+	}
+
+	fscanf(fp, "\n");
+
+	for(y=0; y<enc->height; y++){
+		for(x=0; x<enc->width; x++){
+			for(k=0; k<MAX_DATA_SAVE_DOUBLE; k++){
+				fscanf(fp, "%d,", tempm_array[y][x][k]);
+			}
+
+			for(k=0; k<MAX_DATA_SAVE; k++){
+				fscanf(fp, "%d,", enc->array[y][x][k]);
+			}
+
+			for(k=0; k<TEMPLATE_CLASS_NUM; k++){
+				fscanf(fp, "%d,", exam_array[y][x][k]);
+			}
+			fscanf(fp,"\n");
+		}
+	}
+	fclose(fp);
+	return;
+}

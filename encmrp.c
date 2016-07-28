@@ -748,19 +748,19 @@ int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出
 		// u += err_p[*roff_p++] * (*wt_p++);
 		u += err_p[roff_p[k]] * wt_p[k];
 		#if CHECK_DEBUG
-			if(y==check_y && x==check_x)	printf("u: %d | err: %d(%3d) | wt_p: %d\n", u, err_p[k], roff_p[k], wt_p[k]);
+			// if(y==check_y && x==check_x)	printf("u: %d | err: %d(%3d) | wt_p: %d\n", u, err_p[k], roff_p[k], wt_p[k]);
 		#endif
 	}
 	u >>= 6;
 	if (u > MAX_UPARA) u = MAX_UPARA;
 	#if CHECK_DEBUG
-		if(y==check_y && x==check_x)	printf("u: %d\n", u);
+		// if(y==check_y && x==check_x)	printf("u: %d\n", u);
 	#endif
 	return (u);
 }
 
 #if TEMPLATE_MATCHING_ON
-void*** TemplateM (ENCODER *enc) {
+void*** TemplateM (ENCODER *enc, char *outfile) {
 	int x , y , bx , by , g , h , i , j=0 , k , count , area1[AREA] , area_o[AREA] , *tm_array ,
 		*roff_p , *org_p , x_size = X_SIZE , sum1 , sum_o, temp_x, temp_y, break_flag=0,
 		**encval;
@@ -769,14 +769,14 @@ void*** TemplateM (ENCODER *enc) {
 	double dist1=0, dist_o=0, *area1_d=0, *area_o_d=0;
 	area1_d = (double * )alloc_mem(AREA * sizeof(double));
 	area_o_d = (double * )alloc_mem(AREA * sizeof(double));
-	printf("AVDN	ON\n");
+	printf("AVDN\tON\n");
 #endif
 
 #if MANHATTAN_SORT
 	int *mcost_num, max_nas=0, before_nas_num=0;
-	printf("MANHATTAN_SORT	ON\n");
+	printf("MANHATTAN_SORT\tON\n");
 #endif
-
+#if TEMPLATEM_LOG_INPUT
 
 /////////////////////////
 ///////メモリ確保////////
@@ -1050,6 +1050,10 @@ for(y = 0 ; y < enc->height ; y++){
 	}//x fin
 }//y fin
 // printf("number of hours worked:%lf[s]\n",(float)(end - start)/CLOCKS_PER_SEC);
+TemplateM_Log_Output(enc, outfile, tempm_array, exam_array);
+#else
+TemplateM_Log_Input(enc, outifle, tempm_array, exam_array);
+#endif
 printf("Calculating Template Matching Fin\n");
 
 /////////////////////////////
@@ -4349,7 +4353,7 @@ int main(int argc, char **argv)
 	tempm_array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
 	// exam_array = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
 	exam_array = (int ***)alloc_3d_array(enc->height, enc->width, TEMPLATE_CLASS_NUM, sizeof(int));
-	TemplateM(enc);
+	TemplateM(enc, outfile);
 	enc->w_gr = W_GR;	//マッチングコストに対する重みの分散値の初期化
 #endif
 

@@ -149,6 +149,9 @@ DECODER *init_decoder(FILE *fp)
 	printf("TEMP_CL : %d | ", dec->temp_cl);
 	dec->w_gr = getbits(fp, 4);
 	printf("w_gr: %d\n", dec->w_gr);
+#else
+	dec->temp_cl = -1;
+	printf("TEMP_CL : %d\n", dec->temp_cl);
 #endif
 
 	dec->maxprd = dec->maxval << dec->coef_precision;

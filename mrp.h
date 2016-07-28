@@ -25,6 +25,7 @@
 #define LOG_TH_DIR		DIR"Threshold"BOUNDARY
 #define LOG_PRED_DIR		DIR"Predictor"BOUNDARY
 #define LOG_AMP_CH_DIR	DIR"Amp_Chara"BOUNDARY
+#define LOG_TEMP_DIR		DIR"Temp_Map"BOUNDARY
 
 /****** MRP-VERSION ************************/
 #define MAGIC_NUMBER	('M' << 8) + 'R'
@@ -130,27 +131,27 @@
 #define MANHATTAN_SORT	1
 #define AREA			6
 #define Y_SIZE			20
-#define X_SIZE			40	//調査結果より
+#define X_SIZE			20	//調査結果より80*20がいいかも？
 #define NAS_ACCURACY	100
-#define MAX_DATA_SAVE	50
+#define MAX_DATA_SAVE	20
 #define MAX_DATA_SAVE_DOUBLE 	MAX_DATA_SAVE*4
-#define MAX_MULTIMODAL	45
+#define MAX_MULTIMODAL	10
 #define W_GR 			7
 #define WEIGHT_CN		2
-#define TEMPLATE_CLASS_NUM	2
-
+#define TEMPLATE_CLASS_NUM	3
+#define TEMPLATEM_LOG_INPUT	1
 #endif
 
 #define TEMPLATE_FLAG	2 << COEF_PRECISION
 
 /*********DEBUG******************************/
-#define CHECK_TM 		1
-#define CHECK_TM_DETAIL	1
+#define CHECK_TM 		0
+#define CHECK_TM_DETAIL	0
 #define CHECK_DEBUG 		1
-#define CHECK_PMODEL	1
+#define CHECK_PMODEL	0
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
-#define check_y			0
+#define check_y			2
 #define check_x			717
 
 #define  OPENMP_ON		1
@@ -361,6 +362,7 @@ void print_block_size(int **, char ***, int, int, int, char *);
 void calc_var_upara( ENCODER *, char *);
 void init_log_sheet(ENCODER *, char *);
 void finish_log_sheet(ENCODER *, int, int, int, int, int, int, double);
+void TemplateM_Log_Output(ENCODER *, char *, int ***, int ***);
 
 #if defined(_WIN32)
 	int set_directory(void);
