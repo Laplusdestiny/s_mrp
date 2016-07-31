@@ -1057,11 +1057,12 @@ void decode_mask(FILE *fp, DECODER *dec)
 
 void init_mask()
 {
+	int peak_num = MAX_PEAK_NUM + TEMPLATE_CLASS_NUM;
 	mask = (MASK *)alloc_mem(sizeof(MASK));
-	mask->weight = (int *)alloc_mem(MAX_PEAK_NUM * sizeof(int));
-	mask->class = (char *)alloc_mem(MAX_PEAK_NUM * sizeof(char));
-	mask->base = (int *)alloc_mem(MAX_PEAK_NUM * sizeof(int));
-	mask->pm =(PMODEL **)alloc_mem(MAX_PEAK_NUM * sizeof(PMODEL *));
+	mask->weight = (int *)alloc_mem(peak_num * sizeof(int));
+	mask->class = (char *)alloc_mem(peak_num * sizeof(char));
+	mask->base = (int *)alloc_mem(peak_num * sizeof(int));
+	mask->pm =(PMODEL **)alloc_mem(peak_num * sizeof(PMODEL *));
 }
 
 #if TEMPLATE_MATCHING_ON
@@ -1090,16 +1091,16 @@ double continuous_GGF(DECODER *dec, double e, int gr)
 
 int temp_mask_parameter(DECODER *dec, int y, int x , int u, int peak, int cl, int weight_all, int bmask, int shift, int r_cl)
 {
-	int i, m_gr, m_prd, m_base, *th_p;
-	double weight[TEMPLATE_CLASS_NUM], sum_weight=0, weight_coef=0;
+	int i, m_gr, m_prd, m_base, *th_p, peak_num = TEMPLATE_CLASS_NUM;
+	double weight[peak_num], sum_weight=0, weight_coef=0;
 
-	for(i=0; i<TEMPLATE_CLASS_NUM; i++){
+	for(i=0; i<peak_num; i++){
 		weight[i] = continuous_GGF(dec, (double)tempm_array[i*4+3] / NAS_ACCURACY, dec->w_gr);
 		sum_weight += weight[i];
 	}
 	weight_coef = (double)weight_all / sum_weight;
 
-	for(i=0; i<TEMPLATE_CLASS_NUM; i++){
+	for(i=0; i<peak_num; i++){
 		mask->class[peak] = cl;
 		mask->weight[peak] = (int)(weight[i] * weight_coef);
 		th_p = dec->th[cl];

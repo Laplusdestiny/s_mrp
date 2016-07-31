@@ -545,11 +545,12 @@ void init_class(ENCODER *enc)
 
 void init_mask()
 {
+	int peak_num = MAX_PEAK_NUM + TEMPLATE_CLASS_NUM;
 	mask = (MASK *)alloc_mem(sizeof(MASK));
-	mask->weight = (int *)alloc_mem(MAX_PEAK_NUM * sizeof(int));
-	mask->class = (char *)alloc_mem(MAX_PEAK_NUM * sizeof(char));
-	mask->base = (int *)alloc_mem(MAX_PEAK_NUM * sizeof(int));
-	mask->pm =(PMODEL **)alloc_mem(MAX_PEAK_NUM * sizeof(PMODEL *));
+	mask->weight = (int *)alloc_mem(peak_num * sizeof(int));
+	mask->class = (char *)alloc_mem(peak_num * sizeof(char));
+	mask->base = (int *)alloc_mem(peak_num * sizeof(int));
+	mask->pm =(PMODEL **)alloc_mem(peak_num * sizeof(PMODEL *));
 }
 
 void set_cost_model(ENCODER *enc, int f_mmse)
@@ -1089,16 +1090,16 @@ double continuous_GGF(ENCODER *enc, double e,int w_gr){
 
 int temp_mask_parameter(ENCODER *enc, int y, int x, int u, int peak, int cl, int weight_all)
 {
-	int i, m_gr, m_prd, m_frac;
-	double weight[TEMPLATE_CLASS_NUM], sum_weight = 0, weight_coef=0;
+	int i, m_gr, m_prd, m_frac, template_peak= TEMPLATE_CLASS_NUM;
+	double weight[template_peak], sum_weight = 0, weight_coef=0;
 
-	for(i=0; i<TEMPLATE_CLASS_NUM; i++){
+	for(i=0; i<template_peak; i++){
 		weight[i] = continuous_GGF(enc, (double)tempm_array[y][x][i*4+3] / NAS_ACCURACY, enc->w_gr);
 		sum_weight += weight[i];
 	}
 	weight_coef = (double)weight_all / sum_weight;
 
-	for(i=0; i<TEMPLATE_CLASS_NUM; i++){
+	for(i=0; i<template_peak; i++){
 		mask->class[peak] = cl;
 		mask->weight[peak] = (int)(weight[i] * weight_coef);
 		m_gr = enc->uquant[cl][u];
