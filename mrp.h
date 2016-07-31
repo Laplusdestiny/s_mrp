@@ -25,6 +25,7 @@
 #define LOG_TH_DIR		DIR"Threshold"BOUNDARY
 #define LOG_PRED_DIR		DIR"Predictor"BOUNDARY
 #define LOG_AMP_CH_DIR	DIR"Amp_Chara"BOUNDARY
+#define LOG_TEMP_DIR		DIR"Temp_Map"BOUNDARY
 
 /****** MRP-VERSION ************************/
 #define MAGIC_NUMBER	('M' << 8) + 'R'
@@ -33,7 +34,7 @@
 
 /****** OPTIMIZE ***************************/
 #define OPT_SIDEINFO		1 // 1 : side-info into consideration (standard), 0 : neglect side-info
-#define MAX_ITERATION	5	//100
+#define MAX_ITERATION	100	//100
 #define EXTRA_ITERATION	10
 #define AUTO_DEL_CL		0
 #define AUTO_PRD_ORDER	1
@@ -126,19 +127,19 @@
 #define TEMPLATE_MATCHING_ON 	1
 #if TEMPLATE_MATCHING_ON
 
-#define AVDN			0
-#define MANHATTAN_SORT	0
+#define ZNCC			1
+#define MANHATTAN_SORT	1
 #define AREA			6
 #define Y_SIZE			20
-#define X_SIZE			40	//調査結果より
+#define X_SIZE			40	//調査結果より80*20がいいかも？
 #define NAS_ACCURACY	100
-#define MAX_DATA_SAVE	50
+#define MAX_DATA_SAVE	20
 #define MAX_DATA_SAVE_DOUBLE 	MAX_DATA_SAVE*4
-#define MAX_MULTIMODAL	45
+#define MAX_MULTIMODAL	10
 #define W_GR 			7
 #define WEIGHT_CN		2
-#define TEMPLATE_CLASS_NUM	2
-
+#define TEMPLATE_CLASS_NUM	10
+#define TEMPLATEM_LOG_OUTPUT	1
 #endif
 
 #define TEMPLATE_FLAG	2 << COEF_PRECISION
@@ -150,8 +151,8 @@
 #define CHECK_PMODEL	0
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
-#define check_y			70
-#define check_x			81
+#define check_y			2
+#define check_x			717
 
 #define  OPENMP_ON		1
 #define NUM_THREADS		8	//depend on server threads num
@@ -202,6 +203,7 @@ typedef struct{
 	int sum;
 	int ave_o;
 	int mhd;
+	double s_devian;
 } TM_Member;
 
 typedef struct {
@@ -273,6 +275,7 @@ typedef struct {
 	int **mmc;
 #endif
 	int temp_cl;
+	int w_gr;
 } ENCODER;
 
 typedef struct {
@@ -318,6 +321,7 @@ typedef struct {
 #endif
 	int temp_cl;
 	int **org;
+	int w_gr;
 } DECODER;
 
 /***** FUNC - common.c ****************************/
@@ -358,6 +362,8 @@ void print_block_size(int **, char ***, int, int, int, char *);
 void calc_var_upara( ENCODER *, char *);
 void init_log_sheet(ENCODER *, char *);
 void finish_log_sheet(ENCODER *, int, int, int, int, int, int, double);
+void TemplateM_Log_Output(ENCODER *, char *, int ***, int ***);
+void TemplateM_Log_Input(ENCODER *, char *, int ***, int ***);
 
 #if defined(_WIN32)
 	int set_directory(void);

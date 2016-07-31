@@ -177,9 +177,12 @@ void print_class(char **class, int num_class, int height, int width, char *outfi
 void output_class_map(char **class, int num_class, int height, int width, char *outfile)
 {
 	int i, j, step;
+	int count_class[num_class];
 	char *name;
 	char file[256];
 	FILE *fp;
+
+	memset(&count_class, 0, sizeof(count_class));
 
 	name = strrchr( outfile, BS);
 	name++;
@@ -189,8 +192,13 @@ void output_class_map(char **class, int num_class, int height, int width, char *
 	for (i = 0; i < height; i++) {
 		for (j = 0; j < width; j++) {
 			fprintf(fp , "%d,", class[i][j]);
+			count_class[(int)class[i][j]]++;
 		}
 		fprintf(fp, "\n");
+	}
+	fprintf(fp, "\n\n\nClass Histgram\n");
+	for(i=0; i<num_class; i++){
+		fprintf(fp, "%d,%d,%f%%\n", i, count_class[i], (double)count_class[i] * 100 / (height * width));
 	}
 	fclose(fp);
 	return;
@@ -866,25 +874,22 @@ void init_log_sheet(ENCODER *enc, char *outfile)
 	sprintf(date, "%4d/%2d/%2d_%2d:%2d",
 		1900 + lst->tm_year, 1 + lst->tm_mon, lst->tm_mday, lst->tm_hour, lst->tm_min);
 
-    if ((fp = fopen(LOG_LIST, "rb")) == NULL) {
-	fp = fileopen(LOG_LIST, "wb");
-	fprintf(fp, "Date,Input,Height,Width,Init_Class,Use_Class,Prd_Order,\
-Header[bits],Class[bits],Predictor[bits],Threshold[bits],\
-Pred. Errors[bits],Total info.[bits],Coding Rate[bits/pel], ,");
+	if ((fp = fopen(LOG_LIST, "rb")) == NULL) {
+		fp = fileopen(LOG_LIST, "wb");
+		fprintf(fp, "Date,Input,Height,Width,Init_Class,Use_Class,Prd_Order,\
+			Header[bits],Class[bits],Predictor[bits],Threshold[bits],\
+			Pred. Errors[bits],Total info.[bits],Coding Rate[bits/pel], ,");
 
-	fprintf(fp, "Auto_Del_CL,\
-Auto_Set_Coef,\
-BASE_BSIZE,\
-QUADTREE_DEPTH,MIN_BSIZE,MAX_BSIZE,\
-COEF_PRECISION,PM_ACCURACY,NUM_GROUP,UPEL_DIST,\
-CTX_WEIGHT,");
+		fprintf(fp, "Auto_Del_CL,	Auto_Set_Coef,BASE_BSIZE,QUADTREE_DEPTH,\
+			MIN_BSIZE,MAX_BSIZE,COEF_PRECISION,PM_ACCURACY,NUM_GROUP,\
+			UPEL_DIST,CTX_WEIGHT,TEMPLATE_MATCHING,ZNCC,MANHATTAN_SORT,\
+			Search Window,");
+		fprintf(fp, "\n");
+		fclose(fp);
+	}
 
-	fprintf(fp, "\n");
-	fclose(fp);
-    }
-
-    fp = fileopen(LOG_LIST, "ab");
-    fprintf(fp, "%s,%s,%d,%d,%d,", date, name, enc->height, enc->width, enc->num_class);
+	fp = fileopen(LOG_LIST, "ab");
+	fprintf(fp, "%s,%s,%d,%d,%d,", date, name, enc->height, enc->width, enc->num_class);
 	fclose(fp);
 
 	return;
@@ -925,7 +930,25 @@ void finish_log_sheet(ENCODER *enc, int header_info, int class_info, int pred_in
 	}else {
 		fprintf(fp, "Non,");
 	}
+#if TEMPLATE_MATCHING_ON
+	if(TEMPLATE_MATCHING_ON){
+		fprintf(fp, "ON,");
 
+		if(ZNCC){
+			fprintf(fp, "ON,");
+		} else {
+			fprintf(fp, "OFF,");
+		}
+
+		if(MANHATTAN_SORT){
+			fprintf(fp, "ON,");
+		} else {
+			fprintf(fp, "OFF,");
+		}
+
+		fprintf(fp, "%d*%d,", X_SIZE*2+1, Y_SIZE);
+	}
+#endif
 	fprintf(fp, "\n");
 	fclose(fp);
 
@@ -997,3 +1020,118 @@ int set_directory(void)
 	return (0);
 }
 #endif
+
+void TemplateM_Log_Output(ENCODER *enc, char *outfile, int ***tempm_array, int ***exam_array){
+	int y, x, k;
+	FILE *fp;
+	char *name, file[256];
+
+	name = strrchr(outfile, BS);
+	name++;
+	sprintf(file, LOG_TEMP_DIR"%s_temp.csv", name);
+	if ((fp = fopen(file, "rb")) != NULL) {
+		if(remove(file) != 0){
+			printf("Remove Error!!![%s]\n", file);
+		}
+	}
+	fp = fileopen(file, "wb");
+	// fprintf(fp, "Y_SIZE,X_SIZE,AREA,MAX_DATA_SAVE,MAX_DATA_SAVE_DOUBLE,MAX_MULTIMODAL\n");
+	fprintf(fp, "%d,%d,%d,%d,%d,%d\n",
+		Y_SIZE, X_SIZE, AREA, MAX_DATA_SAVE, MAX_DATA_SAVE_DOUBLE, MAX_MULTIMODAL);
+	// fprintf(fp, "NAS_ACCURACY,TEMPLATE_CLASS_NUM\n");
+	fprintf(fp, "%d,%d\n", NAS_ACCURACY, TEMPLATE_CLASS_NUM);
+
+	fprintf(fp, "\n");
+	for(y=0; y<enc->height; y++){
+		for(x=0; x<enc->width; x++){
+			for(k=0; k<MAX_DATA_SAVE_DOUBLE; k++){
+				fprintf(fp, "%d,", tempm_array[y][x][k]);
+			}
+			for(k=0; k<MAX_DATA_SAVE; k++){
+				fprintf(fp, "%d,", enc->array[y][x][k]);
+			}
+			for(k=0; k<TEMPLATE_CLASS_NUM; k++){
+				fprintf(fp, "%d,", exam_array[y][x][k]);
+			}
+			fprintf(fp,"\n");
+		}
+	}
+	fclose(fp);
+	return;
+}
+
+void TemplateM_Log_Input(ENCODER *enc, char *outfile, int ***tempm_array, int ***exam_array){
+	int y, x, k, y_size_check, x_size_check, area_check, max_data_save_check,
+		max_data_save_double_check, max_multimodal_check, nas_accuracy_check,
+		template_class_num_check, flg=0;
+	FILE *fp;
+	char *name, file[256];
+
+	name = strrchr(outfile, BS);
+	name++;
+	sprintf(file, LOG_TEMP_DIR"%s_temp.csv", name);
+	if (( fp = fileopen(file, "rb")) == NULL){
+		printf("[%s] is NOT exist\n", file);
+		exit(1);
+	}
+	fscanf(fp, "%d,%d,%d,%d,%d,%d\n", &y_size_check, &x_size_check, &area_check, &max_data_save_check,
+		&max_data_save_double_check, &max_multimodal_check);
+	if(y_size_check != Y_SIZE){
+		printf("Y_SIZE is NOT coincide!!!\n");
+		flg++;
+	}
+	if(x_size_check != X_SIZE){
+		printf("X_SIZE is NOT coincide!!!\n");
+		flg++;
+	}
+	if(area_check != AREA){
+		printf("AREA is NOT coincide!!!\n");
+		flg++;
+	}
+	if(max_data_save_check != MAX_DATA_SAVE){
+		printf("MAX_DATA_SAVE is NOT coincide!!!\n");
+		flg++;
+	}
+	if(max_data_save_double_check != MAX_DATA_SAVE_DOUBLE){
+		printf("MAX_DATA_SAVE_DOUBLE is NOT coincide!!!\n");
+		flg++;
+	}
+	if(max_multimodal_check != MAX_MULTIMODAL){
+		printf("MAX_MULTIMODAL is NOT coincide!!!\n");
+		flg++;
+	}
+	if(flg!=0)exit(1);
+
+	flg = 0;
+	fscanf(fp, "%d,%d\n", &nas_accuracy_check, &template_class_num_check);
+	if(nas_accuracy_check != NAS_ACCURACY){
+		printf("NAS_ACCURACY is NOT coincide!!!\n");
+		flg++;
+	}
+	if(template_class_num_check != TEMPLATE_CLASS_NUM){
+		printf("TEMPLATE_CLASS_NUM is NOT coincide!!!\n");
+		flg++;
+	}
+	if(flg!=0)exit(1);
+
+	fscanf(fp, "\n");
+
+	for(y=0; y<enc->height; y++){
+		for(x=0; x<enc->width; x++){
+			for(k=0; k<MAX_DATA_SAVE_DOUBLE; k++){
+				fscanf(fp, "%d,", &tempm_array[y][x][k]);
+			}
+
+			for(k=0; k<MAX_DATA_SAVE; k++){
+				fscanf(fp, "%d,", &enc->array[y][x][k]);
+			}
+
+			for(k=0; k<TEMPLATE_CLASS_NUM; k++){
+				fscanf(fp, "%d,", &exam_array[y][x][k]);
+			}
+			fscanf(fp,"\n");
+		}
+	}
+	fclose(fp);
+	return;
+}

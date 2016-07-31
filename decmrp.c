@@ -146,6 +146,11 @@ DECODER *init_decoder(FILE *fp)
 
 #if TEMPLATE_MATCHING_ON
 	dec->temp_cl = getbits(fp, 6);
+	printf("TEMP_CL : %d | ", dec->temp_cl);
+	dec->w_gr = getbits(fp, 4);
+	printf("w_gr: %d\n", dec->w_gr);
+#else
+	dec->temp_cl = -1;
 	printf("TEMP_CL : %d\n", dec->temp_cl);
 #endif
 
@@ -503,7 +508,7 @@ void decode_class(FILE *fp, DECODER *dec)
 	}
 	for (y = 0; y < dec->height; y += blksize) {
 		for (x = 0; x < dec->width; x += blksize) {
-			printf("(%3d,%3d)\n", y, x);
+			// printf("(%3d,%3d)\n", y, x);
 			decode_qtindex(fp, dec, cpm, y, x,
 				blksize, dec->width, level);
 		}
@@ -528,6 +533,9 @@ int calc_udec(DECODER *dec, int y, int x)
 			ry = y + dyx[k].y;
 			rx = x + dyx[k].x;
 			u += err[ry][rx] * (*wt_p++);
+			#if CHECK_DEBUG
+				if(y==check_y && x==check_x)	printf("[1]u: %d | err: %d(%d,%d) | wt_p: %d\n", u, err[ry][rx], ry, rx, wt_p[k]);
+			#endif
 		}
 	} else if (y == 0) {
 		if (x == 0) {
@@ -541,6 +549,9 @@ int calc_udec(DECODER *dec, int y, int x)
 				if (rx < 0) rx = 0;
 				else if (rx >= x) rx = x - 1;
 				u += err[ry][rx] * (*wt_p++);
+				#if CHECK_DEBUG
+					if(y==check_y && x==check_x)	printf("[2]u: %d | err: %d(%d,%d) | wt_p: %d\n", u, err[ry][rx], ry, rx, wt_p[k]);
+				#endif
 			}
 		}
 	} else {
@@ -552,6 +563,9 @@ int calc_udec(DECODER *dec, int y, int x)
 				rx = x + dyx[k].x;
 				if (rx < 0) rx = 0;
 				u += err[ry][rx] * (*wt_p++);
+				#if CHECK_DEBUG
+					if(y==check_y && x==check_x)	printf("[3]u: %d | err: %d(%d,%d) | wt_p: %d\n", u, err[ry][rx], ry, rx, wt_p[k]);
+				#endif
 			}
 		} else {
 			for (k = 0; k < NUM_UPELS; k++) {
@@ -561,11 +575,17 @@ int calc_udec(DECODER *dec, int y, int x)
 				if (rx < 0) rx = 0;
 				else if (rx >= dec->width) rx = dec->width - 1;
 				u += err[ry][rx] * (*wt_p++);
+				#if CHECK_DEBUG
+					if(y==check_y && x==check_x-1)	printf("[4]u: %d | err: %d(%d,%d) | wt_p: %d\n", u, err[ry][rx], ry, rx, wt_p[k]);
+				#endif
 			}
 		}
 	}
 	u >>= 6;
 	if (u > MAX_UPARA) u = MAX_UPARA;
+	#if CHECK_DEBUG
+		if(y==check_y && x==check_x)	printf("u: %d\n", u);
+	#endif
 	return (u);
 }
 
@@ -578,7 +598,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 	TM_Member tm[Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE ];
 	TM_Member temp;
 
-#if AVDN
+#if ZNCC
 	double dist1=0, dist_o=0, *area1_d=0, *area_o_d=0;
 	area1_d = (double *)alloc_mem(AREA * sizeof(double));
 	area_o_d = (double *)alloc_mem(AREA * sizeof(double));
@@ -626,16 +646,23 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 			if(dec_y==check_y && dec_x==check_x) printf("ave1: %f\n", ave1);
 		#endif
 
-#if AVDN
+#if ZNCC
 	dist1=0;
 	for(i=0; i<AREA; i++){
 		dist1 += ((double)area1[i] - ave1) * ((double)area1[i] - ave1);
+		#if CHECK_TM_DETAIL
+			if(dec_y == check_y && dec_x == check_x )	printf("dist1: %f | area1: %d | ave1: %f\n", dist1, area1[i], ave1);
+		#endif
 	}
 
 	dist1 = sqrt(dist1);
+	if(dist1 == 0) dist1 = 1;
 
 	for(i=0; i<AREA; i++){
 		area1_d[i] = ((double)area1[i] -ave1) / dist1;
+		#if CHECK_TM_DETAIL
+			if(dec_y == check_y && dec_x == check_x )	printf("area1_d: %f | area1: %d | ave1: %f | dist1: %f\n", area1_d[i], area1[i], ave1, dist1);
+		#endif
 	}
 #endif
 
@@ -674,22 +701,30 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 			#if CHECK_TM_DETAIL
 				if(dec_y==check_y && dec_x==check_x)	printf("ave_o: %f\n", ave_o);
 			#endif
-		#if AVDN
+		#if ZNCC
 			dist_o = 0;
 			for(i=0; i<AREA; i++){
 				dist_o += ((double)area_o[i] - ave_o) * ((double)area_o[i] - ave_o);
+				#if CHECK_TM_DETAIL
+					if(dec_y == check_y && dec_x == check_x)	printf("dist_o: %f | area_o: %d | ave_o: %f\n", dist_o, area_o[i], ave_o);
+				#endif
 			}
 
 			dist_o = sqrt(dist_o);
+			if(dist_o == 0)	dist_o = 1;
 
 			for(i=0; i<AREA; i++){
 				area_o_d[i] = ((double)area_o[i] - ave_o) / dist_o;
+				#if CHECK_TM_DETAIL
+					if(dec_y == check_y && dec_x == check_x)	printf("area_o_d: %f | area_o: %d | ave_o: %f | dist_o: %f\n", area_o_d[i], area_o[i], ave_o, dist_o);
+				#endif
 			}
 		#endif
 			nas = 0;
 			for(i=0; i<AREA; i++){
-				#if AVDN
+				#if ZNCC
 					nas += (area1_d[i] - area_o_d[i]) * (area1_d[i] - area_o_d[i]);
+					// nas += fabs(area1_d[i] - area_o_d[i]);
 					#if CHECK_TM_DETAIL
 						if(dec_y == check_y && dec_x == check_x)	printf("nas: %f | area1: %f | area_o: %f\n", nas, area1_d[i], area_o_d[i]);
 					#endif
@@ -710,13 +745,18 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 			tm[j].ave_o = (int)ave_o;
 			tm[j].sum = (int)(nas * NAS_ACCURACY);
 			if(tm[j].sum < 0)	tm[j].sum = 0;
+
+			#if ZNCC
+				tm[j].s_devian = dist_o;
+			#endif
+
 			#if MANHATTAN_SORT
 				tm[j].mhd = abs(dec_x - bx) + abs( dec_y - by);
 				if(tm[j].sum > max_nas)	max_nas = tm[j].sum;
 			#endif
 
 			#if CHECK_TM
-				if(dec_y == check_y && dec_x == check_x)	printf("B[%3d](%3d,%3d) sum: %d | ave: %d\n", tm[j].id, tm[j].by, tm[j].bx, tm[j].sum, tm[j].ave_o);
+				if(dec_y == check_y && dec_x == check_x)	printf("B[%3d](%3d,%3d) sum: %d | ave: %d | devian: %f\n", tm[j].id, tm[j].by, tm[j].bx, tm[j].sum, tm[j].ave_o, tm[j].s_devian);
 			#endif
 
 			j++;
@@ -778,7 +818,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 		tm_array[k * 4 + count] = 0;
 		tm_array[k * 4 + count] = tm[k].sum;
 		#if CHECK_TM
-			if(dec_y == check_y && dec_x == check_x)	printf("A[%3d](%3d,%3d) sum: %d | ave: %d\n", tm[k].id, tm[k].by, tm[k].bx, tm[k].sum, tm[k].ave_o);
+			if(dec_y == check_y && dec_x == check_x)	printf("A[%3d](%3d,%3d) sum: %d | ave: %d | devian: %f\n", tm[k].id, tm[k].by, tm[k].bx, tm[k].sum, tm[k].ave_o, tm[k].s_devian);
 		#endif
 	}
 
@@ -796,10 +836,18 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 		temp_x = tempm_array[i*4+2];
 		ave_o = dec->array[i];
 
+		#if ZNCC
+			dist_o = tm[i].s_devian;
+		#endif
+
 		if(dec_y == 0 && dec_x < 3){
 			exam_array[dec_y][dec_x][i] = (dec->maxprd > 1);
 		} else {
-			exam_array[dec_y][dec_x][i] = (int)((double)decval[temp_y][temp_x] - ave_o + ave1);
+			#if ZNCC
+				exam_array[dec_y][dec_x][i] = (int)( ((double)decval[temp_y][temp_x] - ave_o) * dist1 / dist_o + ave1);
+			#else
+				exam_array[dec_y][dec_x][i] = (int)((double)decval[temp_y][temp_x] - ave_o + ave1);
+			#endif
 			if(exam_array[dec_y][dec_x][i] < 0 || exam_array[dec_y][dec_x][i] > dec->maxprd)
 				exam_array[dec_y][dec_x][i] = (int)ave1;
 		}
@@ -808,6 +856,9 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 		#endif
 
 	}
+
+	free(tm_array);
+	free(decval);
 
 //一番マッチングコストが小さいものを予測値のひとつに加える
 	/*temp_y = tempm_array[1];
@@ -820,6 +871,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 		exam_array[dec_y][dec_x] = (int)((double)decval[temp_y][temp_x] - ave_o + ave1) ;
 		if(exam_array[dec_y][dec_x] < 0 || exam_array[dec_y][dec_x] > dec->maxprd)	exam_array[dec_y][dec_x] = (int)ave1 ;
 	}*/
+
 }
 #endif
 
@@ -1005,11 +1057,12 @@ void decode_mask(FILE *fp, DECODER *dec)
 
 void init_mask()
 {
+	int peak_num = MAX_PEAK_NUM + TEMPLATE_CLASS_NUM;
 	mask = (MASK *)alloc_mem(sizeof(MASK));
-	mask->weight = (int *)alloc_mem(MAX_PEAK_NUM * sizeof(int));
-	mask->class = (char *)alloc_mem(MAX_PEAK_NUM * sizeof(char));
-	mask->base = (int *)alloc_mem(MAX_PEAK_NUM * sizeof(int));
-	mask->pm =(PMODEL **)alloc_mem(MAX_PEAK_NUM * sizeof(PMODEL *));
+	mask->weight = (int *)alloc_mem(peak_num * sizeof(int));
+	mask->class = (char *)alloc_mem(peak_num * sizeof(char));
+	mask->base = (int *)alloc_mem(peak_num * sizeof(int));
+	mask->pm =(PMODEL **)alloc_mem(peak_num * sizeof(PMODEL *));
 }
 
 #if TEMPLATE_MATCHING_ON
@@ -1034,6 +1087,38 @@ double continuous_GGF(DECODER *dec, double e, int gr)
 	}
 
 	return(p);
+}
+
+int temp_mask_parameter(DECODER *dec, int y, int x , int u, int peak, int cl, int weight_all, int bmask, int shift, int r_cl)
+{
+	int i, m_gr, m_prd, m_base, *th_p, peak_num = TEMPLATE_CLASS_NUM;
+	double weight[peak_num], sum_weight=0, weight_coef=0;
+
+	for(i=0; i<peak_num; i++){
+		weight[i] = continuous_GGF(dec, (double)tempm_array[i*4+3] / NAS_ACCURACY, dec->w_gr);
+		sum_weight += weight[i];
+	}
+	weight_coef = (double)weight_all / sum_weight;
+
+	for(i=0; i<peak_num; i++){
+		mask->class[peak] = cl;
+		mask->weight[peak] = (int)(weight[i] * weight_coef);
+		th_p = dec->th[cl];
+		for(m_gr = 0; m_gr < dec->num_group - 1; m_gr++){
+			if( u < *th_p++)	break;
+		}
+
+		m_prd = exam_array[y][x][i];
+		#if CHECK_DEBUG
+			if(y == check_y && x == check_x) printf("[set_mask_parameter] 	m_prd[%d]: %d[%2d] | weight: %d | u: %d | gr: %d\n", peak, m_prd, cl, mask->weight[peak], u, m_gr);
+		#endif
+		m_base = (dec->maxprd - m_prd + (1 << shift) / 2 ) >> shift;
+		mask->pm[peak] = dec->pmodels[m_gr][0] + (m_base & bmask);
+		m_base >>= dec->pm_accuracy;
+		mask->base[peak] = m_base;
+		peak++;
+	}
+	return(peak);
 }
 #endif
 
@@ -1063,53 +1148,33 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 	r_cl = dec->class[y][x]; 	//当該ブロックのクラス番号
 	for(cl = peak = 0; cl < dec->num_class; cl++){
 		if (count_cl[cl]!=0){
-			mask->class[peak] = cl;	//コメントアウトされていた？
-			mask->weight[peak] = ( (count_cl[cl] << W_SHIFT) / sample);
-			th_p = dec->th[cl];
-			for (m_gr = 0; m_gr < dec->num_group - 1; m_gr++) {
-				if (u < *th_p++) break;
+			if(cl == dec->temp_cl){
+				#if TEMPLATE_MATCHING_ON
+					peak = temp_mask_parameter(dec, y, x, u, peak, cl, (count_cl[cl] << W_SHIFT) / sample, bmask, shift, r_cl);
+					if( cl == r_cl)	r_prd = exam_array[y][x][0];
+				#endif
+			} else {
+				mask->class[peak] = cl;	//コメントアウトされていた？
+				mask->weight[peak] = ( (count_cl[cl] << W_SHIFT) / sample);
+				th_p = dec->th[cl];
+				for (m_gr = 0; m_gr < dec->num_group - 1; m_gr++) {
+					if (u < *th_p++) break;
+				}
+
+				m_prd = calc_prd(img, dec, cl, y, x);
+				if (cl == r_cl) r_prd = m_prd;
+				#if CHECK_DEBUG
+					if(y == check_y && x == check_x) printf("[set_mask_parameter] 	m_prd[%d]: %d[%2d] | weight: %d | u: %d | gr: %d\n", peak, m_prd, cl, mask->	weight[peak], u, m_gr);
+				#endif
+				m_base = (dec->maxprd - m_prd + (1 << shift) / 2) >> shift;
+				mask->pm[peak] = dec->pmodels[m_gr][0] + (m_base & bmask);
+				m_base >>= dec->pm_accuracy;
+				mask->base[peak] = m_base;
+				peak++;
 			}
-
-			m_prd = calc_prd(img, dec, cl, y, x);
-			if (cl == r_cl) r_prd = m_prd;
-			#if CHECK_DEBUG
-				if(y == check_y && x == check_x) printf("[set_mask_parameter] m_prd[%d]: %d[%2d] | weight: %d\n", peak, m_prd, cl, mask->weight[peak]);
-			#endif
-			m_base = (dec->maxprd - m_prd + (1 << shift) / 2) >> shift;
-			mask->pm[peak] = dec->pmodels[m_gr][0] + (m_base & bmask);
-			m_base >>= dec->pm_accuracy;
-			mask->base[peak] = m_base;
-			peak++;
 		}
 	}
 
-#if 0
-// #if TEMPLATE_MATCHING_ON
-	if(y==0 && x < 3){
-
-	} else {
-		cl = dec->class[y][x];
-		mask->class[peak] = cl;
-		// printf("%d\n", tempm_array[3]);
-		mask->weight[peak] = continuous_GGF(dec, (double)tempm_array[3] / NAS_ACCURACY, dec->w_gr) *( (count_cl[cl] << W_SHIFT) / sample);
-		// if(y==0 && x==1)printf("weight: %d\n",mask->weight[peak]);
-		th_p = dec->th[cl];
-		for(m_gr = 0; m_gr < dec->num_group - 1; m_gr++){
-			if(u < *th_p++)break;
-		}
-
-		m_prd = exam_array[y][x];
-		#if CHECK_DEBUG
-			if(y == check_y && x == check_x)
-				printf("[set_mask_parameter] m_prd[%d]: %d\n", peak, m_prd);
-		#endif
-		m_base = (dec->maxprd - m_prd + (1 << shift) / 2) >> shift;
-		mask->pm[peak] = dec->pmodels[m_gr][0] + (m_base & bmask);
-		m_base >>= dec->pm_accuracy;
-		mask->base[peak] = m_base;
-		peak++;
-	}
-#endif
 	mask->num_peak = peak;	//ピークの数
 	return(r_prd);	//r_prdは当該ブロックのクラスによる予測値
 }
@@ -1142,16 +1207,36 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 
 			if (dec->mask[y][x] == 0){
 				cl = dec->class[y][x];
-				th_p = dec->th[cl];
-				for (gr = 0; gr < dec->num_group - 1; gr++) {
-					if (u < *th_p++) break;
+				if(cl == dec->temp_cl){
+					prd = set_mask_parameter(img, dec, y, x, u, bitmask, shift);
+					if (mask->num_peak == 1){	// single_peak
+						base = mask->base[0];
+						pm = mask->pm[0];
+						p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
+							- base;
+					}else{
+						pm = &dec->mult_pm;
+						set_pmodel_mult(pm,mask,dec->maxval+1);
+						#if CHECK_PMODEL
+							if(y==check_y && x==check_x)	printmodel(pm, dec		->maxval+1);
+						#endif
+						p = rc_decode(fp, dec->rc, pm, 0, dec->maxval+1);
+					}
+				} else {
+					th_p = dec->th[cl];
+					for (gr = 0; gr < dec->num_group - 1; gr++) {
+						if (u < *th_p++) break;
+					}
+					prd = calc_prd(img, dec, cl, y, x);
+					base = (dec->maxprd - prd + (1 << shift) / 2) >> shift;
+					pm = dec->pmodels[gr][0] + (base & bitmask);
+					base >>= dec->pm_accuracy;
+					#if CHECK_PMODEL
+						if(y==check_y && x==check_x)	printmodel(pm, dec->maxval	+1);
+					#endif
+					p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
+						- base;
 				}
-				prd = calc_prd(img, dec, cl, y, x);
-				base = (dec->maxprd - prd + (1 << shift) / 2) >> shift;
-				pm = dec->pmodels[gr][0] + (base & bitmask);
-				base >>= dec->pm_accuracy;
-				p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
-					- base;
 			}else{	//mult_peak
 
 				prd = set_mask_parameter(img, dec, y, x, u, bitmask, shift);
@@ -1164,7 +1249,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 					pm = &dec->mult_pm;
 					set_pmodel_mult(pm,mask,dec->maxval+1);
 					#if CHECK_PMODEL
-						if(y==check_y && x==check_x)printmodel(pm, dec->maxval+1);
+						if(y==check_y && x==check_x)	printmodel(pm, dec->maxval+1);
 					#endif
 					p = rc_decode(fp, dec->rc, pm, 0, dec->maxval+1);
 				}
@@ -1176,8 +1261,8 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 			if (e < 0) e = -(e + 1);
 			dec->err[y][x] = e;	//特徴量算出に用いる
 			#if CHECK_DEBUG
-				// printf("d[%d][%d]: %d\n", y, x, p);
-				printf("%d\n", p);
+				printf("d[%d][%d]: %d(%d) | err: %d\n", y, x, p, prd, e);
+				// printf("%d\n", p);
 			#endif
 
 		}

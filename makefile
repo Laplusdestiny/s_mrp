@@ -35,7 +35,10 @@ clean :
 	rm -f $(ENCODER) $(DECODER) $(ENCOBJ) $(DECOBJ) core.* *~ nohup.out
 
 job :
-	sjob -h compute-0-20 run.sh &
+	sjob run.sh &
+
+job25 :
+	sjob -h c25 run.sh &
 
 cleanlog :
 	rm -rf Log/*
