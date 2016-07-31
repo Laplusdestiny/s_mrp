@@ -882,7 +882,7 @@ void init_log_sheet(ENCODER *enc, char *outfile)
 
 		fprintf(fp, "Auto_Del_CL,	Auto_Set_Coef,BASE_BSIZE,QUADTREE_DEPTH,\
 			MIN_BSIZE,MAX_BSIZE,COEF_PRECISION,PM_ACCURACY,NUM_GROUP,\
-			UPEL_DIST,CTX_WEIGHT,TEMPLATE_MATCHING,AVDN,MANHATTAN_SORT,\
+			UPEL_DIST,CTX_WEIGHT,TEMPLATE_MATCHING,ZNCC,MANHATTAN_SORT,\
 			Search Window,");
 		fprintf(fp, "\n");
 		fclose(fp);
@@ -934,7 +934,7 @@ void finish_log_sheet(ENCODER *enc, int header_info, int class_info, int pred_in
 	if(TEMPLATE_MATCHING_ON){
 		fprintf(fp, "ON,");
 
-		if(AVDN){
+		if(ZNCC){
 			fprintf(fp, "ON,");
 		} else {
 			fprintf(fp, "OFF,");
@@ -1035,10 +1035,10 @@ void TemplateM_Log_Output(ENCODER *enc, char *outfile, int ***tempm_array, int *
 		}
 	}
 	fp = fileopen(file, "wb");
-	fprintf(fp, "Y_SIZE,X_SIZE,AREA,MAX_DATA_SAVE,MAX_DATA_SAVE_DOUBLE,MAX_MULTIMODAL\n");
-	fprintf(fp, "%d,%d,%d,%d,%d,%d\n\n",
+	// fprintf(fp, "Y_SIZE,X_SIZE,AREA,MAX_DATA_SAVE,MAX_DATA_SAVE_DOUBLE,MAX_MULTIMODAL\n");
+	fprintf(fp, "%d,%d,%d,%d,%d,%d\n",
 		Y_SIZE, X_SIZE, AREA, MAX_DATA_SAVE, MAX_DATA_SAVE_DOUBLE, MAX_MULTIMODAL);
-	fprintf(fp, "NAS_ACCURACY,TEMPLATE_CLASS_NUM\n");
+	// fprintf(fp, "NAS_ACCURACY,TEMPLATE_CLASS_NUM\n");
 	fprintf(fp, "%d,%d\n", NAS_ACCURACY, TEMPLATE_CLASS_NUM);
 
 	fprintf(fp, "\n");
@@ -1060,49 +1060,74 @@ void TemplateM_Log_Output(ENCODER *enc, char *outfile, int ***tempm_array, int *
 	return;
 }
 
-void Template_log_input(ENCODER *enc, char *outfile, int ***tempm_array, int ***exam_array){
-	int y, x, k, y_size, x_size, area, max_data_save, max_data_save_double, max_multimodal,
-		nas_accuracy, template_class_num;
+void TemplateM_Log_Input(ENCODER *enc, char *outfile, int ***tempm_array, int ***exam_array){
+	int y, x, k, y_size_check, x_size_check, area_check, max_data_save_check,
+		max_data_save_double_check, max_multimodal_check, nas_accuracy_check,
+		template_class_num_check, flg=0;
 	FILE *fp;
 	char *name, file[256];
 
 	name = strrchr(outfile, BS);
 	name++;
 	sprintf(file, LOG_TEMP_DIR"%s_temp.csv", name);
-	if (( fp = fopen(file, "rb")) != NULL){
-		printf("[%s] is NOT exist\n", outfile);
+	if (( fp = fileopen(file, "rb")) == NULL){
+		printf("[%s] is NOT exist\n", file);
 		exit(1);
 	}
-	fp = fileopen(file, "rb");
-	fscanf(fp, "%d,%d,%d,%d,%d,%d\n", y_size, x_size, area, max_data_save, max_data_save_double,
-			max_multimodal);
-	if(y_size != Y_SIZE || x_size != X_SIZE || area != AREA || max_data_save != MAX_DATA_SAVE ||
-		max_data_save_double != MAX_DATA_SAVE_DOUBLE || max_multimodal != MAX_MULTIMODAL){
+	fscanf(fp, "%d,%d,%d,%d,%d,%d\n", &y_size_check, &x_size_check, &area_check, &max_data_save_check,
+		&max_data_save_double_check, &max_multimodal_check);
+	if(y_size_check != Y_SIZE){
+		printf("Y_SIZE is NOT coincide!!!\n");
+		flg++;
+	}
+	if(x_size_check != X_SIZE){
+		printf("X_SIZE is NOT coincide!!!\n");
+		flg++;
+	}
+	if(area_check != AREA){
+		printf("AREA is NOT coincide!!!\n");
+		flg++;
+	}
+	if(max_data_save_check != MAX_DATA_SAVE){
+		printf("MAX_DATA_SAVE is NOT coincide!!!\n");
+		flg++;
+	}
+	if(max_data_save_double_check != MAX_DATA_SAVE_DOUBLE){
+		printf("MAX_DATA_SAVE_DOUBLE is NOT coincide!!!\n");
+		flg++;
+	}
+	if(max_multimodal_check != MAX_MULTIMODAL){
+		printf("MAX_MULTIMODAL is NOT coincide!!!\n");
+		flg++;
+	}
+	if(flg!=0)exit(1);
 
-		printf("Parameter is NOT coincide!!!\n");
-		exit(1);
+	flg = 0;
+	fscanf(fp, "%d,%d\n", &nas_accuracy_check, &template_class_num_check);
+	if(nas_accuracy_check != NAS_ACCURACY){
+		printf("NAS_ACCURACY is NOT coincide!!!\n");
+		flg++;
 	}
-
-	fscanf(fp, "%d,%d\n", nas_accuracy, template_class_num);
-	if(nas_accuracy != NAS_ACCURACY || template_class_num != TEMPLATE_CLASS_NUM){
-		printf("Parameter is NOT coincide!!!\n");
-		exit(1);
+	if(template_class_num_check != TEMPLATE_CLASS_NUM){
+		printf("TEMPLATE_CLASS_NUM is NOT coincide!!!\n");
+		flg++;
 	}
+	if(flg!=0)exit(1);
 
 	fscanf(fp, "\n");
 
 	for(y=0; y<enc->height; y++){
 		for(x=0; x<enc->width; x++){
 			for(k=0; k<MAX_DATA_SAVE_DOUBLE; k++){
-				fscanf(fp, "%d,", tempm_array[y][x][k]);
+				fscanf(fp, "%d,", &tempm_array[y][x][k]);
 			}
 
 			for(k=0; k<MAX_DATA_SAVE; k++){
-				fscanf(fp, "%d,", enc->array[y][x][k]);
+				fscanf(fp, "%d,", &enc->array[y][x][k]);
 			}
 
 			for(k=0; k<TEMPLATE_CLASS_NUM; k++){
-				fscanf(fp, "%d,", exam_array[y][x][k]);
+				fscanf(fp, "%d,", &exam_array[y][x][k]);
 			}
 			fscanf(fp,"\n");
 		}

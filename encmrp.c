@@ -761,22 +761,23 @@ int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出
 
 #if TEMPLATE_MATCHING_ON
 void*** TemplateM (ENCODER *enc, char *outfile) {
+
+#if TEMPLATEM_LOG_OUTPUT
 	int x , y , bx , by , g , h , i , j=0 , k , count , area1[AREA] , area_o[AREA] , *tm_array ,
 		*roff_p , *org_p , x_size = X_SIZE , sum1 , sum_o, temp_x, temp_y, break_flag=0,
 		**encval;
 	double ave1=0 , ave_o , nas ;
-#if AVDN
+#if ZNCC
 	double dist1=0, dist_o=0, *area1_d=0, *area_o_d=0;
 	area1_d = (double * )alloc_mem(AREA * sizeof(double));
 	area_o_d = (double * )alloc_mem(AREA * sizeof(double));
-	printf("AVDN\tON\n");
+	printf("ZNCC\tON\n");
 #endif
 
 #if MANHATTAN_SORT
 	int *mcost_num, max_nas=0, before_nas_num=0;
 	printf("MANHATTAN_SORT\tON\n");
 #endif
-#if TEMPLATEM_LOG_INPUT
 
 /////////////////////////
 ///////メモリ確保////////
@@ -818,7 +819,7 @@ for(y = 0 ; y < enc->height ; y++){
 		}
 		ave1 = (double)sum1 / AREA;
 
-	#if AVDN
+	#if ZNCC
 		dist1=0;
 		for(i=0; i<AREA; i++){
 			dist1 += ((double)area1[i] - ave1) * ((double)area1[i] - ave1);
@@ -875,7 +876,7 @@ for(y = 0 ; y < enc->height ; y++){
 
 				ave_o = (double)sum_o / AREA;
 
-			#if AVDN
+			#if ZNCC
 				dist_o = 0;
 				for(i=0; i<AREA; i++){
 					dist_o += ((double)area_o[i] - ave_o) * ((double)area_o[i] - ave_o);
@@ -897,7 +898,7 @@ for(y = 0 ; y < enc->height ; y++){
 				nas = 0;
 
 				for(i = 0; i < AREA ; i++){//マッチングコストの計算
-					#if AVDN
+					#if ZNCC
 						// nas += fabs(area1_d[i] - area_o_d[i]);
 						nas += (area1_d[i] - area_o_d[i]) * (area1_d[i] - area_o_d[i]);
 						#if CHECK_TM_DETAIL
@@ -919,7 +920,7 @@ for(y = 0 ; y < enc->height ; y++){
 				tm[j].sum = (int)(nas * NAS_ACCURACY);
 				if(tm[j].sum < 0)	tm[j].sum = 0;
 
-				#if AVDN
+				#if ZNCC
 					tm[j].s_devian = dist_o;
 				#endif
 
@@ -1014,14 +1015,14 @@ for(y = 0 ; y < enc->height ; y++){
 			temp_y = tempm_array[y][x][i*4 + 1];
 			temp_x = tempm_array[y][x][i*4 + 2];
 			ave_o = enc->array[y][x][i];
-			#if AVDN
+			#if ZNCC
 				dist_o = tm[i].s_devian;
 			#endif
 
 			if(y == 0 && x< 3){
 				exam_array[y][x][i] = (enc->maxprd > 1);
 			} else {
-				#if AVDN
+				#if ZNCC
 					exam_array[y][x][i] = (int)( ((double)encval[temp_y][temp_x] - ave_o) * dist1 / dist_o + ave1);
 				#else
 					exam_array[y][x][i] = (int)((double)encval[temp_y][temp_x] - ave_o + ave1);
@@ -1051,8 +1052,10 @@ for(y = 0 ; y < enc->height ; y++){
 }//y fin
 // printf("number of hours worked:%lf[s]\n",(float)(end - start)/CLOCKS_PER_SEC);
 TemplateM_Log_Output(enc, outfile, tempm_array, exam_array);
+free(tm_array);
+free(encval);
 #else
-TemplateM_Log_Input(enc, outifle, tempm_array, exam_array);
+TemplateM_Log_Input(enc, outfile, tempm_array, exam_array);
 #endif
 printf("Calculating Template Matching Fin\n");
 
@@ -1060,7 +1063,7 @@ printf("Calculating Template Matching Fin\n");
 ////////メモリ解放///////////
 ////////////////////////////
 
-	free(tm_array);
+
 	return(0);
 	// return(array);
 }
@@ -3074,7 +3077,7 @@ printf ("[op_group] -> %d" ,(int)cost);	//しきい値毎に分散を最適化�
 	}
 	if(new_gr >= enc->num_group) new_gr = enc->num_group-1;
 	enc->w_gr = new_gr;
-	printf(" [opt w_gr: %d]", enc->w_gr);
+	printf(" [opt w_gr: %2d]", enc->w_gr);
 #endif
 	printf (" [op_c] ->");	//分散毎に確率モデルの形状を最適化した時のコスト
 	// printf (" op_c -> %d" ,(int)cost);	//分散毎に確率モデルの形状を最適化した時のコスト

@@ -598,7 +598,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 	TM_Member tm[Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE ];
 	TM_Member temp;
 
-#if AVDN
+#if ZNCC
 	double dist1=0, dist_o=0, *area1_d=0, *area_o_d=0;
 	area1_d = (double *)alloc_mem(AREA * sizeof(double));
 	area_o_d = (double *)alloc_mem(AREA * sizeof(double));
@@ -646,7 +646,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 			if(dec_y==check_y && dec_x==check_x) printf("ave1: %f\n", ave1);
 		#endif
 
-#if AVDN
+#if ZNCC
 	dist1=0;
 	for(i=0; i<AREA; i++){
 		dist1 += ((double)area1[i] - ave1) * ((double)area1[i] - ave1);
@@ -701,7 +701,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 			#if CHECK_TM_DETAIL
 				if(dec_y==check_y && dec_x==check_x)	printf("ave_o: %f\n", ave_o);
 			#endif
-		#if AVDN
+		#if ZNCC
 			dist_o = 0;
 			for(i=0; i<AREA; i++){
 				dist_o += ((double)area_o[i] - ave_o) * ((double)area_o[i] - ave_o);
@@ -722,7 +722,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 		#endif
 			nas = 0;
 			for(i=0; i<AREA; i++){
-				#if AVDN
+				#if ZNCC
 					nas += (area1_d[i] - area_o_d[i]) * (area1_d[i] - area_o_d[i]);
 					// nas += fabs(area1_d[i] - area_o_d[i]);
 					#if CHECK_TM_DETAIL
@@ -746,7 +746,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 			tm[j].sum = (int)(nas * NAS_ACCURACY);
 			if(tm[j].sum < 0)	tm[j].sum = 0;
 
-			#if AVDN
+			#if ZNCC
 				tm[j].s_devian = dist_o;
 			#endif
 
@@ -836,14 +836,14 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 		temp_x = tempm_array[i*4+2];
 		ave_o = dec->array[i];
 
-		#if AVDN
+		#if ZNCC
 			dist_o = tm[i].s_devian;
 		#endif
 
 		if(dec_y == 0 && dec_x < 3){
 			exam_array[dec_y][dec_x][i] = (dec->maxprd > 1);
 		} else {
-			#if AVDN
+			#if ZNCC
 				exam_array[dec_y][dec_x][i] = (int)( ((double)decval[temp_y][temp_x] - ave_o) * dist1 / dist_o + ave1);
 			#else
 				exam_array[dec_y][dec_x][i] = (int)((double)decval[temp_y][temp_x] - ave_o + ave1);

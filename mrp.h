@@ -34,7 +34,7 @@
 
 /****** OPTIMIZE ***************************/
 #define OPT_SIDEINFO		1 // 1 : side-info into consideration (standard), 0 : neglect side-info
-#define MAX_ITERATION	5	//100
+#define MAX_ITERATION	100	//100
 #define EXTRA_ITERATION	10
 #define AUTO_DEL_CL		0
 #define AUTO_PRD_ORDER	1
@@ -127,19 +127,19 @@
 #define TEMPLATE_MATCHING_ON 	1
 #if TEMPLATE_MATCHING_ON
 
-#define AVDN			1
+#define ZNCC			1
 #define MANHATTAN_SORT	1
 #define AREA			6
 #define Y_SIZE			20
-#define X_SIZE			20	//調査結果より80*20がいいかも？
+#define X_SIZE			40	//調査結果より80*20がいいかも？
 #define NAS_ACCURACY	100
 #define MAX_DATA_SAVE	20
 #define MAX_DATA_SAVE_DOUBLE 	MAX_DATA_SAVE*4
 #define MAX_MULTIMODAL	10
 #define W_GR 			7
 #define WEIGHT_CN		2
-#define TEMPLATE_CLASS_NUM	3
-#define TEMPLATEM_LOG_INPUT	1
+#define TEMPLATE_CLASS_NUM	10
+#define TEMPLATEM_LOG_OUTPUT	1
 #endif
 
 #define TEMPLATE_FLAG	2 << COEF_PRECISION
@@ -147,7 +147,7 @@
 /*********DEBUG******************************/
 #define CHECK_TM 		0
 #define CHECK_TM_DETAIL	0
-#define CHECK_DEBUG 		1
+#define CHECK_DEBUG 		0
 #define CHECK_PMODEL	0
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
@@ -363,6 +363,7 @@ void calc_var_upara( ENCODER *, char *);
 void init_log_sheet(ENCODER *, char *);
 void finish_log_sheet(ENCODER *, int, int, int, int, int, int, double);
 void TemplateM_Log_Output(ENCODER *, char *, int ***, int ***);
+void TemplateM_Log_Input(ENCODER *, char *, int ***, int ***);
 
 #if defined(_WIN32)
 	int set_directory(void);
