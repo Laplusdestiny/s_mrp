@@ -594,7 +594,7 @@ int calc_udec(DECODER *dec, int y, int x)
 #if TEMPLATE_MATCHING_ON
 void TemplateM (DECODER *dec, int dec_y, int dec_x){
 	int bx, by, g, h, i, j, k, count, area1[AREA], area_o[AREA], *roff_p, *org_p,  x_size = X_SIZE,
-		sum1, sum_o, temp_x, temp_y, break_flag=0, **decval, *tm_array;
+		sum1, sum_o, temp_x, temp_y, break_flag=0, **decval, *tm_array, temp_peak_num=0;
 	double ave1, ave_o, nas;
 	// int tm_array[(Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE)*4] = {0};
 	TM_Member tm[Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE ];
@@ -835,7 +835,8 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 	}
 
 //マッチングコストが小さいものをTEMPLATE_CLASS_NUMの数だけ用意
-	for(i=0; i<TEMPLATE_CLASS_NUM; i++){
+	if(dec->temp_num[dec_y][dec_x] < TEMPLATE_CLASS_NUM)	temp_peak_num = dec->temp_num[dec_y][dec_x];
+	for(i=0; i<temp_peak_num; i++){
 		temp_y = tempm_array[i*4+1];
 		temp_x = tempm_array[i*4+2];
 		ave_o = dec->array[i];
@@ -849,8 +850,10 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 		} else {
 			#if ZNCC
 				exam_array[dec_y][dec_x][i] = (int)( ((double)decval[temp_y][temp_x] - ave_o) * dist1 / dist_o + ave1);
-			#else
+			#elif ZSAD
 				exam_array[dec_y][dec_x][i] = (int)((double)decval[temp_y][temp_x] - ave_o + ave1);
+			#else
+				exam_array[dec_y][dec_x] = decval[temp_y][temp_x];
 			#endif
 			if(exam_array[dec_y][dec_x][i] < 0 || exam_array[dec_y][dec_x][i] > dec->maxprd)
 				exam_array[dec_y][dec_x][i] = (int)ave1;
@@ -1095,16 +1098,18 @@ double continuous_GGF(DECODER *dec, double e, int gr)
 
 int temp_mask_parameter(DECODER *dec, int y, int x , int u, int peak, int cl, int weight_all, int bmask, int shift, int r_cl)
 {
-	int i, m_gr, m_prd, m_base, *th_p, peak_num = dec->temp_peak_num;
-	double weight[peak_num], sum_weight=0, weight_coef=0;
+	int i, m_gr, m_prd, m_base, *th_p, template_peak = dec->temp_peak_num;
+	double weight[template_peak], sum_weight=0, weight_coef=0;
 
-	for(i=0; i<peak_num; i++){
+	if(template_peak > dec->temp_num[y][x])	template_peak = dec->temp_num[y][x];
+
+	for(i=0; i<template_peak; i++){
 		weight[i] = continuous_GGF(dec, (double)tempm_array[i*4+3] / NAS_ACCURACY, dec->w_gr);
 		sum_weight += weight[i];
 	}
 	weight_coef = (double)weight_all / sum_weight;
 
-	for(i=0; i<peak_num; i++){
+	for(i=0; i<template_peak; i++){
 		mask->class[peak] = cl;
 		mask->weight[peak] = (int)(weight[i] * weight_coef);
 		th_p = dec->th[cl];

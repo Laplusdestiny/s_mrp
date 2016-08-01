@@ -127,9 +127,9 @@
 #define TEMPLATE_MATCHING_ON 	1
 #if TEMPLATE_MATCHING_ON
 
-#define ZSAD			1
-#define ZNCC			0
-#define MANHATTAN_SORT	0
+#define ZSAD			0
+#define ZNCC			1
+#define MANHATTAN_SORT	1
 #define AREA			6
 #define Y_SIZE			20
 #define X_SIZE			40	//調査結果より80*20がいいかも？
@@ -138,15 +138,15 @@
 #define MAX_DATA_SAVE_DOUBLE 	MAX_DATA_SAVE*4
 #define W_GR 			7
 #define WEIGHT_CN		2
-#define TEMPLATE_CLASS_NUM	50
+#define TEMPLATE_CLASS_NUM	20
 #define TEMPLATEM_LOG_OUTPUT	1
 #endif
 
 #define TEMPLATE_FLAG	2 << COEF_PRECISION
 
 /*********DEBUG******************************/
-#define CHECK_TM 		0
-#define CHECK_TM_DETAIL	0
+#define CHECK_TM 		1
+#define CHECK_TM_DETAIL	1
 #define CHECK_DEBUG 		0
 #define CHECK_PMODEL	0
 #define CHECK_CLASS		0

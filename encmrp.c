@@ -766,7 +766,7 @@ void*** TemplateM (ENCODER *enc, char *outfile) {
 #if TEMPLATEM_LOG_OUTPUT
 	int x , y , bx , by , g , h , i , j=0 , k , count , area1[AREA] , area_o[AREA] , *tm_array ,
 		*roff_p , *org_p , x_size = X_SIZE , sum1 , sum_o, temp_x, temp_y, break_flag=0,
-		**encval;
+		**encval, temp_peak_num=0;
 	double ave1=0 , ave_o , nas ;
 #if ZNCC
 	double dist1=0, dist_o=0, *area1_d=0, *area_o_d=0;
@@ -911,7 +911,7 @@ for(y = 0 ; y < enc->height ; y++){
 							if(y==check_y && x==check_x)	printf("nas: %f | area1: %d | area_o: %d | ave1: %f | ave_o: %f\n", nas, area1[i], area_o[i], ave1, ave_o);
 						#endif
 					#else
-						nas += (area1[i] - area_o[i]) * (area1[i] - area_o[i]);
+						nas += (area1[i] - area_o[i] ) * (area1[i] - area_o[i]);
 					#endif
 
 				}
@@ -1014,7 +1014,8 @@ for(y = 0 ; y < enc->height ; y++){
 		}
 
 //マッチングコストが小さいものをTEMPLATE_CLASS_NUMの数だけ用意
-		for(i=0; i<TEMPLATE_CLASS_NUM; i++){
+		if(enc->temp_num[y][x] < TEMPLATE_CLASS_NUM)	temp_peak_num = enc->temp_num[y][x];
+		for(i=0; i<temp_peak_num; i++){
 			temp_y = tempm_array[y][x][i*4 + 1];
 			temp_x = tempm_array[y][x][i*4 + 2];
 			ave_o = enc->array[y][x][i];
@@ -1027,8 +1028,10 @@ for(y = 0 ; y < enc->height ; y++){
 			} else {
 				#if ZNCC
 					exam_array[y][x][i] = (int)( ((double)encval[temp_y][temp_x] - ave_o) * dist1 / dist_o + ave1);
-				#else
+				#elif ZSAD
 					exam_array[y][x][i] = (int)((double)encval[temp_y][temp_x] - ave_o + ave1);
+				#else
+					exam_array[y][x][i] = encval[temp_y][temp_x];
 				#endif
 				if(exam_array[y][x][i] < 0 || exam_array[y][x][i] > enc->maxprd)	exam_array[y][x][i] = (int)ave1;
 			}
@@ -1094,6 +1097,8 @@ int temp_mask_parameter(ENCODER *enc, int y, int x, int u, int peak, int cl, int
 {
 	int i, m_gr, m_prd, m_frac, template_peak= enc->temp_peak_num;
 	double weight[template_peak], sum_weight = 0, weight_coef=0;
+
+	if(template_peak > enc->temp_num[y][x])	template_peak = enc->temp_num[y][x];
 
 	for(i=0; i<template_peak; i++){
 		weight[i] = continuous_GGF(enc, (double)tempm_array[y][x][i*4+3] / NAS_ACCURACY, enc->w_gr);
@@ -4373,7 +4378,6 @@ int main(int argc, char **argv)
 
 #if TEMPLATE_MATCHING_ON
 	tempm_array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
-	// exam_array = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
 	exam_array = (int ***)alloc_3d_array(enc->height, enc->width, TEMPLATE_CLASS_NUM, sizeof(int));
 	TemplateM(enc, outfile);
 	enc->w_gr = W_GR;	//マッチングコストに対する重みの分散値の初期化
