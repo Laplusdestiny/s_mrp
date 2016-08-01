@@ -127,18 +127,18 @@
 #define TEMPLATE_MATCHING_ON 	1
 #if TEMPLATE_MATCHING_ON
 
-#define ZNCC			1
-#define MANHATTAN_SORT	1
+#define ZSAD			1
+#define ZNCC			0
+#define MANHATTAN_SORT	0
 #define AREA			6
 #define Y_SIZE			20
 #define X_SIZE			40	//調査結果より80*20がいいかも？
-#define NAS_ACCURACY	100
-#define MAX_DATA_SAVE	20
+#define NAS_ACCURACY	1000
+#define MAX_DATA_SAVE	50
 #define MAX_DATA_SAVE_DOUBLE 	MAX_DATA_SAVE*4
-#define MAX_MULTIMODAL	10
 #define W_GR 			7
 #define WEIGHT_CN		2
-#define TEMPLATE_CLASS_NUM	10
+#define TEMPLATE_CLASS_NUM	50
 #define TEMPLATEM_LOG_OUTPUT	1
 #endif
 
@@ -152,7 +152,7 @@
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
 #define check_y			2
-#define check_x			717
+#define check_x			100
 
 #define  OPENMP_ON		1
 #define NUM_THREADS		8	//depend on server threads num
@@ -273,6 +273,7 @@ typedef struct {
 	int **temp_num;
 	int ***array;
 	int **mmc;
+	int temp_peak_num;
 #endif
 	int temp_cl;
 	int w_gr;
@@ -315,9 +316,9 @@ typedef struct {
 #endif
 #if TEMPLATE_MATCHING_ON
 	int **temp_num;
-	// int ***tempm_array;
 	int ***roff;
 	int *array;
+	int temp_peak_num;
 #endif
 	int temp_cl;
 	int **org;

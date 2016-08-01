@@ -147,6 +147,8 @@ DECODER *init_decoder(FILE *fp)
 #if TEMPLATE_MATCHING_ON
 	dec->temp_cl = getbits(fp, 6);
 	printf("TEMP_CL : %d | ", dec->temp_cl);
+	dec->temp_peak_num = getbits(fp, 6);
+	printf("TEMP_PEAK_NUM: %d |", dec->temp_peak_num);
 	dec->w_gr = getbits(fp, 4);
 	printf("w_gr: %d\n", dec->w_gr);
 #else
@@ -728,11 +730,13 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 					#if CHECK_TM_DETAIL
 						if(dec_y == check_y && dec_x == check_x)	printf("nas: %f | area1: %f | area_o: %f\n", nas, area1_d[i], area_o_d[i]);
 					#endif
-				#else
+				#elif ZSAD
 					nas += fabs( ((double)area1[i] - ave1) - ((double)area_o[i] - ave_o));
 					#if CHECK_TM_DETAIL
 						if(dec_y == check_y && dec_x == check_x)	printf("nas: %f | area1: %d | area_o: %d | ave1: %f | ave_o: %f\n", nas, area1[i], area_o[i], ave1, ave_o);
 					#endif
+				#else
+					nas += (area1[i] - area_o[i] ) * (area1[i] - area_o[i]);
 				#endif
 				#if CHECK_TM_DETAIL
 					if(dec_y == check_y && dec_x == check_x)	printf("nas: %f | area1: %d | area_o: %d | ave1: %f | ave_o: %f\n", nas, area1[i], area_o[i], ave1, ave_o);
@@ -1091,7 +1095,7 @@ double continuous_GGF(DECODER *dec, double e, int gr)
 
 int temp_mask_parameter(DECODER *dec, int y, int x , int u, int peak, int cl, int weight_all, int bmask, int shift, int r_cl)
 {
-	int i, m_gr, m_prd, m_base, *th_p, peak_num = TEMPLATE_CLASS_NUM;
+	int i, m_gr, m_prd, m_base, *th_p, peak_num = dec->temp_peak_num;
 	double weight[peak_num], sum_weight=0, weight_coef=0;
 
 	for(i=0; i<peak_num; i++){

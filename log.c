@@ -1036,10 +1036,10 @@ void TemplateM_Log_Output(ENCODER *enc, char *outfile, int ***tempm_array, int *
 	}
 	fp = fileopen(file, "wb");
 	// fprintf(fp, "Y_SIZE,X_SIZE,AREA,MAX_DATA_SAVE,MAX_DATA_SAVE_DOUBLE,MAX_MULTIMODAL\n");
-	fprintf(fp, "%d,%d,%d,%d,%d,%d\n",
-		Y_SIZE, X_SIZE, AREA, MAX_DATA_SAVE, MAX_DATA_SAVE_DOUBLE, MAX_MULTIMODAL);
+	fprintf(fp, "%d,%d,%d,%d,%d\n",
+		Y_SIZE, X_SIZE, AREA, MAX_DATA_SAVE, MAX_DATA_SAVE_DOUBLE);
 	// fprintf(fp, "NAS_ACCURACY,TEMPLATE_CLASS_NUM\n");
-	fprintf(fp, "%d,%d\n", NAS_ACCURACY, TEMPLATE_CLASS_NUM);
+	fprintf(fp, "%d,%d,%d,%d\n", NAS_ACCURACY, TEMPLATE_CLASS_NUM, MANHATTAN_SORT, ZNCC);
 
 	fprintf(fp, "\n");
 	for(y=0; y<enc->height; y++){
@@ -1062,7 +1062,7 @@ void TemplateM_Log_Output(ENCODER *enc, char *outfile, int ***tempm_array, int *
 
 void TemplateM_Log_Input(ENCODER *enc, char *outfile, int ***tempm_array, int ***exam_array){
 	int y, x, k, y_size_check, x_size_check, area_check, max_data_save_check,
-		max_data_save_double_check, max_multimodal_check, nas_accuracy_check,
+		max_data_save_double_check, nas_accuracy_check, manhattan_sort_check, zncc_check,
 		template_class_num_check, flg=0;
 	FILE *fp;
 	char *name, file[256];
@@ -1074,8 +1074,8 @@ void TemplateM_Log_Input(ENCODER *enc, char *outfile, int ***tempm_array, int **
 		printf("[%s] is NOT exist\n", file);
 		exit(1);
 	}
-	fscanf(fp, "%d,%d,%d,%d,%d,%d\n", &y_size_check, &x_size_check, &area_check, &max_data_save_check,
-		&max_data_save_double_check, &max_multimodal_check);
+	fscanf(fp, "%d,%d,%d,%d,%d\n", &y_size_check, &x_size_check, &area_check, &max_data_save_check,
+		&max_data_save_double_check);
 	if(y_size_check != Y_SIZE){
 		printf("Y_SIZE is NOT coincide!!!\n");
 		flg++;
@@ -1096,20 +1096,25 @@ void TemplateM_Log_Input(ENCODER *enc, char *outfile, int ***tempm_array, int **
 		printf("MAX_DATA_SAVE_DOUBLE is NOT coincide!!!\n");
 		flg++;
 	}
-	if(max_multimodal_check != MAX_MULTIMODAL){
-		printf("MAX_MULTIMODAL is NOT coincide!!!\n");
-		flg++;
-	}
 	if(flg!=0)exit(1);
 
 	flg = 0;
-	fscanf(fp, "%d,%d\n", &nas_accuracy_check, &template_class_num_check);
+	fscanf(fp, "%d,%d,%d,%d\n", &nas_accuracy_check, &template_class_num_check,
+		&manhattan_sort_check, &zncc_check);
 	if(nas_accuracy_check != NAS_ACCURACY){
 		printf("NAS_ACCURACY is NOT coincide!!!\n");
 		flg++;
 	}
-	if(template_class_num_check != TEMPLATE_CLASS_NUM){
+	if(template_class_num_check < TEMPLATE_CLASS_NUM){
 		printf("TEMPLATE_CLASS_NUM is NOT coincide!!!\n");
+		flg++;
+	}
+	if(manhattan_sort_check != MANHATTAN_SORT){
+		printf("MANHATTAN_SORT is NOT coincide!!!\n");
+		flg++;
+	}
+	if(zncc_check != ZNCC){
+		printf("ZNCC is NOT coincide!!!\n");
 		flg++;
 	}
 	if(flg!=0)exit(1);

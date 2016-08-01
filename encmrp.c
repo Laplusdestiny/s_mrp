@@ -905,11 +905,13 @@ for(y = 0 ; y < enc->height ; y++){
 						#if CHECK_TM_DETAIL
 							if(y==check_y && x==check_x)	printf("nas: %f | area1: %f | area_o: %f\n", nas, area1_d[i], area_o_d[i]);
 						#endif
-					#else
+					#elif ZSAD
 						nas += fabs( ((double)area1[i] - ave1) - ((double)area_o[i] - ave_o) );
 						#if CHECK_TM_DETAIL
 							if(y==check_y && x==check_x)	printf("nas: %f | area1: %d | area_o: %d | ave1: %f | ave_o: %f\n", nas, area1[i], area_o[i], ave1, ave_o);
 						#endif
+					#else
+						nas += (area1[i] - area_o[i]) * (area1[i] - area_o[i]);
 					#endif
 
 				}
@@ -1090,7 +1092,7 @@ double continuous_GGF(ENCODER *enc, double e,int w_gr){
 
 int temp_mask_parameter(ENCODER *enc, int y, int x, int u, int peak, int cl, int weight_all)
 {
-	int i, m_gr, m_prd, m_frac, template_peak= TEMPLATE_CLASS_NUM;
+	int i, m_gr, m_prd, m_frac, template_peak= enc->temp_peak_num;
 	double weight[template_peak], sum_weight = 0, weight_coef=0;
 
 	for(i=0; i<template_peak; i++){
@@ -1184,7 +1186,7 @@ int set_mask_parameter_optimize(ENCODER *enc,int y, int x, int u, int r_cl)
 		#if TEMPLATE_MATCHING_ON
 			if(cl == enc->temp_cl){
 				peak = temp_mask_parameter(enc, y, x, u, peak, cl, enc->weight[y][x][cl]);
-				if(cl == r_cl)	r_peak = peak - (TEMPLATE_CLASS_NUM - 1);	//マッチングコストが一番小さい事例のピーク番号
+				if(cl == r_cl)	r_peak = peak - (enc->temp_peak_num - 1);	//マッチングコストが一番小さい事例のピーク番号
 			} else {
 		#endif
 				mask->class[peak] = cl;
@@ -2813,17 +2815,46 @@ void set_mask_parameter_optimize2(ENCODER *enc,int y, int x, int u)
 	mask->num_peak = peak;	//ピークの数
 }
 
+cost_t optimize_template(ENCODER *enc){
+	int temp_num, min_temp_num=0;
+	int min_gr = 0, gr;
+	cost_t cost, min_cost = INT_MAX;
+
+//ピークの数の最適化
+	for(temp_num = 1; temp_num<=TEMPLATE_CLASS_NUM; temp_num++){
+		enc->temp_peak_num = temp_num;
+		cost = calc_cost2(enc, 0, 0, enc->height, enc->width);
+		if(cost < min_cost){
+			min_cost = cost;
+			min_temp_num = temp_num;
+		}
+	}
+	enc->temp_peak_num = min_temp_num;
+	printf("%d[%2d] ->", (int)min_cost, enc->temp_peak_num);
+
+// 片側ラプラス関数の分散の決定
+	min_cost = INT_MAX;
+	for(gr=0; gr<enc->num_group; gr++){
+		enc->w_gr = gr;
+		cost = calc_cost2(enc, 0, 0, enc->height, enc->width);
+		if(cost < min_cost){
+			min_gr = gr;
+			min_cost = cost;
+		}
+	}
+	if(min_gr >= enc->num_group) min_gr = enc->num_group-1;
+	enc->w_gr = min_gr;
+	printf("%d[%2d] ->", (int)min_cost, enc->w_gr);
+	return(min_cost);
+}
+
+
 cost_t optimize_group_mult(ENCODER *enc)
 {
 	cost_t cost, min_cost, **cbuf, *dpcost, *cbuf_p, *thc_p;
 	double a;
 	int x, y, th1, th0, k, u, cl, gr, prd, e, base, frac, peak,m_gr,count;
 	int **trellis;
-
-#if TEMPLATE_MATCHING_ON
-	int new_gr=0;
-	cost_t  w_gr_cost=0;
-#endif
 
 	PMODEL *pm, **pm_p;
 
@@ -2954,7 +2985,7 @@ cost_t optimize_group_mult(ENCODER *enc)
 			}
 		}
 	}
-printf ("[op_group] -> %d" ,(int)cost);	//しきい値毎に分散を最適化した時のコスト算出
+printf ("[op_group]-> %d" ,(int)cost);	//しきい値毎に分散を最適化した時のコスト算出
 
 	/* optimize probability models */
 	if (enc->optimize_loop > 1 && enc->num_pmodel > 1) {
@@ -3018,7 +3049,8 @@ printf ("[op_group] -> %d" ,(int)cost);	//しきい値毎に分散を最適化�
 			for (x = 0; x < enc->width; x++) {
 				gr = enc->group[y][x];
 				e = enc->encval[y][x];
-				prd = enc->prd[y][x];				prd = CLIP(0, enc->maxprd, prd);
+				prd = enc->prd[y][x];
+				prd = CLIP(0, enc->maxprd, prd);
 				base = enc->bconv[prd];
 				frac = enc->fconv[prd];
 				for (k = 0; k < enc->num_pmodel; k++) {
@@ -3064,23 +3096,7 @@ printf ("[op_group] -> %d" ,(int)cost);	//しきい値毎に分散を最適化�
 			}
 		}
 	}
-#if TEMPLATE_MATCHING_ON
-	// 片側ラプラス関数の分散の決定
-	// before_gr = enc->w_gr;
-	min_cost = INT_MAX;
-	for(gr=0; gr<enc->num_group; gr++){
-		enc->w_gr = gr;
-		w_gr_cost = calc_cost2(enc, 0, 0, enc->height, enc->width);
-		if(w_gr_cost < min_cost){
-			new_gr = gr;
-			min_cost = w_gr_cost;
-		}
-	}
-	if(new_gr >= enc->num_group) new_gr = enc->num_group-1;
-	enc->w_gr = new_gr;
-	printf(" [opt w_gr: %2d]", enc->w_gr);
-#endif
-	printf (" [op_c] ->");	//分散毎に確率モデルの形状を最適化した時のコスト
+	printf ("[op_c]->");	//分散毎に確率モデルの形状を最適化した時のコスト
 	// printf (" op_c -> %d" ,(int)cost);	//分散毎に確率モデルの形状を最適化した時のコスト
 
 	free(cbuf);
@@ -3187,6 +3203,8 @@ int write_header(ENCODER *enc, FILE *fp)
 #if TEMPLATE_MATCHING_ON
 	bits += putbits(fp, 6, enc->temp_cl);
 	printf("TEMP_CL : %d | ", enc->temp_cl);
+	bits += putbits(fp, 6, enc->temp_peak_num);
+	printf("TEMP_PEAK_NUM: %d |", enc->temp_peak_num);
 	bits += putbits(fp, 4, enc->w_gr);
 	printf("w_gr: %d\n", enc->w_gr);
 #endif
@@ -4295,8 +4313,8 @@ int main(int argc, char **argv)
 #endif
 
 #if TEMPLATE_MATCHING_ON
-	// num_class++;
-	num_class += TEMPLATE_CLASS_NUM;
+	num_class++;
+	// num_class += TEMPLATE_CLASS_NUM;
 #endif
 
 	printf("%s -> %s (%dx%d)\n", infile, outfile, img->width, img->height);
@@ -4306,7 +4324,7 @@ int main(int argc, char **argv)
 	printf("NUM_CLASS\t= %d\nMAX_PRD_ORDER\t= %d\ncoef_precision\t= %d\nnum_pmodel\t= %d\npm_accuracy\t= %d\nmax_iteration\t= %d\nf_mmse\t\t= %d\nf_optpred\t= %d\nquadtree_depth\t= %d\nTemplateM\t= %d\n",
 		num_class, MAX_PRD_ORDER, coef_precision, num_pmodel, pm_accuracy, max_iteration, f_mmse, f_optpred, quadtree_depth, TEMPLATE_MATCHING_ON);
 	#if TEMPLATE_MATCHING_ON
-		// printf("TM_CLASS_NUM	= %d\n", TEMPLATE_CLASS_NUM);
+		printf("TM_CLASS_NUM\t= %d\n", TEMPLATE_CLASS_NUM);
 	#endif
 	#if OPENMP_ON
 		omp_set_num_threads(NUM_THREADS);
@@ -4440,8 +4458,12 @@ int main(int argc, char **argv)
 	enc->optimize_loop = 2;
 	min_cost = INT_MAX;
 	sw = 0;
+#if TEMPLATE_MATCHING_ON
+	enc->temp_peak_num = TEMPLATE_CLASS_NUM;
+	enc->w_gr = W_GR;
+#endif
 	for (i = j = 0; i < max_iteration; i++) {
-		printf("(%2d) cost =", i);
+		printf("(%2d)cost=", i);
 		if (f_optpred) {
 			cost = optimize_predictor(enc);	//予測器の最適化
 			printf(" %d", (int)cost);
@@ -4453,8 +4475,11 @@ int main(int argc, char **argv)
 #else
 		cost = optimize_group(enc);	//閾値に対する分散の再決定
 #endif
+#if TEMPLATE_MATCHING_ON
+		cost = optimize_template(enc);
+#endif
 		side_cost += sc = encode_threshold(NULL, enc, 1);	//閾値の符号量を見積もる
-		printf(" %d[%d] ->", (int)cost, (int)sc);
+		printf("%d[%d] ->", (int)cost, (int)sc);
 		cost = optimize_class(enc);		//クラス情報の最適化
 		side_cost += sc = encode_class(NULL, enc, 1);	//クラス情報の符号量を見積もる
 		printf(" %d[%d] (%d)", (int)cost, (int)sc, (int)side_cost);
@@ -4469,7 +4494,7 @@ int main(int argc, char **argv)
 #if OPTIMIZE_MASK_LOOP
 		// if (sw != 0) {
 		cost = optimize_mask(enc);
-		printf(" -> %d", (int)cost);
+		printf(" ->%d", (int)cost);
 		// }else{
 			// set_weight_flag(enc);
 		// }
@@ -4484,7 +4509,7 @@ int main(int argc, char **argv)
 					sw = enc->num_class;
 					cost = auto_del_class(enc, cost);
 				}
-				printf(" -> %d[%d]", (int)cost, enc->num_class);
+				printf(" ->%d[%d]", (int)cost, enc->num_class);
 			}
 		}
 #endif
