@@ -835,7 +835,11 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 	}
 
 //マッチングコストが小さいものをTEMPLATE_CLASS_NUMの数だけ用意
-	if(dec->temp_num[dec_y][dec_x] < TEMPLATE_CLASS_NUM)	temp_peak_num = dec->temp_num[dec_y][dec_x];
+	if(dec->temp_num[dec_y][dec_x] < TEMPLATE_CLASS_NUM){
+		temp_peak_num = dec->temp_num[dec_y][dec_x];
+	} else {
+		temp_peak_num = TEMPLATE_CLASS_NUM;
+	}
 	for(i=0; i<temp_peak_num; i++){
 		temp_y = tempm_array[i*4+1];
 		temp_x = tempm_array[i*4+2];
@@ -1102,7 +1106,7 @@ int temp_mask_parameter(DECODER *dec, int y, int x , int u, int peak, int cl, in
 	double weight[template_peak], sum_weight=0, weight_coef=0;
 
 	if(template_peak > dec->temp_num[y][x])	template_peak = dec->temp_num[y][x];
-
+	if(template_peak == 0)	return(peak);
 	for(i=0; i<template_peak; i++){
 		weight[i] = continuous_GGF(dec, (double)tempm_array[i*4+3] / NAS_ACCURACY, dec->w_gr);
 		sum_weight += weight[i];

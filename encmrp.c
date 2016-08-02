@@ -481,6 +481,7 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 #if TEMPLATE_MATCHING_ON
 	enc->temp_num = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
 	enc->array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
+	init_3d_array(enc->array, enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, 0);
 #endif
 	return (enc);
 }
@@ -1014,7 +1015,11 @@ for(y = 0 ; y < enc->height ; y++){
 		}
 
 //マッチングコストが小さいものをTEMPLATE_CLASS_NUMの数だけ用意
-		if(enc->temp_num[y][x] < TEMPLATE_CLASS_NUM)	temp_peak_num = enc->temp_num[y][x];
+		if(enc->temp_num[y][x] < TEMPLATE_CLASS_NUM){
+			temp_peak_num = enc->temp_num[y][x];
+		} else {
+			temp_peak_num = TEMPLATE_CLASS_NUM;
+		}
 		for(i=0; i<temp_peak_num; i++){
 			temp_y = tempm_array[y][x][i*4 + 1];
 			temp_x = tempm_array[y][x][i*4 + 2];
@@ -1042,18 +1047,6 @@ for(y = 0 ; y < enc->height ; y++){
 		#if CHECK_TM
 			if(y==check_y && x==check_x)	printf("(%3d,%3d)org: %d\n", y, x, encval[y][x]);
 		#endif
-
-//一番マッチングコストが小さいものを予測値のひとつに加える
-		/*temp_y = tempm_array[y][x][1];
-		temp_x = tempm_array[y][x][2];
-		ave_o = enc->array[y][x][0];
-
-		if(y==0 && x < 3){
-			exam_array[y][x] = (enc->maxprd > 1) ;	//事例がないため，輝度値の中央
-		} else {
-			exam_array[y][x] = (int)((double)encval[temp_y][temp_x] - ave_o + ave1) ;
-			if(exam_array[y][x] < 0 || exam_array[y][x] > enc->maxprd)	exam_array[y][x] = (int)ave1;
-		}*/
 	}//x fin
 }//y fin
 // printf("number of hours worked:%lf[s]\n",(float)(end - start)/CLOCKS_PER_SEC);
@@ -1099,6 +1092,7 @@ int temp_mask_parameter(ENCODER *enc, int y, int x, int u, int peak, int cl, int
 	double weight[template_peak], sum_weight = 0, weight_coef=0;
 
 	if(template_peak > enc->temp_num[y][x])	template_peak = enc->temp_num[y][x];
+	if(template_peak == 0)	return(peak);
 
 	for(i=0; i<template_peak; i++){
 		weight[i] = continuous_GGF(enc, (double)tempm_array[y][x][i*4+3] / NAS_ACCURACY, enc->w_gr);
@@ -1114,7 +1108,7 @@ int temp_mask_parameter(ENCODER *enc, int y, int x, int u, int peak, int cl, int
 		// m_prd = enc->prd_class[y][x][cl];
 		m_prd = CLIP(0, enc->maxprd, m_prd);
 		#if CHECK_DEBUG
-			if( y == check_y && x == check_x)	printf("[set_mask_parameter] m_prd[%d]: %d[%2d] | weight: %d | u: %d | gr: %d\n", peak, m_prd, cl, mask->weight[peak], u, m_gr);
+			if( y == check_y && x == check_x)	printf("[temp_mask_parameter] m_prd[%d]: %d[%2d] | weight: %d | u: %d | gr: %d\n", peak, m_prd, cl, mask->weight[peak], u, m_gr);
 		#endif
 
 		mask->base[peak] = enc->bconv[m_prd];
@@ -1130,7 +1124,7 @@ int temp_mask_parameter(ENCODER *enc, int y, int x, int u, int peak, int cl, int
 
 void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 {
-	int ty, tx, cl, i, peak, sample/*, temp_x, temp_y*/;
+	int ty, tx, cl, i, peak, sample;
 	int m_gr,m_prd,m_frac;
 	int count_cl[enc->num_class];
 
@@ -1898,7 +1892,6 @@ cost_t optimize_class(ENCODER *enc)
 				blksize, enc->width, level, &blk);
 		}
 	}
-// #if 0
 #if TEMPLATE_MATCHING_ON
 	int cl;
 	enc->temp_cl = -1;
@@ -2804,18 +2797,15 @@ void set_mask_parameter_optimize2(ENCODER *enc,int y, int x, int u)
 
 	for(cl = peak = 0; cl < enc->num_class; cl++){
 		if (enc->weight[y][x][cl] != 0){
-			mask->class[peak] = cl;
-			mask->weight[peak] = enc->weight[y][x][cl];
-			peak++;
+			if(cl == enc->temp_cl){
+				peak = temp_mask_parameter(enc, y, x, u, peak, cl, enc->weight[y][x][cl]);
+			} else {
+				mask->class[peak] = cl;
+				mask->weight[peak] = enc->weight[y][x][cl];
+				peak++;
+			}
 		}
 	}
-
-// #if TEMPLATE_MATCHING_ON
-#if 0
-	mask->class[peak] = enc->class[y][x];
-	mask->weight[peak] = continuous_GGF(enc, (double)tempm_array[y][x][3] / NAS_ACCURACY, enc->w_gr) * enc->weight[y][x][cl];
-	peak++;
-#endif
 
 	mask->num_peak = peak;	//ピークの数
 }
@@ -4378,7 +4368,9 @@ int main(int argc, char **argv)
 
 #if TEMPLATE_MATCHING_ON
 	tempm_array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
+	init_3d_array(tempm_array, enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, 0);
 	exam_array = (int ***)alloc_3d_array(enc->height, enc->width, TEMPLATE_CLASS_NUM, sizeof(int));
+	init_3d_array(exam_array, enc->height, enc->width, TEMPLATE_CLASS_NUM, 0);
 	TemplateM(enc, outfile);
 	enc->w_gr = W_GR;	//マッチングコストに対する重みの分散値の初期化
 #endif
