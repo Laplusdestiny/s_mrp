@@ -802,7 +802,10 @@ void*** TemplateM (ENCODER *enc, char *outfile) {
 printf("Calculating Template Matching\r");
 for(y = 0 ; y < enc->height ; y++){
 	for (x = 0; x < enc->width; x++){
-		if(y==0 && x==0) continue;
+		if(y==0 && x==0) {
+			enc->temp_num[y][x] = 0;
+			continue;
+		}
 
 		// bzero(&tm, sizeof(tm));
 		memset(&tm, 0, sizeof(tm));
@@ -1090,9 +1093,19 @@ int temp_mask_parameter(ENCODER *enc, int y, int x, int u, int peak, int cl, int
 {
 	int i, m_gr, m_prd, m_frac, template_peak= enc->temp_peak_num;
 	double weight[template_peak], sum_weight = 0, weight_coef=0;
-
 	if(template_peak > enc->temp_num[y][x])	template_peak = enc->temp_num[y][x];
-	if(template_peak == 0)	return(peak);
+	if(template_peak == 0){
+		mask->class[peak] = cl;
+		mask->weight[peak] = 1;
+		m_gr = enc->uquant[cl][u];
+		m_prd = enc->maxprd > 1;
+		m_prd = CLIP(0, enc->maxprd, m_prd);
+		mask->base[peak] = enc->bconv[m_prd];
+		m_frac = enc->fconv[m_prd];
+		mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
+		peak++;
+		return(peak);
+	}
 
 	for(i=0; i<template_peak; i++){
 		weight[i] = continuous_GGF(enc, (double)tempm_array[y][x][i*4+3] / NAS_ACCURACY, enc->w_gr);
@@ -1243,6 +1256,7 @@ cost_t calc_cost2(ENCODER *enc, int tly, int tlx, int bry, int brx)
 				set_pmodel_mult_cost(mask,enc->maxval+1,e);
 				cost += a * (log(mask->cumfreq)-log(mask->freq)) ;
 			}
+			if(enc->function_number== F_NUM) printf("(%3d,%3d) cost: %d | cl: %d\n", y, x, (int)cost, cl );
 		}
 	}
 	return (cost);
@@ -1294,7 +1308,7 @@ cost_t design_predictor(ENCODER *enc, int f_mmse)
 {
 	double **mat, *weight, w, e, d, pivot;
 	int x, y, i, j, k, cl, gr, pivpos, *index, *roff_p, *org_p, *nzc_p;
-
+	enc->function_number = 1;
 	mat = (double **)alloc_2d_array(enc->prd_order, enc->prd_order + 1, sizeof(double));
 	index = (int *)alloc_mem(sizeof(int) * enc->prd_order);
 	weight = (double *)alloc_mem(sizeof(double) * enc->num_group);
@@ -1423,7 +1437,7 @@ cost_t optimize_group(ENCODER *enc)
 	int x, y, th1, th0, k, u, cl, gr, prd, e, base, frac;
 	int **trellis;
 	PMODEL *pm, **pm_p;
-
+	enc->function_number = 2;
 	trellis = (int **)alloc_2d_array(enc->num_group, MAX_UPARA + 2,
 		sizeof(int));
 	dpcost = (cost_t *)alloc_mem((MAX_UPARA + 2) * sizeof(cost_t));
@@ -1870,7 +1884,7 @@ cost_t optimize_class(ENCODER *enc)
 {
 	int y, x, i, blksize, level, blk = 0;
 	int **prdbuf, **errbuf;
-
+	enc->function_number = 3;
 	if (enc->quadtree_depth >= 0 && enc->optimize_loop > 1) {
 		level = enc->quadtree_depth;
 		blksize = MAX_BSIZE;
@@ -2461,7 +2475,7 @@ cost_t optimize_predictor(ENCODER *enc)	//when AUTO_PRD_ORDER 1
 #ifndef RAND_MAX
 #  define RAND_MAX 32767
 #endif
-
+	enc->function_number = 4;
 	for (cl = 0; cl < enc->num_class; cl++) {
 		// num_nzc = enc->num_nzcoef[cl];
 		num_eff = 0;
@@ -2749,7 +2763,7 @@ cost_t optimize_mask(ENCODER *enc)
 {
 	cost_t cost, min_cost;
 	int y, x, ty, tx, min_m, m, i, j;
-
+	enc->function_number = 7;
 //	min_cost = 1E8;
 
 	for (y = 0; y < enc->height; y += WIN_BSIZE) {
@@ -2814,7 +2828,7 @@ cost_t optimize_template(ENCODER *enc){
 	int temp_num, min_temp_num=0;
 	int min_gr = 0, gr;
 	cost_t cost, min_cost = INT_MAX;
-
+	enc->function_number = 6;
 //ピークの数の最適化
 	for(temp_num = 1; temp_num<=TEMPLATE_CLASS_NUM; temp_num++){
 		enc->temp_peak_num = temp_num;
@@ -2850,7 +2864,7 @@ cost_t optimize_group_mult(ENCODER *enc)
 	double a;
 	int x, y, th1, th0, k, u, cl, gr, prd, e, base, frac, peak,m_gr,count;
 	int **trellis;
-
+	enc->function_number = 5;
 	PMODEL *pm, **pm_p;
 
 	trellis = (int **)alloc_2d_array(enc->num_group, MAX_UPARA + 2,

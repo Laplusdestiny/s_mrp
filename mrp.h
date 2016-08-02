@@ -129,7 +129,7 @@
 
 #define ZSAD			0
 #define ZNCC			1
-#define MANHATTAN_SORT	1
+#define MANHATTAN_SORT	0
 #define AREA			6
 #define Y_SIZE			20
 #define X_SIZE			40	//調査結果より80*20がいいかも？
@@ -138,21 +138,22 @@
 #define MAX_DATA_SAVE_DOUBLE 	MAX_DATA_SAVE*4
 #define W_GR 			7
 #define WEIGHT_CN		2
-#define TEMPLATE_CLASS_NUM	20
-#define TEMPLATEM_LOG_OUTPUT	1
+#define TEMPLATE_CLASS_NUM	50
+#define TEMPLATEM_LOG_OUTPUT	0
 #endif
 
 #define TEMPLATE_FLAG	2 << COEF_PRECISION
 
 /*********DEBUG******************************/
-#define CHECK_TM 		1
-#define CHECK_TM_DETAIL	1
+#define CHECK_TM 		0
+#define CHECK_TM_DETAIL	0
 #define CHECK_DEBUG 		0
 #define CHECK_PMODEL	0
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
 #define check_y			2
 #define check_x			100
+#define F_NUM			-1
 
 #define  OPENMP_ON		1
 #define NUM_THREADS		8	//depend on server threads num
@@ -277,6 +278,7 @@ typedef struct {
 #endif
 	int temp_cl;
 	int w_gr;
+	int function_number;
 } ENCODER;
 
 typedef struct {
@@ -338,6 +340,9 @@ void set_spmodel(PMODEL *, int, int);
 int *init_ctx_weight(void);
 void mtf_classlabel(char **, int *, int, int, int, int, int);
 double cpu_time(void);
+void init_array(int *, int , int);
+void init_2d_array(int **, int , int, int);
+void init_3d_array(int ***, int , int, int, int);
 
 /***** FUNC - rc.c ********************************/
 RANGECODER *rc_init(void);

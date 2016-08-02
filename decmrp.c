@@ -1106,7 +1106,23 @@ int temp_mask_parameter(DECODER *dec, int y, int x , int u, int peak, int cl, in
 	double weight[template_peak], sum_weight=0, weight_coef=0;
 
 	if(template_peak > dec->temp_num[y][x])	template_peak = dec->temp_num[y][x];
-	if(template_peak == 0)	return(peak);
+	if(template_peak == 0){
+		mask->class[peak] = cl;
+		mask->weight[peak] = 1;
+		th_p = dec->th[cl];
+		for(m_gr = 0; m_gr < dec->num_group - 1; m_gr++){
+			if( u < *th_p++)	break;
+		}
+
+		m_prd = dec->maxprd > 1;
+		m_base = (dec->maxprd - m_prd + (1 << shift) / 2 ) >> shift;
+		mask->pm[peak] = dec->pmodels[m_gr][0] + (m_base & bmask);
+		m_base >>= dec->pm_accuracy;
+		mask->base[peak] = m_base;
+		peak++;
+		return(peak);
+	}
+
 	for(i=0; i<template_peak; i++){
 		weight[i] = continuous_GGF(dec, (double)tempm_array[i*4+3] / NAS_ACCURACY, dec->w_gr);
 		sum_weight += weight[i];
