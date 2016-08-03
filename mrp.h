@@ -147,7 +147,7 @@
 /*********DEBUG******************************/
 #define CHECK_TM 		0
 #define CHECK_TM_DETAIL	0
-#define CHECK_DEBUG 		0
+#define CHECK_DEBUG 		1
 #define CHECK_PMODEL	0
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
