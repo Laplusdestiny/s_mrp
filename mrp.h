@@ -139,7 +139,7 @@
 #define W_GR 			7
 #define WEIGHT_CN		2
 #define TEMPLATE_CLASS_NUM	50
-#define TEMPLATEM_LOG_OUTPUT	0
+#define TEMPLATEM_LOG_OUTPUT	1
 #endif
 
 #define TEMPLATE_FLAG	2 << COEF_PRECISION
@@ -147,15 +147,16 @@
 /*********DEBUG******************************/
 #define CHECK_TM 		0
 #define CHECK_TM_DETAIL	0
-#define CHECK_DEBUG 		1
+#define CHECK_DEBUG 		0
 #define CHECK_PMODEL	0
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
-#define check_y			2
-#define check_x			100
+#define check_y			4
+#define check_x			33
 #define F_NUM			-1
 
-#define  OPENMP_ON		1
+/****************** PARARELL ***************/
+#define  OPENMP_ON		0
 #define NUM_THREADS		8	//depend on server threads num
 
 /***** STRUCTURE ***************************/

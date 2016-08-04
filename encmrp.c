@@ -798,7 +798,6 @@ void*** TemplateM (ENCODER *enc, char *outfile) {
 ///////////////////////////
 ////////画像の走査/////////
 ///////////////////////////
-
 printf("Calculating Template Matching\r");
 for(y = 0 ; y < enc->height ; y++){
 	for (x = 0; x < enc->width; x++){
@@ -990,7 +989,6 @@ for(y = 0 ; y < enc->height ; y++){
 
 		free(mcost_num);
 	#endif
-
 		for(k = 0 ; k < j  ; k++){
 			count = 0;
 			tm_array[k * 4 + count] = 0;
@@ -1012,7 +1010,6 @@ for(y = 0 ; y < enc->height ; y++){
 		for(k = 0 ; k < MAX_DATA_SAVE_DOUBLE ; k++){
 			tempm_array[y][x][k] = tm_array[k];
 		}
-
 		for(k = 0 ; k < MAX_DATA_SAVE ; k++){
 			enc->array[y][x][k] = tm[k].ave_o;
 		}

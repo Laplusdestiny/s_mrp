@@ -216,9 +216,6 @@ DECODER *init_decoder(FILE *fp)
 	dec->temp_num = (int **)alloc_2d_array(dec->height, dec->width, sizeof(int));
 #endif
 	dec->org = (int **)alloc_2d_array(dec->height, dec->width, sizeof(int));
-#if CHECK_DEBUG
-	printf("Decoded Header\n");
-#endif
 	return (dec);
 }
 
@@ -301,9 +298,6 @@ void decode_predictor(FILE *fp, DECODER *dec)	//when AUTO_PRD_ORDER 1
 		#endif
 		dec->num_nzcoef[cl] = d;
 	}
-	#if CHECK_DEBUG
-		printf("Decoded Predictor\n");
-	#endif
 	return;
 }
 
@@ -385,9 +379,6 @@ void decode_threshold(FILE *fp, DECODER *dec)
 			dec->pm_idx[gr] = rc_decode(fp, dec->rc, pm, 0, pm->size);
 		}
 	}
-	#if CHECK_DEBUG
-		printf("Decoded Threshold\n");
-	#endif
 	return;
 }
 
@@ -515,9 +506,6 @@ void decode_class(FILE *fp, DECODER *dec)
 				blksize, dec->width, level);
 		}
 	}
-	#if CHECK_DEBUG
-		printf("Decoded Class Info\n");
-	#endif
 	return;
 }
 
@@ -536,7 +524,7 @@ int calc_udec(DECODER *dec, int y, int x)
 			rx = x + dyx[k].x;
 			u += err[ry][rx] * (*wt_p++);
 			#if CHECK_DEBUG
-				if(y==check_y && x==check_x)	printf("[1]u: %d | err: %d(%d,%d) | wt_p: %d\n", u, err[ry][rx], ry, rx, wt_p[k]);
+				// if(y==check_y && x==check_x)	printf("[1]u: %d | err: %d(%d,%d) | wt_p: %d\n", u, err[ry][rx], ry, rx, wt_p[k]);
 			#endif
 		}
 	} else if (y == 0) {
@@ -552,7 +540,7 @@ int calc_udec(DECODER *dec, int y, int x)
 				else if (rx >= x) rx = x - 1;
 				u += err[ry][rx] * (*wt_p++);
 				#if CHECK_DEBUG
-					if(y==check_y && x==check_x)	printf("[2]u: %d | err: %d(%d,%d) | wt_p: %d\n", u, err[ry][rx], ry, rx, wt_p[k]);
+					// if(y==check_y && x==check_x)	printf("[2]u: %d | err: %d(%d,%d) | wt_p: %d\n", u, err[ry][rx], ry, rx, wt_p[k]);
 				#endif
 			}
 		}
@@ -566,7 +554,7 @@ int calc_udec(DECODER *dec, int y, int x)
 				if (rx < 0) rx = 0;
 				u += err[ry][rx] * (*wt_p++);
 				#if CHECK_DEBUG
-					if(y==check_y && x==check_x)	printf("[3]u: %d | err: %d(%d,%d) | wt_p: %d\n", u, err[ry][rx], ry, rx, wt_p[k]);
+					// if(y==check_y && x==check_x)	printf("[3]u: %d | err: %d(%d,%d) | wt_p: %d\n", u, err[ry][rx], ry, rx, wt_p[k]);
 				#endif
 			}
 		} else {
@@ -578,7 +566,7 @@ int calc_udec(DECODER *dec, int y, int x)
 				else if (rx >= dec->width) rx = dec->width - 1;
 				u += err[ry][rx] * (*wt_p++);
 				#if CHECK_DEBUG
-					if(y==check_y && x==check_x-1)	printf("[4]u: %d | err: %d(%d,%d) | wt_p: %d\n", u, err[ry][rx], ry, rx, wt_p[k]);
+					// if(y==check_y && x==check_x-1)	printf("[4]u: %d | err: %d(%d,%d) | wt_p: %d\n", u, err[ry][rx], ry, rx, wt_p[k]);
 				#endif
 			}
 		}
@@ -586,7 +574,7 @@ int calc_udec(DECODER *dec, int y, int x)
 	u >>= 6;
 	if (u > MAX_UPARA) u = MAX_UPARA;
 	#if CHECK_DEBUG
-		if(y==check_y && x==check_x)	printf("u: %d\n", u);
+		// if(y==check_y && x==check_x)	printf("u: %d\n", u);
 	#endif
 	return (u);
 }
@@ -1290,8 +1278,8 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 			if (e < 0) e = -(e + 1);
 			dec->err[y][x] = e;	//特徴量算出に用いる
 			#if CHECK_DEBUG
-				printf("d[%d][%d]: %d(%d) | err: %d\n", y, x, p, prd, e);
-				// printf("%d\n", p);
+				// printf("d[%d][%d]: %d(%d) | err: %d\n", y, x, p, prd, e);
+				printf("%d\n", p);
 			#endif
 
 		}
