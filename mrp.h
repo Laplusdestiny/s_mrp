@@ -36,7 +36,7 @@
 #define OPT_SIDEINFO		1 // 1 : side-info into consideration (standard), 0 : neglect side-info
 #define MAX_ITERATION	100	//100
 #define EXTRA_ITERATION	10
-#define AUTO_DEL_CL		0
+#define AUTO_DEL_CL		1
 #define AUTO_PRD_ORDER	1
 
 /****** MULT PEAK **************************/
@@ -139,7 +139,11 @@
 #define W_GR 			7
 #define WEIGHT_CN		2
 #define TEMPLATE_CLASS_NUM	50
-#define TEMPLATEM_LOG_OUTPUT	1
+#define TEMPLATEM_LOG_OUTPUT	0
+
+#else
+#define TEMPLATE_CLASS_NUM	0
+
 #endif
 
 #define TEMPLATE_FLAG	2 << COEF_PRECISION

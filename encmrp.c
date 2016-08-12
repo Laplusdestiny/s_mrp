@@ -2808,19 +2808,24 @@ void set_mask_parameter_optimize2(ENCODER *enc,int y, int x, int u)
 
 	for(cl = peak = 0; cl < enc->num_class; cl++){
 		if (enc->weight[y][x][cl] != 0){
+		#if TEMPLATE_MATCHING_ON
 			if(cl == enc->temp_cl){
 				peak = temp_mask_parameter(enc, y, x, u, peak, cl, enc->weight[y][x][cl]);
 			} else {
+		#endif
 				mask->class[peak] = cl;
 				mask->weight[peak] = enc->weight[y][x][cl];
 				peak++;
+		#if TEMPLATE_MATCHING_ON
 			}
+		#endif
 		}
 	}
 
 	mask->num_peak = peak;	//ピークの数
 }
 
+#if TEMPLATE_MATCHING_ON
 cost_t optimize_template(ENCODER *enc){
 	int temp_num, min_temp_num=0;
 	int min_gr = 0, gr;
@@ -2853,7 +2858,7 @@ cost_t optimize_template(ENCODER *enc){
 	printf("%d[%2d] ->", (int)min_cost, enc->w_gr);
 	return(min_cost);
 }
-
+#endif
 
 cost_t optimize_group_mult(ENCODER *enc)
 {
@@ -4149,6 +4154,7 @@ cost_t auto_del_class(ENCODER *enc, cost_t pre_cost)
 	min_cost = 1E10;
 	del_cl = 0;
 	for (k = 0; k < enc->num_class; k++) {	//各クラスを削除してみて一番コストが小さくなったクラスを見つける
+		if(k == enc->temp_cl)	continue;
 		blk = 0;
 		cost = opcl(enc, k, &blk, 1);
 		if (cost < min_cost) {
@@ -4320,7 +4326,7 @@ int main(int argc, char **argv)
 
 #if TEMPLATE_MATCHING_ON
 	num_class++;
-	// num_class += TEMPLATE_CLASS_NUM;
+	int temp_peak_num_save=0, w_gr_save = 0;
 #endif
 
 	printf("%s -> %s (%dx%d)\n", infile, outfile, img->width, img->height);
@@ -4512,7 +4518,7 @@ int main(int argc, char **argv)
 			if( enc->num_class > 1) {
 				sw = enc->num_class;
 				cost = auto_del_class(enc, cost);	//使用していないクラスの削除
-				while (sw != enc->num_class) {
+				while (sw != enc->num_class) {	//削除に成功する間
 					sw = enc->num_class;
 					cost = auto_del_class(enc, cost);
 				}
@@ -4561,6 +4567,10 @@ int main(int argc, char **argv)
 						th_save[cl][k] = enc->th[cl][k];
 					}
 				}
+#if TEMPLATE_MATCHING_ON
+				temp_peak_num_save = enc->temp_peak_num;
+				w_gr_save = enc->w_gr;
+#endif
 			}
 		} else {
 			sw = 1;
@@ -4610,6 +4620,10 @@ int main(int argc, char **argv)
 				}
 			}
 		}
+#if TEMPLATE_MATCHING_ON
+		enc->temp_peak_num = temp_peak_num_save;
+		enc->w_gr = w_gr_save;
+#endif
 #if AUTO_PRD_ORDER
 		set_prd_pels(enc);
 #endif

@@ -1021,6 +1021,7 @@ int set_directory(void)
 }
 #endif
 
+#if TEMPLATE_MATCHING_ON
 void TemplateM_Log_Output(ENCODER *enc, char *outfile, int ***tempm_array, int ***exam_array){
 	int y, x, k;
 	FILE *fp;
@@ -1140,3 +1141,5 @@ void TemplateM_Log_Input(ENCODER *enc, char *outfile, int ***tempm_array, int **
 	fclose(fp);
 	return;
 }
+
+#endif
