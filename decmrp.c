@@ -282,9 +282,9 @@ void decode_predictor(FILE *fp, DECODER *dec)	//when AUTO_PRD_ORDER 1
 		for (k = 0; k < dec->max_prd_order; k++) {
 			if(dec->nzconv[cl][0] == -1){
 				d=-1;
-						#if CHECK_PREDICTOR
-							printf("%d", dec->predictor[cl][0]);
-						#endif
+				#if CHECK_PREDICTOR
+					printf("%d", dec->predictor[cl][0]);
+				#endif
 				break;
 			} else if (dec->predictor[cl][k] != 0) {
 				dec->nzconv[cl][d++] = k;

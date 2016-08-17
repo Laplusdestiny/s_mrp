@@ -139,7 +139,7 @@
 #define W_GR 			7
 #define WEIGHT_CN		2
 #define TEMPLATE_CLASS_NUM	50
-#define TEMPLATEM_LOG_OUTPUT	0
+#define TEMPLATEM_LOG_OUTPUT	1
 
 #else
 #define TEMPLATE_CLASS_NUM	0
@@ -154,7 +154,7 @@
 #define CHECK_DEBUG 		0
 #define CHECK_PMODEL	0
 #define CHECK_CLASS		0
-#define CHECK_PREDICTOR	0
+#define CHECK_PREDICTOR	1
 #define check_y			4
 #define check_x			33
 #define F_NUM			-1

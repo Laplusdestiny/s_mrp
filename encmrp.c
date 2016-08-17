@@ -1321,7 +1321,6 @@ cost_t design_predictor(ENCODER *enc, int f_mmse)
 		nzc_p = enc->nzconv[cl];
 #if TEMPLATE_MATCHING_ON
 		if(cl == 0){
-		// if(cl < TEMPLATE_CLASS_NUM){
 			nzc_p[0] = -1;	//nzcの頭にフラグを入れる
 			for(i=0; i < enc->prd_order; i++){
 				enc->predictor[cl][i] = 0;
@@ -1921,11 +1920,13 @@ cost_t optimize_class(ENCODER *enc)
 	}
 #endif
 #if CHECK_CLASS
-	for(y=0; y<enc->height; y += blksize){
-		for(x=0; x<enc->width; x += blksize){
-			printf("%2d ", enc->class[y][x]);
+	if(enc->optimize_loop == 1){
+		for(y=0; y<enc->height; y += blksize){
+			for(x=0; x<enc->width; x += blksize){
+				printf("%2d ", enc->class[y][x]);
+			}
+			printf("\n");
 		}
-		printf("\n");
 	}
 #endif
 	free(errbuf);
@@ -2841,7 +2842,7 @@ cost_t optimize_template(ENCODER *enc){
 		}
 	}
 	enc->temp_peak_num = min_temp_num;
-	printf("%d[%2d] ->", (int)min_cost, enc->temp_peak_num);
+	// printf("%d[%2d]-> ", (int)min_cost, enc->temp_peak_num);
 
 // 片側ラプラス関数の分散の決定
 	min_cost = INT_MAX;
@@ -2855,7 +2856,7 @@ cost_t optimize_template(ENCODER *enc){
 	}
 	if(min_gr >= enc->num_group) min_gr = enc->num_group-1;
 	enc->w_gr = min_gr;
-	printf("%d[%2d] ->", (int)min_cost, enc->w_gr);
+	printf("%d[%2d | %2d]-> ", (int)min_cost, enc->temp_peak_num, enc->w_gr);
 	return(min_cost);
 }
 #endif
@@ -3107,7 +3108,7 @@ printf ("[op_group]-> %d" ,(int)cost);	//しきい値毎に分散を最適化し
 			}
 		}
 	}
-	printf ("[op_c]->");	//分散毎に確率モデルの形状を最適化した時のコスト
+	printf ("[op_c]-> ");	//分散毎に確率モデルの形状を最適化した時のコスト
 	// printf (" op_c -> %d" ,(int)cost);	//分散毎に確率モデルの形状を最適化した時のコスト
 
 	free(cbuf);
@@ -3469,9 +3470,9 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 			cost = 0.0;
 			for (k = d * (d + 1); k < (d + 1) * (d + 2); k++) {
 				for (cl = 0; cl < enc->num_class; cl++) {
-					#if TEMPLATE_MATCHING_ON
-						if(cl == enc->temp_cl) continue;
-					#endif
+				#if TEMPLATE_MATCHING_ON
+					if(cl == enc->temp_cl) continue;
+				#endif
 					coef = enc->predictor[cl][k];
 					if (coef < 0) coef = -coef;
 					cost += enc->coef_cost[enc->zero_m[d]][m][coef];
@@ -3512,7 +3513,7 @@ int encode_predictor(FILE *fp, ENCODER *enc, int flag)	//when AUTO_PRD_ORDER 1
 				printf("[%2d] TEMPLATE_CLASS\n", cl);
 			} else {
 				printf("[%2d]", cl);
-				for(k=0; k<enc->num_nzcoef[cl]; k++){
+				for(k=0; k<enc->max_prd_order; k++){
 					printf("%d ", enc->predictor[cl][k]);
 				}
 				printf("\n");
@@ -4165,7 +4166,7 @@ cost_t auto_del_class(ENCODER *enc, cost_t pre_cost)
 	if (pre_cost > min_cost) {
 		blk = 0;
 		#if CHECK_CLASS
-			printf("DEL_CLASS: %d\n", del_cl);
+			printf("%d ", del_cl);
 		#endif
 		cost = opcl(enc, del_cl, &blk, 0);
 #if MULT_PEAK_MODE == 0
@@ -4482,17 +4483,17 @@ int main(int argc, char **argv)
 			printf(" %d", (int)cost);
 		}
 		side_cost = sc = encode_predictor(NULL, enc, 1);	//予測器の符号量を見積もる
-		printf("[%d] ->", (int)sc);
+		printf("[%d]->", (int)sc);
+#if TEMPLATE_MATCHING_ON
+		cost = optimize_template(enc);
+#endif
 #if OPTIMIZE_MASK_LOOP
 		cost = optimize_group_mult(enc);
 #else
 		cost = optimize_group(enc);	//閾値に対する分散の再決定
 #endif
-#if TEMPLATE_MATCHING_ON
-		cost = optimize_template(enc);
-#endif
 		side_cost += sc = encode_threshold(NULL, enc, 1);	//閾値の符号量を見積もる
-		printf("%d[%d] ->", (int)cost, (int)sc);
+		printf("%d[%d]->", (int)cost, (int)sc);
 		cost = optimize_class(enc);		//クラス情報の最適化
 		side_cost += sc = encode_class(NULL, enc, 1);	//クラス情報の符号量を見積もる
 		printf(" %d[%d] (%d)", (int)cost, (int)sc, (int)side_cost);
