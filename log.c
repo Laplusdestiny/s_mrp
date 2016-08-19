@@ -128,7 +128,12 @@ void print_threshold(int **th, int num_group, int num_class,
 	name++;
 	sprintf(file, LOG_TH_DIR"%s_th.csv", name);
 	fp = fileopen(file, "wb");
+	for (cl = 0; cl < num_class; cl++){
+		fprintf(fp, "[%d],", cl);
+	}
+	fprintf(fp, "\n");
 	for (cl = 0; cl < num_class; cl++) {
+		fprintf(fp, "[%d],", cl);
 		for (gr = 0; gr < num_group - 1; gr++) {
 			fprintf(fp, "%d,", th[cl][gr]);
 		}
@@ -176,7 +181,7 @@ void print_class(char **class, int num_class, int height, int width, char *outfi
 
 void output_class_map(char **class, int num_class, int height, int width, char *outfile)
 {
-	int i, j, step;
+	int i, j;
 	int count_class[num_class];
 	char *name;
 	char file[256];
@@ -188,7 +193,6 @@ void output_class_map(char **class, int num_class, int height, int width, char *
 	name++;
 	sprintf(file, LOG_CL_DIR"%s_class_map.csv", name);
 	fp = fileopen(file, "wb");
-	step = 255 / num_class;
 	for (i = 0; i < height; i++) {
 		for (j = 0; j < width; j++) {
 			fprintf(fp , "%d,", class[i][j]);
@@ -196,7 +200,7 @@ void output_class_map(char **class, int num_class, int height, int width, char *
 		}
 		fprintf(fp, "\n");
 	}
-	fprintf(fp, "\n\n\nClass Histgram\n");
+	fprintf(fp, "\n\n\nClass Histogram\n");
 	for(i=0; i<num_class; i++){
 		fprintf(fp, "%d,%d,%f%%\n", i, count_class[i], (double)count_class[i] * 100 / (height * width));
 	}
@@ -878,32 +882,32 @@ void init_log_sheet(ENCODER *enc, char *outfile)
 		fp = fileopen(LOG_LIST, "wb");
 		fprintf(fp, "Date,Input,Height,Width,Init_Class,Use_Class,Prd_Order,\
 			Header[bits],Class[bits],Predictor[bits],Threshold[bits],\
-			Pred. Errors[bits],Total info.[bits],Coding Rate[bits/pel], ,");
+			Pred. Errors[bits],Total info.[bits],Coding Rate[bits/pel],Time[s], ,");
 
 		fprintf(fp, "Auto_Del_CL,	Auto_Set_Coef,BASE_BSIZE,QUADTREE_DEPTH,\
 			MIN_BSIZE,MAX_BSIZE,COEF_PRECISION,PM_ACCURACY,NUM_GROUP,\
 			UPEL_DIST,CTX_WEIGHT,TEMPLATE_MATCHING,ZNCC,MANHATTAN_SORT,\
 			Search Window,");
-		fprintf(fp, "\n");
+		// fprintf(fp, "\n");
 		fclose(fp);
 	}
 
 	fp = fileopen(LOG_LIST, "ab");
-	fprintf(fp, "%s,%s,%d,%d,%d,", date, name, enc->height, enc->width, enc->num_class);
+	fprintf(fp, "\n%s,%s,%d,%d,%d,", date, name, enc->height, enc->width, enc->num_class);
 	fclose(fp);
 
 	return;
 }
 
 void finish_log_sheet(ENCODER *enc, int header_info, int class_info, int pred_info,
-							  int th_info, int err_info, int total_info, double rate)
+		int th_info, int err_info, int total_info, double rate, double time)
 {
 	FILE *fp;
 
 	fp = fileopen(LOG_LIST, "ab");
 	fprintf(fp, "%d,%d,", enc->num_class, enc->max_prd_order);
 	fprintf(fp, "%d,%d,%d,%d,%d,%d,", header_info, class_info, pred_info, th_info, err_info, total_info);
-	fprintf(fp, "%f, ,", rate);
+	fprintf(fp, "%f,%f, ,", rate, time);
 
 	if(AUTO_DEL_CL) {
 		fprintf(fp, "ON,");
@@ -949,7 +953,7 @@ void finish_log_sheet(ENCODER *enc, int header_info, int class_info, int pred_in
 		fprintf(fp, "%d*%d,", X_SIZE*2+1, Y_SIZE);
 	}
 #endif
-	fprintf(fp, "\n");
+	// fprintf(fp, "\n");
 	fclose(fp);
 
 	return;

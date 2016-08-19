@@ -2835,28 +2835,32 @@ cost_t optimize_template(ENCODER *enc){
 //ピークの数の最適化
 	for(temp_num = 1; temp_num<=TEMPLATE_CLASS_NUM; temp_num++){
 		enc->temp_peak_num = temp_num;
-		cost = calc_cost2(enc, 0, 0, enc->height, enc->width);
-		if(cost < min_cost){
-			min_cost = cost;
-			min_temp_num = temp_num;
+		for(gr=0; gr<enc->num_group; gr++){
+			enc->w_gr = gr;
+			cost = calc_cost2(enc, 0, 0, enc->height, enc->width);
+			if(cost < min_cost){
+				min_cost = cost;
+				min_temp_num = temp_num;
+				min_gr = gr;
+			}
 		}
 	}
 	enc->temp_peak_num = min_temp_num;
 	// printf("%d[%2d]-> ", (int)min_cost, enc->temp_peak_num);
 
 // 片側ラプラス関数の分散の決定
-	min_cost = INT_MAX;
-	for(gr=0; gr<enc->num_group; gr++){
-		enc->w_gr = gr;
-		cost = calc_cost2(enc, 0, 0, enc->height, enc->width);
+/*	min_cost = INT_MAX;
+
+	cost = calc_cost2(enc, 0, 0, enc->height, enc->width);
 		if(cost < min_cost){
 			min_gr = gr;
 			min_cost = cost;
 		}
 	}
+*/
 	if(min_gr >= enc->num_group) min_gr = enc->num_group-1;
 	enc->w_gr = min_gr;
-	printf("%d[%2d | %2d]-> ", (int)min_cost, enc->temp_peak_num, enc->w_gr);
+	printf("%d[%2d|%2d]-> ", (int)min_cost, enc->temp_peak_num, enc->w_gr);
 	return(min_cost);
 }
 #endif
@@ -4197,7 +4201,7 @@ int main(int argc, char **argv)
 {
 	cost_t cost, min_cost, side_cost, sc;
 	int i, j, k, x, y, xx, yy, cl, gr, bits, **prd_save, **th_save, sw;
-	int header_info, class_info, pred_info, th_info, mask_info, err_info;
+	int header_info, class_info, pred_info, th_info, mask_info, err_info, side_info_back=0;
 	int num_class_save;
 	char **class_save, **mask_save;
 	char **qtmap_save[QUADTREE_DEPTH];
@@ -4575,6 +4579,51 @@ int main(int argc, char **argv)
 			}
 		} else {
 			sw = 1;
+			if(i - j >= EXTRA_ITERATION / 2 && side_info_back == 0){
+				if (f_optpred) {
+					enc->num_class = num_class_save;
+					for (y = 0; y < enc->height; y++) {
+						for (x = 0; x < enc->width; x++) {
+							enc->class[y][x] = class_save[y][x];
+							enc->mask[y][x] = mask_save[y][x];
+						}
+					}
+					if (enc->quadtree_depth > 0) {
+						y = (enc->height + MAX_BSIZE - 1) / MAX_BSIZE;
+						x = (enc->width + MAX_BSIZE - 1) / MAX_BSIZE;
+						for (k = enc->quadtree_depth - 1; k >= 0; k--) {
+							for (yy = 0; yy < y; yy++) {
+								for (xx = 0; xx < x; xx++) {
+									enc->qtmap[k][yy][xx] = qtmap_save[k][yy][xx];
+								}
+							}
+							y <<= 1;
+							x <<= 1;
+						}
+					}
+					for (gr = 0; gr < enc->num_group; gr++) {
+						enc->pmlist[gr] = pmlist_save[gr];
+					}
+					for (cl = 0; cl < enc->num_class; cl++) {
+						for (k= 0; k < enc->max_prd_order; k++) {
+							enc->predictor[cl][k] = prd_save[cl][k];
+						}
+						i = 0;
+						for (k= 0; k < enc->num_group; k++) {
+							enc->th[cl][k] = th_save[cl][k];
+							for (; i < enc->th[cl][k]; i++) {
+								enc->uquant[cl][i] = k;
+							}
+						}
+					}
+			#if TEMPLATE_MATCHING_ON
+					enc->temp_peak_num = temp_peak_num_save;
+					enc->w_gr = w_gr_save;
+			#endif
+				}
+				side_info_back = 1;
+				printf("!");
+			}
 			printf("\n");
 		}
 		if (f_optpred) {
@@ -4681,7 +4730,7 @@ int main(int argc, char **argv)
 	calc_ratio_of_model_to_rate(enc);
 
 #if LOG_LIST_MODE
-	finish_log_sheet(enc, header_info, class_info, pred_info, th_info, err_info, bits, rate);
+	finish_log_sheet(enc, header_info, class_info, pred_info, th_info, err_info, bits, rate, elapse);
 #endif
 
 #if LOG_PUT_OUT_ENC

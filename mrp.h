@@ -154,7 +154,7 @@
 #define CHECK_DEBUG 		0
 #define CHECK_PMODEL	0
 #define CHECK_CLASS		0
-#define CHECK_PREDICTOR	1
+#define CHECK_PREDICTOR	0
 #define check_y			4
 #define check_x			33
 #define F_NUM			-1
@@ -372,7 +372,7 @@ void print_rate_compare_class_map(ENCODER *, char *);
 void print_block_size(int **, char ***, int, int, int, char *);
 void calc_var_upara( ENCODER *, char *);
 void init_log_sheet(ENCODER *, char *);
-void finish_log_sheet(ENCODER *, int, int, int, int, int, int, double);
+void finish_log_sheet(ENCODER *, int, int, int, int, int, int, double, double);
 void TemplateM_Log_Output(ENCODER *, char *, int ***, int ***);
 void TemplateM_Log_Input(ENCODER *, char *, int ***, int ***);
 
