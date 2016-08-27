@@ -187,6 +187,11 @@ void init_3d_array(int ***array, int height, int width, int depth ,int value){
 	}
 	// return(array);
 }
+
+int cmp(const void *p, const void *q){
+	return ((TM_Member*)p)->sum - ((TM_Member*)q)->sum;
+}
+
 /*
 Natural logarithm of the gamma function
 cf. "Numerical Recipes in C", 6.1

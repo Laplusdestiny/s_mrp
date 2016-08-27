@@ -16,7 +16,6 @@ extern int win_sample[], win_dis[];
 
 MASK *mask;
 int ***tempm_array;
-// int **exam_array;
 int ***exam_array;
 
 float ****calc_entropy_of_conditional_probability(PMODEL ***pmodels, int num_group,
@@ -765,10 +764,11 @@ int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出
 void*** TemplateM (ENCODER *enc, char *outfile) {
 
 #if TEMPLATEM_LOG_OUTPUT
-	int x , y , bx , by , g , h , i , j=0 , k , count , area1[AREA] , area_o[AREA] , *tm_array ,
+	int x , y , bx , by , i , j=0 , k , count , area1[AREA] , area_o[AREA] , *tm_array ,
 		*roff_p , *org_p , x_size = X_SIZE , sum1 , sum_o, temp_x, temp_y, break_flag=0,
 		**encval, temp_peak_num=0;
 	double ave1=0 , ave_o , nas ;
+	TM_Member tm[Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE ], *tm_save;
 #if ZNCC
 	double dist1=0, dist_o=0, *area1_d=0, *area_o_d=0;
 	area1_d = (double * )alloc_mem(AREA * sizeof(double));
@@ -786,7 +786,6 @@ void*** TemplateM (ENCODER *enc, char *outfile) {
 /////////////////////////
 
 	tm_array = (int *)alloc_mem((Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE) * 4 * sizeof(int)) ;
-	TM_Member tm[Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE ];
 	encval = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
 
 	for(y=0; y<enc->height; y++){
@@ -950,17 +949,22 @@ for(y = 0 ; y < enc->height ; y++){
 /////////////////////////
 
 		enc->temp_num[y][x] = j;
-
-		TM_Member temp;
+		tm_save = (TM_Member *)alloc_mem(j * sizeof(TM_Member));
+		for(i=0; i<j; i++){
+			tm_save[i] = tm[i];
+		}
+		qsort(tm_save, j , sizeof(TM_Member), cmp);
+		/*TM_Member temp;
 		for (g = 0; g < j - 1; g++) {
 			for (h = j - 1; h > g; h--) {
-				if(tm[h - 1].sum > tm[h].sum) {  /* 前の要素の方が大きかったら */
-					temp = tm[h];        /* 交換する */
+				if(tm[h - 1].sum > tm[h].sum) {	//前の要素の方が大きかったら
+					temp = tm[h];		//交換する
 					tm[h] = tm[h - 1];
 					tm[h - 1] = temp;
 				}
 			}
-		}
+		}*/
+
 	#if MANHATTAN_SORT
 		mcost_num = (int *)alloc_mem( (max_nas + 1) *sizeof(int));
 		for(i=0; i <= max_nas; i++){
@@ -989,6 +993,10 @@ for(y = 0 ; y < enc->height ; y++){
 
 		free(mcost_num);
 	#endif
+		for(i=0; i<j; i++){
+			tm[i] = tm_save[i];
+		}
+		free(tm_save);
 		for(k = 0 ; k < j  ; k++){
 			count = 0;
 			tm_array[k * 4 + count] = 0;
@@ -1118,7 +1126,7 @@ int temp_mask_parameter(ENCODER *enc, int y, int x, int u, int peak, int cl, int
 		// m_prd = enc->prd_class[y][x][cl];
 		m_prd = CLIP(0, enc->maxprd, m_prd);
 		#if CHECK_DEBUG
-			if( y == check_y && x == check_x)	printf("[temp_mask_parameter] m_prd[%d]: %d[%2d] | weight: %d | u: %d | gr: %d\n", peak, m_prd, cl, mask->weight[peak], u, m_gr);
+			if( y == check_y && x == check_x && enc->function_number == F_NUM)	printf("[temp_mask_parameter] m_prd[%d]: %d[%2d] | weight: %d | u: %d | gr: %d\n", peak, m_prd, cl, mask->weight[peak], u, m_gr);
 		#endif
 
 		mask->base[peak] = enc->bconv[m_prd];
@@ -1168,7 +1176,7 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 				m_prd = enc->prd_class[y][x][cl];
 				m_prd = CLIP(0, enc->maxprd, m_prd);
 				#if CHECK_DEBUG
-					if( y == check_y && x == check_x)	printf("[set_mask_parameter] m_prd[%d]: %d[%2d] | weight: %d | u: %d | gr: %d\n", 	peak, m_prd, cl, mask->weight[peak], u, m_gr);
+					if( y == check_y && x == check_x && enc->function_number == F_NUM)	printf("[set_mask_parameter] m_prd[%d]: %d[%2d] | weight: %d | u: %d | gr: %d\n", 	peak, m_prd, cl, mask->weight[peak], u, m_gr);
 				#endif
 
 				mask->base[peak] = enc->bconv[m_prd];
@@ -1205,6 +1213,9 @@ int set_mask_parameter_optimize(ENCODER *enc,int y, int x, int u, int r_cl)
 				mask->base[peak] = enc->bconv[m_prd];
 				m_frac = enc->fconv[m_prd];
 				m_gr = enc->uquant[cl][u];
+				#if CHECK_DEBUG
+					if( y == check_y && x == check_x && enc->function_number == F_NUM)	printf("[set_mask_parameter_opt] m_prd[%d]: %d[%2d] | weight: %d | gr: %d\n", 	peak, m_prd, cl, mask->weight[peak], m_gr);
+				#endif
 				if (cl == r_cl)	 r_peak = peak;	//当該ブロックのピーク番号
 				mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
 				peak++;
@@ -1874,6 +1885,9 @@ void count_cl(ENCODER *enc)
 			enc->cl_hist[(int)enc->class[y][x]]++;
 		}
 	}
+#if TEMPLATE_MATCHING_ON
+	if(enc->optimize_loop >1)	printf("[TEMP: %d]", enc->cl_hist[enc->temp_cl]);
+#endif
 }
 
 cost_t optimize_class(ENCODER *enc)
@@ -2860,7 +2874,7 @@ cost_t optimize_template(ENCODER *enc){
 */
 	if(min_gr >= enc->num_group) min_gr = enc->num_group-1;
 	enc->w_gr = min_gr;
-	printf("%d[%2d|%2d]-> ", (int)min_cost, enc->temp_peak_num, enc->w_gr);
+	printf(" %d[%2d|%2d]->", (int)min_cost, enc->temp_peak_num, enc->w_gr);
 	return(min_cost);
 }
 #endif
@@ -3112,8 +3126,7 @@ printf ("[op_group]-> %d" ,(int)cost);	//しきい値毎に分散を最適化し
 			}
 		}
 	}
-	printf ("[op_c]-> ");	//分散毎に確率モデルの形状を最適化した時のコスト
-	// printf (" op_c -> %d" ,(int)cost);	//分散毎に確率モデルの形状を最適化した時のコスト
+	printf ("[op_c]->");
 
 	free(cbuf);
 	free(dpcost);
@@ -3847,7 +3860,7 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 {
 	int x, y, e, u, base, bits, cumbase;
 	PMODEL *pm;
-
+	enc->function_number = 8;
 	bits = 0;
 	/* Arithmetic */
 	for (y = 0; y < enc->height; y++) {
@@ -4326,7 +4339,7 @@ int main(int argc, char **argv)
 		if (i >= 8) prd_order = 72;
 	}
 #if AUTO_DEL_CL
-	num_class = 63;
+	num_class = MAX_CLASS;
 #endif
 
 #if TEMPLATE_MATCHING_ON
@@ -4404,7 +4417,7 @@ int main(int argc, char **argv)
 	for (i = j = 0; i < max_iteration; i++) {
 		printf("[%2d] cost =", i);
 		cost = design_predictor(enc, f_mmse);	//予測器の設計(クラス情報を含んで再設計)
-		printf(" %d ", (int)cost);
+		printf(" %d ->", (int)cost);
 		cost = optimize_group(enc);	//閾値に対する分散の最適化
 		printf(" %d ->", (int)cost);
 		cost = optimize_class(enc);	//クラス情報の最適化
@@ -4427,6 +4440,27 @@ int main(int argc, char **argv)
 				}
 			}
 		} else {
+			if(i - j >= (EXTRA_ITERATION / 2) && side_info_back == 0){
+				for (y = 0; y < enc->height; y++) {
+					for (x = 0; x < enc->width; x++) {
+						enc->class[y][x] = class_save[y][x];
+					}
+				}
+				for (cl = 0; cl < enc->num_class; cl++) {
+					for (k= 0; k < enc->max_prd_order; k++) {
+						enc->predictor[cl][k] = prd_save[cl][k];
+					}
+					xx = 0;
+					for (k= 0; k < enc->num_group; k++) {
+						enc->th[cl][k] = th_save[cl][k];
+						for (; xx < enc->th[cl][k]; xx++) {
+							enc->uquant[cl][xx] = k;
+						}
+					}
+				}
+				side_info_back = 1;
+				printf(" !");
+			}
 			printf("\n");
 		}
 		if (i - j >= EXTRA_ITERATION) break;
@@ -4476,6 +4510,7 @@ int main(int argc, char **argv)
 	enc->optimize_loop = 2;
 	min_cost = INT_MAX;
 	sw = 0;
+	side_info_back = 0;
 #if TEMPLATE_MATCHING_ON
 	enc->temp_peak_num = TEMPLATE_CLASS_NUM;
 	enc->w_gr = W_GR;
@@ -4497,10 +4532,10 @@ int main(int argc, char **argv)
 		cost = optimize_group(enc);	//閾値に対する分散の再決定
 #endif
 		side_cost += sc = encode_threshold(NULL, enc, 1);	//閾値の符号量を見積もる
-		printf("%d[%d]->", (int)cost, (int)sc);
+		printf(" %d[%d]->", (int)cost, (int)sc);
 		cost = optimize_class(enc);		//クラス情報の最適化
 		side_cost += sc = encode_class(NULL, enc, 1);	//クラス情報の符号量を見積もる
-		printf(" %d[%d] (%d)", (int)cost, (int)sc, (int)side_cost);
+		printf(" %d[%d](%d)", (int)cost, (int)sc, (int)side_cost);
 #if CHECK_CLASS
 		for(cl=0; cl<enc->num_class; cl++){
 			if(enc->num_nzcoef[cl] == -1){
@@ -4512,7 +4547,7 @@ int main(int argc, char **argv)
 #if OPTIMIZE_MASK_LOOP
 		// if (sw != 0) {
 		cost = optimize_mask(enc);
-		printf(" ->%d", (int)cost);
+		printf("-> %d", (int)cost);
 		// }else{
 			// set_weight_flag(enc);
 		// }
@@ -4527,7 +4562,7 @@ int main(int argc, char **argv)
 					sw = enc->num_class;
 					cost = auto_del_class(enc, cost);
 				}
-				printf(" ->%d[%d]", (int)cost, enc->num_class);
+				printf("->%d[%d]", (int)cost, enc->num_class);
 			}
 		}
 #endif
@@ -4535,7 +4570,7 @@ int main(int argc, char **argv)
 #if OPTIMIZE_MASK_LOOP
 		set_weight_flag(enc);
 #endif
-		printf(" --> %d", (int)cost);
+		printf("--> %d", (int)cost);
 		if (cost < min_cost) {
 			printf(" *\n");
 			min_cost = cost;
@@ -4572,6 +4607,7 @@ int main(int argc, char **argv)
 						th_save[cl][k] = enc->th[cl][k];
 					}
 				}
+				side_info_back = 0;
 #if TEMPLATE_MATCHING_ON
 				temp_peak_num_save = enc->temp_peak_num;
 				w_gr_save = enc->w_gr;
@@ -4579,7 +4615,7 @@ int main(int argc, char **argv)
 			}
 		} else {
 			sw = 1;
-			if(i - j >= EXTRA_ITERATION / 2 && side_info_back == 0){
+			if(i - j >= (EXTRA_ITERATION / 2) && side_info_back == 0 && enc->num_class == num_class_save){
 				if (f_optpred) {
 					enc->num_class = num_class_save;
 					for (y = 0; y < enc->height; y++) {
@@ -4608,24 +4644,25 @@ int main(int argc, char **argv)
 						for (k= 0; k < enc->max_prd_order; k++) {
 							enc->predictor[cl][k] = prd_save[cl][k];
 						}
-						i = 0;
+						xx = 0;
 						for (k= 0; k < enc->num_group; k++) {
 							enc->th[cl][k] = th_save[cl][k];
-							for (; i < enc->th[cl][k]; i++) {
-								enc->uquant[cl][i] = k;
+							for (; xx < enc->th[cl][k]; xx++) {
+								enc->uquant[cl][xx] = k;
 							}
 						}
 					}
-			#if TEMPLATE_MATCHING_ON
+				#if TEMPLATE_MATCHING_ON
 					enc->temp_peak_num = temp_peak_num_save;
 					enc->w_gr = w_gr_save;
-			#endif
+				#endif
 				}
 				side_info_back = 1;
 				printf("!");
 			}
 			printf("\n");
 		}
+		// printf("i,j: %d,%d\n", i, j);
 		if (f_optpred) {
 			if (i - j >= EXTRA_ITERATION) break;
 		} else {

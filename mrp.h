@@ -151,13 +151,13 @@
 /*********DEBUG******************************/
 #define CHECK_TM 		0
 #define CHECK_TM_DETAIL	0
-#define CHECK_DEBUG 		0
+#define CHECK_DEBUG 		1
 #define CHECK_PMODEL	0
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
 #define check_y			4
 #define check_x			33
-#define F_NUM			-1
+#define F_NUM			8
 
 /****************** PARARELL ***************/
 #define  OPENMP_ON		0
@@ -348,6 +348,7 @@ double cpu_time(void);
 void init_array(int *, int , int);
 void init_2d_array(int **, int , int, int);
 void init_3d_array(int ***, int , int, int, int);
+int cmp(const void*, const void*);
 
 /***** FUNC - rc.c ********************************/
 RANGECODER *rc_init(void);
