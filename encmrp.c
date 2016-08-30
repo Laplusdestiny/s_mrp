@@ -295,6 +295,7 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 	enc->predictor = (int **)alloc_2d_array(enc->num_class, enc->max_prd_order,
 		sizeof(int));
 	enc->num_nzcoef = (int *)alloc_mem(enc->num_class * sizeof(int));
+	enc->optimize_loop = 0;
 #if AUTO_PRD_ORDER
 	for (i = 0; i < enc->num_class; i++) {
 		enc->num_nzcoef[i] = BASE_PRD_ORDER;
@@ -1885,9 +1886,6 @@ void count_cl(ENCODER *enc)
 			enc->cl_hist[(int)enc->class[y][x]]++;
 		}
 	}
-#if TEMPLATE_MATCHING_ON
-	if(enc->optimize_loop >1)	printf("[TEMP: %d]", enc->cl_hist[enc->temp_cl]);
-#endif
 }
 
 cost_t optimize_class(ENCODER *enc)
@@ -3175,7 +3173,7 @@ void remove_emptyclass(ENCODER *enc)
 		if (enc->mtfbuf[i] == 0) {
 			enc->mtfbuf[i] = -1;
 		} else {
-			enc->mtfbuf[i] = cl++;
+			enc->mtfbuf[i] = cl++;	//クラス番号の要素に新しいクラス番号が入る
 		}
 	}
 	if (cl == enc->num_class) return;	/* no empty class */
@@ -4439,6 +4437,7 @@ int main(int argc, char **argv)
 					th_save[cl][k] = enc->th[cl][k];		//閾値の保存
 				}
 			}
+			side_info_back = 0;
 		} else {
 			if(i - j >= (EXTRA_ITERATION / 2) && side_info_back == 0){
 				for (y = 0; y < enc->height; y++) {
@@ -4607,7 +4606,7 @@ int main(int argc, char **argv)
 						th_save[cl][k] = enc->th[cl][k];
 					}
 				}
-				side_info_back = 0;
+				// side_info_back = 0;
 #if TEMPLATE_MATCHING_ON
 				temp_peak_num_save = enc->temp_peak_num;
 				w_gr_save = enc->w_gr;
@@ -4615,7 +4614,7 @@ int main(int argc, char **argv)
 			}
 		} else {
 			sw = 1;
-			if(i - j >= (EXTRA_ITERATION / 2) && side_info_back == 0 && enc->num_class == num_class_save){
+			/*if(i - j >= (EXTRA_ITERATION / 2) && side_info_back == 0 && enc->num_class == num_class_save){
 				if (f_optpred) {
 					enc->num_class = num_class_save;
 					for (y = 0; y < enc->height; y++) {
@@ -4659,7 +4658,7 @@ int main(int argc, char **argv)
 				}
 				side_info_back = 1;
 				printf("!");
-			}
+			}*/
 			printf("\n");
 		}
 		// printf("i,j: %d,%d\n", i, j);

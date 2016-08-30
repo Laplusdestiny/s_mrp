@@ -19,3 +19,5 @@ mkdir ./Info/Amp_Chara
 mkdir ./Info/Var_Upara
 mkdir ./Info/Block_Size
 mkdir ./Info/Temp_Map
+
+echo "Initialized Directory"
