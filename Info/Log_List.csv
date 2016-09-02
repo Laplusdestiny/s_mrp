@@ -1,3 +1,0 @@
-Date,Input,Height,Width,Init_Class,Use_Class,Prd_Order,			Header[bits],Class[bits],Predictor[bits],Threshold[bits],			Pred. Errors[bits],Total info.[bits],Coding Rate[bits/pel],Time[s], ,Auto_Del_CL,	Auto_Set_Coef,BASE_BSIZE,QUADTREE_DEPTH,			MIN_BSIZE,MAX_BSIZE,COEF_PRECISION,PM_ACCURACY,NUM_GROUP,			UPEL_DIST,MAX_ITERATION,CTX_WEIGHT,TEMPLATE_MATCHING,ZNCC,MANHATTAN_SORT,			Search Window,
-2016/ 9/ 2_17:32,lennagrey.pgm,512,512,64,63,110,121,13400,6008,2424,999528,1022017,3.898685,1904.480000, ,ON,ON,8,4,2,32,6,3,16,3,5,mhd,ON,ON,OFF,81*20,
-2016/ 9/ 2_18:19,lennagrey.pgm,512,512,64,63,110,121,13400,6008,2424,999528,1022017,3.898685,1875.020000, ,ON,ON,8,4,2,32,6,3,16,3,5,mhd,ON,ON,OFF,81*20,
