@@ -34,9 +34,9 @@
 
 /****** OPTIMIZE ***************************/
 #define OPT_SIDEINFO		1 // 1 : side-info into consideration (standard), 0 : neglect side-info
-#define MAX_ITERATION	100	//100
+#define MAX_ITERATION	5	//100
 #define EXTRA_ITERATION	10
-#define AUTO_DEL_CL		0
+#define AUTO_DEL_CL		1
 #define AUTO_PRD_ORDER	1
 
 /****** MULT PEAK **************************/
@@ -140,6 +140,10 @@
 #define WEIGHT_CN		2
 #define TEMPLATE_CLASS_NUM	50
 #define TEMPLATEM_LOG_OUTPUT	1
+
+#else
+#define TEMPLATE_CLASS_NUM	0
+
 #endif
 
 #define TEMPLATE_FLAG	2 << COEF_PRECISION
@@ -151,9 +155,9 @@
 #define CHECK_PMODEL	0
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
-#define check_y			4
-#define check_x			33
-#define F_NUM			-1
+#define check_y			24
+#define check_x			403
+#define F_NUM			8
 
 /****************** PARARELL ***************/
 #define  OPENMP_ON		0
@@ -192,6 +196,7 @@ typedef struct {
 	range_t low;
 	range_t code;
 	range_t range;
+	int y, x;
 } RANGECODER;
 
 typedef struct {
@@ -302,6 +307,7 @@ typedef struct {
 	int **th;
 	char **mask;
 	int **err;
+	int **econv;
 	int *ctx_weight;
 	char **qtmap[QUADTREE_DEPTH];
 	char **class;
@@ -344,6 +350,7 @@ double cpu_time(void);
 void init_array(int *, int , int);
 void init_2d_array(int **, int , int, int);
 void init_3d_array(int ***, int , int, int, int);
+int cmp(const void*, const void*);
 
 /***** FUNC - rc.c ********************************/
 RANGECODER *rc_init(void);
@@ -368,7 +375,7 @@ void print_rate_compare_class_map(ENCODER *, char *);
 void print_block_size(int **, char ***, int, int, int, char *);
 void calc_var_upara( ENCODER *, char *);
 void init_log_sheet(ENCODER *, char *);
-void finish_log_sheet(ENCODER *, int, int, int, int, int, int, double);
+void finish_log_sheet(ENCODER *, int, int, int, int, int, int, double, double);
 void TemplateM_Log_Output(ENCODER *, char *, int ***, int ***);
 void TemplateM_Log_Input(ENCODER *, char *, int ***, int ***);
 
