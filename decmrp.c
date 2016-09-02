@@ -955,7 +955,7 @@ int calc_prd(IMAGE *img, DECODER *dec, int cl, int y, int x)
 					if (rx < 0) rx = 0;
 					else if (rx >= img->width) rx = img->width - 1;
 					prd += coef_p[i] * img->val[ry][rx];
-					if( y == check_y && x == check_x)	printf("prd;%d|org;%d|(%d,%d)|coef;%d\n", prd, img->val[ry][rx], ry,rx, coef_p[i]);
+					// if( y == check_y && x == check_x)	printf("prd;%d|org;%d|(%d,%d)|coef;%d\n", prd, img->val[ry][rx], ry,rx, coef_p[i]);
 				}
 			}
 		}
