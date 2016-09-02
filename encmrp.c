@@ -695,6 +695,7 @@ void predict_region(ENCODER *enc, int tly, int tlx, int bry, int brx)	//予測�
 					for(k = 0; k < enc->num_nzcoef[cl]; k++){
 						l = nzc_p[k];
 						prd += org_p[roff_p[l]] * coef_p[l];
+						// if(y == check_y && x== check_x && enc->function_number == 100)	printf("prd;%d|org;%d|roff;%d|coef;%d\n", prd, org_p[roff_p[l]], roff_p[l], coef_p[l]);
 					}
 				}
 			}
@@ -702,8 +703,8 @@ void predict_region(ENCODER *enc, int tly, int tlx, int bry, int brx)	//予測�
 			*prd_p++ = prd;
 			prd = CLIP(0, enc->maxprd, prd);
 			prd >>= (enc->coef_precision - 1);
-			// if(y==check_y)printf("prd(%d,%d): %d\n", y, x, prd);
 			*err_p++ = enc->econv[org][prd];
+			// if(enc->function_number == 100)	printf("%d|%d|err:|%d|org:|%d|prd:|%d\n", y, x, enc->err[y][x], org, prd);
 		}
 	}
 }
@@ -747,10 +748,10 @@ int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出
 
 	u = 0;
 	for (k =0; k < NUM_UPELS; k++) {
-		// u += err_p[*roff_p++] * (*wt_p++);
-		u += err_p[roff_p[k]] * wt_p[k];
+		u += err_p[*roff_p++] * (*wt_p++);
+		// u += err_p[roff_p[k]] * wt_p[k];
 		#if CHECK_DEBUG
-			// if(y==check_y && x==check_x)	printf("u: %d | err: %d(%3d) | wt_p: %d\n", u, err_p[k], roff_p[k], wt_p[k]);
+			// if(y==check_y && x==check_x && enc->function_number == 8)	printf("u: %d | err: %d(%3d) | wt_p: %d\n", u, err_p[k], roff_p[k], wt_p[k]);
 		#endif
 	}
 	u >>= 6;
@@ -3863,14 +3864,16 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 	/* Arithmetic */
 	for (y = 0; y < enc->height; y++) {
 		for (x = 0; x < enc->width; x++) {
-			u = enc->upara[y][x];
-			// u = calc_uenc(enc, y, x);
+			// u = enc->upara[y][x];
+			u = calc_uenc(enc, y, x);
 			set_mask_parameter(enc,y,x,u);
 			e = enc->encval[y][x];
 			if (mask->num_peak == 1){
 				base = mask->base[0];
 				pm = mask->pm[0];
 				cumbase = pm->cumfreq[base];
+				enc->rc->y = y;
+				enc->rc->x = x;
 				rc_encode(fp, enc->rc,
 					pm->cumfreq[base + e] - cumbase,
 					pm->freq[base + e],
@@ -3881,6 +3884,8 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 				#if CHECK_PMODEL
 					if(y==check_y && x==check_x) printmodel(pm,enc->maxval+1);
 				#endif
+				enc->rc->y = y;
+				enc->rc->x = x;
 				rc_encode(fp, enc->rc
 ,					pm->cumfreq[e],
 					pm->freq[e],
@@ -4045,8 +4050,15 @@ void opcl_sub(ENCODER *enc, int k, int *blk, int tly, int tlx, int blksize, int 
 cost_t opcl(ENCODER *enc, int k, int *blk, int restore)
 {
 	int x, y, i, j, *th_s, *prd_s, **prd_cl_s, blksize, level;
-	char *uq_s;
+	char *uq_s, **class;
 	cost_t cost;
+
+	class = (char **)alloc_2d_array(enc->height, enc->width, sizeof(char));
+	for (y = 0; y < enc->height; y++) {
+		for (x = 0; x < enc->width; x++) {
+			class[y][x] = enc->class[y][x];
+		}
+	}
 
 	for (i = 0; i < enc->num_class; i++) enc->mtfbuf[i] = i;
 	if( enc->optimize_loop > 1 && enc->quadtree_depth >= 0) {
@@ -4114,9 +4126,10 @@ cost_t opcl(ENCODER *enc, int k, int *blk, int restore)
 		enc->num_class++;
 		for (y = 0; y < enc->height; y ++) {
 			for (x = 0; x < enc->width; x ++) {
-				if (enc->class[y][x] >= k) {
-					enc->class[y][x]++;
-				}
+				// if (enc->class[y][x] >= k) {
+					// enc->class[y][x]++;
+				// }
+				enc->class[y][x] = class[y][x];
 				for (i = enc->num_class - 2; i >= k; i--) {
 					enc->prd_class[y][x][i + 1] = enc->prd_class[y][x][i];
 				}
@@ -4160,8 +4173,7 @@ cost_t auto_del_class(ENCODER *enc, cost_t pre_cost)
 	cost_t cost, min_cost;
 	char **class;
 
-	class = (char **)alloc_2d_array(enc->height, enc->width,
-		sizeof(char));
+	class = (char **)alloc_2d_array(enc->height, enc->width, sizeof(char));
 	for (y = 0; y < enc->height; y++) {
 		for (x = 0; x < enc->width; x++) {
 			class[y][x] = enc->class[y][x];
@@ -4714,6 +4726,7 @@ int main(int argc, char **argv)
 		set_prd_pels(enc);
 #endif
 		save_prediction_value(enc);
+		enc->function_number = 100;
 		predict_region(enc, 0, 0, enc->height, enc->width);
 		calc_cost(enc, 0, 0, enc->height, enc->width);
 #if OPTIMIZE_MASK

@@ -34,7 +34,7 @@
 
 /****** OPTIMIZE ***************************/
 #define OPT_SIDEINFO		1 // 1 : side-info into consideration (standard), 0 : neglect side-info
-#define MAX_ITERATION	100	//100
+#define MAX_ITERATION	5	//100
 #define EXTRA_ITERATION	10
 #define AUTO_DEL_CL		1
 #define AUTO_PRD_ORDER	1
@@ -151,12 +151,12 @@
 /*********DEBUG******************************/
 #define CHECK_TM 		0
 #define CHECK_TM_DETAIL	0
-#define CHECK_DEBUG 		1
+#define CHECK_DEBUG 		0
 #define CHECK_PMODEL	0
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
-#define check_y			4
-#define check_x			33
+#define check_y			24
+#define check_x			403
 #define F_NUM			8
 
 /****************** PARARELL ***************/
@@ -196,6 +196,7 @@ typedef struct {
 	range_t low;
 	range_t code;
 	range_t range;
+	int y, x;
 } RANGECODER;
 
 typedef struct {
@@ -306,6 +307,7 @@ typedef struct {
 	int **th;
 	char **mask;
 	int **err;
+	int **econv;
 	int *ctx_weight;
 	char **qtmap[QUADTREE_DEPTH];
 	char **class;

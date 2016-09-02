@@ -886,7 +886,7 @@ void init_log_sheet(ENCODER *enc, char *outfile)
 
 		fprintf(fp, "Auto_Del_CL,	Auto_Set_Coef,BASE_BSIZE,QUADTREE_DEPTH,\
 			MIN_BSIZE,MAX_BSIZE,COEF_PRECISION,PM_ACCURACY,NUM_GROUP,\
-			UPEL_DIST,CTX_WEIGHT,TEMPLATE_MATCHING,ZNCC,MANHATTAN_SORT,\
+			UPEL_DIST,MAX_ITERATION,CTX_WEIGHT,TEMPLATE_MATCHING,ZNCC,MANHATTAN_SORT,\
 			Search Window,");
 		// fprintf(fp, "\n");
 		fclose(fp);
@@ -923,7 +923,7 @@ void finish_log_sheet(ENCODER *enc, int header_info, int class_info, int pred_in
 
 	fprintf(fp, "%d,", BASE_BSIZE);
 	fprintf(fp, "%d,%d,%d,", enc->quadtree_depth, MIN_BSIZE, MAX_BSIZE);
-	fprintf(fp, "%d,%d,%d,%d,", enc->coef_precision, enc->pm_accuracy,enc->num_group, UPEL_DIST);
+	fprintf(fp, "%d,%d,%d,%d,%d,", enc->coef_precision, enc->pm_accuracy,enc->num_group, UPEL_DIST, MAX_ITERATION);
 
 	if(CTX_WEIGHT) {
 		if(MHD_WEIGHT) {
@@ -934,7 +934,7 @@ void finish_log_sheet(ENCODER *enc, int header_info, int class_info, int pred_in
 	}else {
 		fprintf(fp, "Non,");
 	}
-#if TEMPLATE_MATCHING_ON
+
 	if(TEMPLATE_MATCHING_ON){
 		fprintf(fp, "ON,");
 
@@ -951,8 +951,10 @@ void finish_log_sheet(ENCODER *enc, int header_info, int class_info, int pred_in
 		}
 
 		fprintf(fp, "%d*%d,", X_SIZE*2+1, Y_SIZE);
+	} else {
+		fprintf(fp, "OFF,");
 	}
-#endif
+
 	// fprintf(fp, "\n");
 	fclose(fp);
 

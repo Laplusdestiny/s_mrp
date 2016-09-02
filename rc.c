@@ -25,7 +25,7 @@ RANGECODER *rc_init(void)
 	return(rc);
 }
 
-void rc_encode(FILE *fp, RANGECODER *rc, uint cumfreq, uint freq, uint totfreq)	//rc_encodeはflgがあるかどうかの違いだけ
+void rc_encode(FILE *fp, RANGECODER *rc, uint cumfreq, uint freq, uint totfreq)
 {
 	rc->range /= totfreq;
 	rc->low += cumfreq * rc->range;
