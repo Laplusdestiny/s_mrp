@@ -871,14 +871,14 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 		#endif
 
 		if(dec_y == 0 && dec_x < 3){
-			exam_array[dec_y][dec_x][i] = (dec->maxprd > 1);
+			exam_array[dec_y][dec_x][i] = (dec->maxprd >> 1);
 		} else {
 			#if ZNCC
 				exam_array[dec_y][dec_x][i] = (int)( ((double)decval[temp_y][temp_x] - ave_o) * dist1 / dist_o + ave1);
 			#elif ZSAD
 				exam_array[dec_y][dec_x][i] = (int)((double)decval[temp_y][temp_x] - ave_o + ave1);
 			#else
-				exam_array[dec_y][dec_x] = decval[temp_y][temp_x];
+				exam_array[dec_y][dec_x][i] = decval[temp_y][temp_x];
 			#endif
 			if(exam_array[dec_y][dec_x][i] < 0 || exam_array[dec_y][dec_x][i] > dec->maxprd)
 				exam_array[dec_y][dec_x][i] = (int)ave1;
@@ -1233,7 +1233,7 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 
 IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 {
-	int x, y, cl, gr, prd, u, e, p, bitmask, shift, base;
+	int x, y, cl, gr, prd, u, p, bitmask, shift, base;
 	int *th_p;
 	IMAGE *img;
 	PMODEL *pm;

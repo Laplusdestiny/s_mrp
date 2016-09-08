@@ -999,6 +999,7 @@ for(y = 0 ; y < enc->height ; y++){
 			tm[i] = tm_save[i];
 		}
 		free(tm_save);
+
 		for(k = 0 ; k < j  ; k++){
 			count = 0;
 			tm_array[k * 4 + count] = 0;
@@ -1039,7 +1040,7 @@ for(y = 0 ; y < enc->height ; y++){
 			#endif
 
 			if(y == 0 && x< 3){
-				exam_array[y][x][i] = (enc->maxprd > 1);
+				exam_array[y][x][i] = (enc->maxprd >> 1);
 			} else {
 				#if ZNCC
 					exam_array[y][x][i] = (int)( ((double)encval[temp_y][temp_x] - ave_o) * dist1 / dist_o + ave1);
@@ -1064,14 +1065,10 @@ TemplateM_Log_Output(enc, outfile, tempm_array, exam_array);
 free(tm_array);
 free(encval);
 #else
+printf("Restoring Template Matching\r");
 TemplateM_Log_Input(enc, outfile, tempm_array, exam_array);
 #endif
 printf("Calculating Template Matching Fin\n");
-
-/////////////////////////////
-////////メモリ解放///////////
-////////////////////////////
-
 
 	return(0);
 	// return(array);
@@ -2858,20 +2855,9 @@ cost_t optimize_template(ENCODER *enc){
 			}
 		}
 	}
+	if(min_temp_num <= 0 || min_temp_num > TEMPLATE_CLASS_NUM)	min_temp_num = TEMPLATE_CLASS_NUM;
 	enc->temp_peak_num = min_temp_num;
-	// printf("%d[%2d]-> ", (int)min_cost, enc->temp_peak_num);
-
-// 片側ラプラス関数の分散の決定
-/*	min_cost = INT_MAX;
-
-	cost = calc_cost2(enc, 0, 0, enc->height, enc->width);
-		if(cost < min_cost){
-			min_gr = gr;
-			min_cost = cost;
-		}
-	}
-*/
-	if(min_gr >= enc->num_group) min_gr = enc->num_group-1;
+	if(min_gr <0 || min_gr >= enc->num_group) min_gr = enc->num_group-1;
 	enc->w_gr = min_gr;
 	printf(" %d[%2d|%2d]->", (int)min_cost, enc->temp_peak_num, enc->w_gr);
 	return(min_cost);
@@ -4170,7 +4156,7 @@ cost_t opcl(ENCODER *enc, int k, int *blk, int restore)
 cost_t auto_del_class(ENCODER *enc, cost_t pre_cost)
 {
 	int x, y, k, del_cl, blk;
-	cost_t cost, min_cost;
+	cost_t cost, min_cost, sc=0;
 	char **class;
 
 	class = (char **)alloc_2d_array(enc->height, enc->width, sizeof(char));
@@ -4213,8 +4199,14 @@ cost_t auto_del_class(ENCODER *enc, cost_t pre_cost)
 		}
 	}
 	predict_region(enc, 0, 0, enc->height, enc->width);
-	cost = calc_cost(enc, 0, 0, enc->height, enc->width)
-		+ encode_class(NULL, enc, 1) + encode_predictor(NULL, enc, 1) + encode_threshold(NULL, enc, 1);
+	cost = calc_cost(enc, 0, 0, enc->height, enc->width);
+	printf("(%d,", (int)cost);
+	cost += sc = encode_class(NULL, enc, 1);
+	printf("%d,", (int)sc);
+	cost += sc = encode_predictor(NULL, enc, 1);
+	printf("%d,", (int)sc);
+	cost += sc = encode_threshold(NULL, enc, 1);
+	printf("%d|%d)\n", (int)sc, (int)cost);
 	free(class);
 	return(cost);
 }
@@ -4568,10 +4560,10 @@ int main(int argc, char **argv)
 		if (sw != 0) {	//コスト削減に一度でも失敗した場合に入る
 			if( enc->num_class > 1) {
 				sw = enc->num_class;
-				cost = auto_del_class(enc, cost);	//使用していないクラスの削除
+				cost = auto_del_class(enc, min_cost);	//使用していないクラスの削除
 				while (sw != enc->num_class) {	//削除に成功する間
 					sw = enc->num_class;
-					cost = auto_del_class(enc, cost);
+					cost = auto_del_class(enc, min_cost);
 				}
 				printf("->%d[%d]", (int)cost, enc->num_class);
 			}

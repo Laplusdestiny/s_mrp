@@ -34,7 +34,7 @@
 
 /****** OPTIMIZE ***************************/
 #define OPT_SIDEINFO		1 // 1 : side-info into consideration (standard), 0 : neglect side-info
-#define MAX_ITERATION	5	//100
+#define MAX_ITERATION	100	//100
 #define EXTRA_ITERATION	10
 #define AUTO_DEL_CL		1
 #define AUTO_PRD_ORDER	1
@@ -139,7 +139,7 @@
 #define W_GR 			7
 #define WEIGHT_CN		2
 #define TEMPLATE_CLASS_NUM	50
-#define TEMPLATEM_LOG_OUTPUT	1
+#define TEMPLATEM_LOG_OUTPUT	0
 
 #else
 #define TEMPLATE_CLASS_NUM	0
@@ -151,7 +151,7 @@
 /*********DEBUG******************************/
 #define CHECK_TM 		0
 #define CHECK_TM_DETAIL	0
-#define CHECK_DEBUG 		0
+#define CHECK_DEBUG 		1
 #define CHECK_PMODEL	0
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
