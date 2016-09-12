@@ -38,7 +38,14 @@
 #define EXTRA_ITERATION	10
 #define AUTO_DEL_CL		1
 #define AUTO_PRD_ORDER	1
-
+#if AUTO_DEL_CL
+	#define RENEW_ADC	0
+	#if RENEW_ADC
+		#define	PAST_ADC	0
+	#else
+		#define PAST_ADC	1
+	#endif
+#endif
 /****** MULT PEAK **************************/
 #define MULT_PEAK_MODE		1
 #define OPTIMIZE_MASK 		1
@@ -51,7 +58,7 @@
 
 /***** BLOCK_SIZE **************************/
 #define BASE_BSIZE		8
-#define QUADTREE_DEPTH	4
+#define QUADTREE_DEPTH	4	//可変ブロックサイズにするときは -f フラグを取る
 #define MAX_BSIZE		32
 #define MIN_BSIZE		(MAX_BSIZE >> QUADTREE_DEPTH)
 
@@ -124,7 +131,7 @@
 #define HAVE_CLOCK
 
 /*****TEMPLATE MATCHING ********************/
-#define TEMPLATE_MATCHING_ON 	1
+#define TEMPLATE_MATCHING_ON 	0
 #if TEMPLATE_MATCHING_ON
 
 #define ZSAD			0
@@ -213,6 +220,15 @@ typedef struct{
 	double s_devian;
 } TM_Member;
 
+typedef struct{
+	int num_class_s;
+	int **th_s;
+	int **prd_s;
+	char **uq_s;
+	int ***prd_cl_s;
+	char **class;
+} RESTORE_SIDE;
+
 typedef struct {
 	int height;
 	int width;
@@ -285,6 +301,7 @@ typedef struct {
 	int temp_cl;
 	int w_gr;
 	int function_number;
+	RESTORE_SIDE *r_side;
 } ENCODER;
 
 typedef struct {
@@ -307,6 +324,7 @@ typedef struct {
 	int **th;
 	char **mask;
 	int **err;
+	int ***roff;
 	int **econv;
 	int *ctx_weight;
 	char **qtmap[QUADTREE_DEPTH];
@@ -325,7 +343,6 @@ typedef struct {
 #endif
 #if TEMPLATE_MATCHING_ON
 	int **temp_num;
-	int ***roff;
 	int *array;
 	int temp_peak_num;
 #endif
@@ -351,6 +368,7 @@ void init_array(int *, int , int);
 void init_2d_array(int **, int , int, int);
 void init_3d_array(int ***, int , int, int, int);
 int cmp(const void*, const void*);
+void save_info(ENCODER*, int);
 
 /***** FUNC - rc.c ********************************/
 RANGECODER *rc_init(void);

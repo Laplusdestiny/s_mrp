@@ -192,6 +192,60 @@ int cmp(const void *p, const void *q){
 	return ((TM_Member*)p)->sum - ((TM_Member*)q)->sum;
 }
 
+void save_info(ENCODER *enc, int restore){
+	int y, x, i, j;
+	if(restore==1){
+		enc->num_class = enc->r_side->num_class_s;
+		for(y=0; y<enc->height; y++){
+			for(x=0; x<enc->width; x++){
+				enc->class[y][x] = enc->r_side->class[y][x];
+				// enc->r_side->class[y][x] = enc->class[y][x];
+				for(i=0; i<enc->num_class; i++){
+					enc->prd_class[y][x][i] = enc->r_side->prd_cl_s[y][x][i];
+					// enc->r_side->prd_cl_s[y][x][i] = enc->prd_class[y][x][i];
+				}
+			}
+		}
+
+		for(i=0; i<enc->num_class; i++){
+			for(j=0; j<enc->num_group; j++){
+				enc->th[i][j] = enc->r_side->th_s[i][j];
+				// enc->r_side->th_s[i][j] = enc->th[i][j];
+			}
+			for(j=0; j<enc->max_prd_order; j++){
+				enc->predictor[i][j] = enc->r_side->prd_s[i][j];
+				// enc->r_side->prd_s[i][j] = enc->predictor[i][j];
+			}
+			for(j=0; j<MAX_UPARA; j++){
+				enc->uquant[i][j] = enc->r_side->uq_s[i][j];
+				// enc->r_side->uq_s[i][j] = enc->uquant[i][j];
+			}
+		}
+	} else {
+		enc->r_side->num_class_s = enc->num_class;
+		for(y=0; y<enc->height; y++){
+			for(x=0; x<enc->width; x++){
+				enc->r_side->class[y][x] = enc->class[y][x];
+				for(i=0; i<enc->num_class; i++){
+					enc->r_side->prd_cl_s[y][x][i] = enc->prd_class[y][x][i];
+				}
+			}
+		}
+
+		for(i=0; i<enc->num_class; i++){
+			for(j=0; j<enc->num_group; j++){
+				enc->r_side->th_s[i][j] = enc->th[i][j];
+			}
+			for(j=0; j<enc->max_prd_order; j++){
+				enc->r_side->prd_s[i][j] = enc->predictor[i][j];
+			}
+			for(j=0; j<MAX_UPARA; j++){
+				enc->r_side->uq_s[i][j] = enc->uquant[i][j];
+			}
+		}
+	}
+}
+
 /*
 Natural logarithm of the gamma function
 cf. "Numerical Recipes in C", 6.1

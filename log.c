@@ -937,7 +937,7 @@ void finish_log_sheet(ENCODER *enc, int header_info, int class_info, int pred_in
 
 	if(TEMPLATE_MATCHING_ON){
 		fprintf(fp, "ON,");
-
+#if TEMPLATE_MATCHING_ON
 		if(ZNCC){
 			fprintf(fp, "ON,");
 		} else {
@@ -951,6 +951,7 @@ void finish_log_sheet(ENCODER *enc, int header_info, int class_info, int pred_in
 		}
 
 		fprintf(fp, "%d*%d,", X_SIZE*2+1, Y_SIZE);
+#endif
 	} else {
 		fprintf(fp, "OFF,");
 	}

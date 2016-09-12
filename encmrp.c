@@ -483,6 +483,12 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 	enc->array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
 	init_3d_array(enc->array, enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, 0);
 #endif
+	enc->r_side = (RESTORE_SIDE *)alloc_mem(sizeof(RESTORE_SIDE));
+	enc->r_side->th_s = (int **)alloc_2d_array(enc->num_class, enc->num_group, sizeof(int));
+	enc->r_side->prd_s = (int **)alloc_2d_array(enc->num_class, enc->max_prd_order, sizeof(int));
+	enc->r_side->uq_s = (char **)alloc_2d_array(enc->num_class, (MAX_UPARA + 1), sizeof(char));
+	enc->r_side->prd_cl_s = (int ***)alloc_3d_array(enc->height, enc->width, enc->num_class, sizeof(int));
+	enc->r_side->class = (char **)alloc_2d_array(enc->height, enc->width, sizeof(char));
 	return (enc);
 }
 
@@ -1241,7 +1247,7 @@ cost_t calc_cost2(ENCODER *enc, int tly, int tlx, int bry, int brx)
 
 	if (bry > enc->height) bry = enc->height;
 	if (tlx < 0) tlx = 0;
-		if (tly < 0) tly = 0;
+	if (tly < 0) tly = 0;
 	if (brx > enc->width) brx = enc->width;
 	cost = 0;
 	for (y = tly; y < bry; y++) {
@@ -2485,7 +2491,6 @@ cost_t optimize_predictor(ENCODER *enc)	//when AUTO_PRD_ORDER 1
 #endif
 	enc->function_number = 4;
 	for (cl = 0; cl < enc->num_class; cl++) {
-		// num_nzc = enc->num_nzcoef[cl];
 		num_eff = 0;
 		if (enc->cl_hist[cl] == 0) continue;
 
@@ -4157,12 +4162,10 @@ cost_t auto_del_class(ENCODER *enc, cost_t pre_cost)
 {
 	int x, y, k, del_cl, blk;
 	cost_t cost, min_cost, sc=0;
-	char **class;
 
-	class = (char **)alloc_2d_array(enc->height, enc->width, sizeof(char));
 	for (y = 0; y < enc->height; y++) {
 		for (x = 0; x < enc->width; x++) {
-			class[y][x] = enc->class[y][x];
+			enc->r_side->class[y][x] = enc->class[y][x];
 		}
 	}
 	min_cost = 1E10;
@@ -4194,20 +4197,27 @@ cost_t auto_del_class(ENCODER *enc, cost_t pre_cost)
 	} else {
 		for (y = 0; y < enc->height; y++) {
 			for (x = 0; x < enc->width; x++) {
-				enc->class[y][x] = class[y][x];
+				enc->class[y][x] = enc->r_side->class[y][x];
 			}
 		}
 	}
 	predict_region(enc, 0, 0, enc->height, enc->width);
 	cost = calc_cost(enc, 0, 0, enc->height, enc->width);
+#if CHECK_DEBUG
 	printf("(%d,", (int)cost);
+#endif
 	cost += sc = encode_class(NULL, enc, 1);
+#if CHECK_DEBUG
 	printf("%d,", (int)sc);
+#endif
 	cost += sc = encode_predictor(NULL, enc, 1);
+#if CHECK_DEBUG
 	printf("%d,", (int)sc);
+#endif
 	cost += sc = encode_threshold(NULL, enc, 1);
-	printf("%d|%d)\n", (int)sc, (int)cost);
-	free(class);
+#if CHECK_DEBUG
+	printf("%d|%d)", (int)sc, (int)cost);
+#endif
 	return(cost);
 }
 #endif
@@ -4237,6 +4247,9 @@ int main(int argc, char **argv)
 	int max_iteration = MAX_ITERATION;
 	char *infile, *outfile;
 	FILE *fp;
+#if RENEW_ADC
+	int cost_save=0;
+#endif
 
 	cpu_time();
 	setbuf(stdout, 0);
@@ -4559,12 +4572,38 @@ int main(int argc, char **argv)
 #if AUTO_DEL_CL
 		if (sw != 0) {	//コスト削減に一度でも失敗した場合に入る
 			if( enc->num_class > 1) {
+			#if PAST_ADC
 				sw = enc->num_class;
-				cost = auto_del_class(enc, min_cost);	//使用していないクラスの削除
+				cost = auto_del_class(enc, cost);	//使用していないクラスの削除
 				while (sw != enc->num_class) {	//削除に成功する間
 					sw = enc->num_class;
-					cost = auto_del_class(enc, min_cost);
+					cost = auto_del_class(enc, cost);
 				}
+			#elif RENEW_ADC
+				sw = enc->num_class;
+				save_info(enc, 0);
+				yy = xx =0;
+				// side_info_back = 1;
+				cost_save = min_cost;
+				while(yy - xx < (EXTRA_ITERATION / 2) ){
+					sw = enc->num_class;
+					cost = auto_del_class(enc, cost);
+					if(cost < cost_save){
+						cost_save = cost;
+						xx = yy;
+						save_info(enc, 0);
+						#if CHECK_DEBUG
+							printf(" *");
+						#endif
+					}
+					#if CHECK_DEBUG
+						printf("\n");
+					#endif
+					yy++;
+					if(sw == enc->num_class)	break;
+				}
+				save_info(enc, 1);
+			#endif
 				printf("->%d[%d]", (int)cost, enc->num_class);
 			}
 		}
@@ -4577,6 +4616,7 @@ int main(int argc, char **argv)
 		if (cost < min_cost) {
 			printf(" *\n");
 			min_cost = cost;
+			sw = 0;
 			j = i;
 			if (f_optpred) {
 				num_class_save = enc->num_class;
@@ -4610,7 +4650,6 @@ int main(int argc, char **argv)
 						th_save[cl][k] = enc->th[cl][k];
 					}
 				}
-				// side_info_back = 0;
 #if TEMPLATE_MATCHING_ON
 				temp_peak_num_save = enc->temp_peak_num;
 				w_gr_save = enc->w_gr;
@@ -4618,54 +4657,8 @@ int main(int argc, char **argv)
 			}
 		} else {
 			sw = 1;
-			/*if(i - j >= (EXTRA_ITERATION / 2) && side_info_back == 0 && enc->num_class == num_class_save){
-				if (f_optpred) {
-					enc->num_class = num_class_save;
-					for (y = 0; y < enc->height; y++) {
-						for (x = 0; x < enc->width; x++) {
-							enc->class[y][x] = class_save[y][x];
-							enc->mask[y][x] = mask_save[y][x];
-						}
-					}
-					if (enc->quadtree_depth > 0) {
-						y = (enc->height + MAX_BSIZE - 1) / MAX_BSIZE;
-						x = (enc->width + MAX_BSIZE - 1) / MAX_BSIZE;
-						for (k = enc->quadtree_depth - 1; k >= 0; k--) {
-							for (yy = 0; yy < y; yy++) {
-								for (xx = 0; xx < x; xx++) {
-									enc->qtmap[k][yy][xx] = qtmap_save[k][yy][xx];
-								}
-							}
-							y <<= 1;
-							x <<= 1;
-						}
-					}
-					for (gr = 0; gr < enc->num_group; gr++) {
-						enc->pmlist[gr] = pmlist_save[gr];
-					}
-					for (cl = 0; cl < enc->num_class; cl++) {
-						for (k= 0; k < enc->max_prd_order; k++) {
-							enc->predictor[cl][k] = prd_save[cl][k];
-						}
-						xx = 0;
-						for (k= 0; k < enc->num_group; k++) {
-							enc->th[cl][k] = th_save[cl][k];
-							for (; xx < enc->th[cl][k]; xx++) {
-								enc->uquant[cl][xx] = k;
-							}
-						}
-					}
-				#if TEMPLATE_MATCHING_ON
-					enc->temp_peak_num = temp_peak_num_save;
-					enc->w_gr = w_gr_save;
-				#endif
-				}
-				side_info_back = 1;
-				printf("!");
-			}*/
 			printf("\n");
 		}
-		// printf("i,j: %d,%d\n", i, j);
 		if (f_optpred) {
 			if (i - j >= EXTRA_ITERATION) break;
 		} else {

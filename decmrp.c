@@ -167,6 +167,7 @@ DECODER *init_decoder(FILE *fp)
 	dec->err = (int **)alloc_2d_array(dec->height+1, dec->width, sizeof(int));
 	dec->org[dec->height][0] = (dec->maxval + 1) >> 1;
 	dec->err[dec->height][0] = (dec->maxval + 1) >> 2;
+	dec->roff = init_ref_offset(dec->height, dec->width, dec->max_prd_order);
 	dec->ctx_weight = init_ctx_weight();
 	if (dec->quadtree_depth > 0) {
 		int x, y, xx, yy;
@@ -222,7 +223,6 @@ DECODER *init_decoder(FILE *fp)
 #endif
 #if TEMPLATE_MATCHING_ON
 	tempm_array = (int *)alloc_mem(MAX_DATA_SAVE_DOUBLE * sizeof(int));
-	dec->roff = init_ref_offset(dec->height, dec->width, dec->max_prd_order);
 	dec->array = (int *)alloc_mem(MAX_DATA_SAVE_DOUBLE * sizeof(int));
 	dec->temp_num = (int **)alloc_2d_array(dec->height, dec->width, sizeof(int));
 	decval = (int **)alloc_2d_array(dec->height, dec->width, sizeof(int));
