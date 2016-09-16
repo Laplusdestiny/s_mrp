@@ -1104,9 +1104,7 @@ void TemplateM_Log_Input(ENCODER *enc, char *outfile, int ***tempm_array, int **
 		printf("MAX_DATA_SAVE_DOUBLE is NOT coincide!!!\n");
 		flg++;
 	}
-	if(flg!=0)exit(1);
 
-	flg = 0;
 	fscanf(fp, "%d,%d,%d,%d\n", &nas_accuracy_check, &template_class_num_check,
 		&manhattan_sort_check, &zncc_check);
 	if(nas_accuracy_check != NAS_ACCURACY){

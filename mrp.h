@@ -39,7 +39,7 @@
 #define AUTO_DEL_CL		1
 #define AUTO_PRD_ORDER	1
 #if AUTO_DEL_CL
-	#define RENEW_ADC	0
+	#define RENEW_ADC	1
 	#if RENEW_ADC
 		#define	PAST_ADC	0
 	#else
@@ -131,11 +131,17 @@
 #define HAVE_CLOCK
 
 /*****TEMPLATE MATCHING ********************/
-#define TEMPLATE_MATCHING_ON 	0
+#define TEMPLATE_MATCHING_ON 	1
 #if TEMPLATE_MATCHING_ON
 
-#define ZSAD			0
-#define ZNCC			1
+#define ZNCC			0
+
+#if ZNCC
+#define	ZSAD			0
+#else
+#define ZSAD			1
+#endif
+
 #define MANHATTAN_SORT	0
 #define AREA			6
 #define Y_SIZE			20
@@ -146,7 +152,7 @@
 #define W_GR 			7
 #define WEIGHT_CN		2
 #define TEMPLATE_CLASS_NUM	50
-#define TEMPLATEM_LOG_OUTPUT	0
+#define TEMPLATEM_LOG_OUTPUT	1
 
 #else
 #define TEMPLATE_CLASS_NUM	0

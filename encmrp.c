@@ -654,9 +654,9 @@ void set_pmodel_mult_cost(MASK *mask,int size, int e)
 	for (p = 0; p < mask->num_peak; p++){
 		base = mask->base[p];
 		pm = mask->pm[p];
-		#if CHECK_TM
-			// printf("mask->freq: %d | mask->weight[%d]: %d | base+e: %d | pm: %d\n", mask->freq, p, mask->weight[p], base+e, pm->freq[base+e]);
-		#endif
+//		#if CHECK_TM
+		//printf("mask->freq: %d | mask->weight[%d]: %d | base+e: %d | pm: %d\n", mask->freq, p, mask->weight[p], base+e, pm->freq[base+e]);
+//		#endif
 		mask->freq += (mask->weight[p] * (pm->freq[base + e] - MIN_FREQ)) >> W_SHIFT;
 		mask->cumfreq += (mask->weight[p] * (pm->cumfreq[base + size] - pm->cumfreq[base])) >> W_SHIFT;
 	}
@@ -4163,11 +4163,11 @@ cost_t auto_del_class(ENCODER *enc, cost_t pre_cost)
 	int x, y, k, del_cl, blk;
 	cost_t cost, min_cost, sc=0;
 
-	for (y = 0; y < enc->height; y++) {
+/*	for (y = 0; y < enc->height; y++) {
 		for (x = 0; x < enc->width; x++) {
 			enc->r_side->class[y][x] = enc->class[y][x];
 		}
-	}
+	}*/
 	min_cost = 1E10;
 	del_cl = 0;
 	for (k = 0; k < enc->num_class; k++) {	//各クラスを削除してみて一番コストが小さくなったクラスを見つける
