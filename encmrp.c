@@ -178,7 +178,7 @@ IMAGE *read_pgm(char *filename)
 	return (img);
 }
 
-int ***init_ref_offset(int height, int width, int prd_order)
+int ***init_ref_offset(int height, int width, int prd_order, CPOINT *yx_array)
 {
 	int ***roff, *ptr;
 	int x, y, dx, dy, k;
@@ -187,8 +187,8 @@ int ***init_ref_offset(int height, int width, int prd_order)
 	min_dx = max_dx = min_dy = 0;
 	order = (prd_order > NUM_UPELS)? prd_order : NUM_UPELS;
 	for (k = 0; k < order; k++) {
-		dy = dyx[k].y;
-		dx = dyx[k].x;
+		dy = yx_array[k].y;
+		dx = yx_array[k].x;
 		if (dy < min_dy) min_dy = dy;
 		if (dx < min_dx) min_dx = dx;
 		if (dx > max_dx) max_dx = dx;
@@ -213,7 +213,7 @@ int ***init_ref_offset(int height, int width, int prd_order)
 					roff[y][x] = ptr;
 					dy = 0;
 					for (k = 0; k < order; k++) {
-						dx = dyx[k].x;
+						dx = yx_array[k].x;
 						if (x + dx < 0) dx = -x;
 						else if (dx >= 0) dx = -1;
 						*ptr++ = dy * width + dx;
@@ -231,19 +231,19 @@ int ***init_ref_offset(int height, int width, int prd_order)
 				if (x == 0) {
 					roff[y][x] = ptr;
 					for (k = 0; k < order; k++) {
-						dy = dyx[k].y;
+						dy = yx_array[k].y;
 						if (y + dy < 0) dy = -y;
 						else if (dy >= 0) dy = -1;
-						dx = dyx[k].x;
+						dx = yx_array[k].x;
 						if (x + dx < 0) dx = -x;
 						*ptr++ = dy * width + dx;
 					}
 				} else if (x + min_dx <= 0 || x + max_dx >= width) {
 					roff[y][x] = ptr;
 					for (k = 0; k < order; k++) {
-						dy = dyx[k].y;
+						dy = yx_array[k].y;
 						if (y + dy < 0) dy = -y;
-						dx = dyx[k].x;
+						dx = yx_array[k].x;
 						if (x + dx < 0) dx = -x;
 						else if (x + dx >= width) {
 							dx = width - x - 1;
@@ -349,7 +349,7 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 	}
 
 //*************
-	enc->roff = init_ref_offset(enc->height, enc->width, enc->max_prd_order);
+	enc->roff = init_ref_offset(enc->height, enc->width, enc->max_prd_order, dyx);
 	enc->org = (int **)alloc_2d_array(enc->height+1, enc->width, sizeof(int));
 	enc->err = (int **)alloc_2d_array(enc->height+1, enc->width, sizeof(int));
 	if (enc->quadtree_depth > 0) {
@@ -4163,7 +4163,7 @@ cost_t auto_del_class(ENCODER *enc, cost_t pre_cost)
 	int x, y, k, del_cl, blk;
 	cost_t cost, min_cost, sc=0;
 
-/*	for (y = 0; y < enc->height; y++) {
+	/*for (y = 0; y < enc->height; y++) {
 		for (x = 0; x < enc->width; x++) {
 			enc->r_side->class[y][x] = enc->class[y][x];
 		}
@@ -4225,9 +4225,9 @@ cost_t auto_del_class(ENCODER *enc, cost_t pre_cost)
 int main(int argc, char **argv)
 {
 	cost_t cost, min_cost, side_cost, sc;
-	int i, j, k, x, y, xx, yy, cl, gr, bits, **prd_save, **th_save, sw;
+	int i, j, k, x, y, xx, yy, cl, gr, bits, **prd_save, **th_save, sw, flg;
 	int header_info, class_info, pred_info, th_info, mask_info, err_info, side_info_back=0;
-	int num_class_save;
+	int num_class_save, before_cost;
 	char **class_save, **mask_save;
 	char **qtmap_save[QUADTREE_DEPTH];
 	double rate;
@@ -4585,20 +4585,32 @@ int main(int argc, char **argv)
 				yy = xx =0;
 				// side_info_back = 1;
 				cost_save = min_cost;
+				before_cost = cost;
+				flg = 0;
 				while(yy - xx < (EXTRA_ITERATION / 2) ){
+					#if CHECK_DEBUG
+						printf("\n");
+					#endif
 					sw = enc->num_class;
 					cost = auto_del_class(enc, cost);
+					if(cost < 0) continue;
 					if(cost < cost_save){
 						cost_save = cost;
 						xx = yy;
 						save_info(enc, 0);
+						flg = 1;
 						#if CHECK_DEBUG
 							printf(" *");
 						#endif
+					} else {
+						if(cost < before_cost && flg == 0){
+							before_cost = cost;
+							save_info(enc, 0);
+							#if CHECK_DEBUG
+								printf(" +");
+							#endif
+						}
 					}
-					#if CHECK_DEBUG
-						printf("\n");
-					#endif
 					yy++;
 					if(sw == enc->num_class)	break;
 				}

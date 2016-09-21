@@ -616,11 +616,11 @@ int calc_udec2(DECODER *dec, int y, int x)
 
 #if TEMPLATE_MATCHING_ON
 void TemplateM (DECODER *dec, int dec_y, int dec_x){
-	int bx, by, g, h, i, j, k, count, area1[AREA], area_o[AREA], *roff_p, *org_p,  x_size = X_SIZE,
+	int bx, by, i, j, k, count, area1[AREA], area_o[AREA], *roff_p, *org_p,  x_size = X_SIZE,
 		sum1, sum_o, temp_x, temp_y, break_flag=0, *tm_array, temp_peak_num=0;
 	double ave1, ave_o, nas;
 	TM_Member tm[Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE ];
-	TM_Member temp;
+	TM_Member *tm_save;
 
 #if ZNCC
 	double dist1=0, dist_o=0, *area1_d=0, *area_o_d=0;
@@ -790,8 +790,13 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 	}//by fin
 
 	dec->temp_num[dec_y][dec_x] = j;
+	tm_save = (TM_Member *)alloc_mem(j * sizeof(TM_Member));
+	for(i=0; i<j ;i++){
+		tm_save[i] = tm[i];
+	}
+	qsort(tm_save, j, sizeof(TM_Member), cmp);
 
-	for(g=0; g<j-1; g++){
+	/*for(g=0; g<j-1; g++){
 		for(h=j-1; h>g; h--){
 			if(tm[h-1].sum > tm[h].sum){
 				temp = tm[h];
@@ -799,7 +804,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 				tm[h-1] = temp;
 			}
 		}
-	}
+	}*/
 
 	#if MANHATTAN_SORT
 		mcost_num = (int *)alloc_mem((max_nas + 1) * sizeof(int));
@@ -827,6 +832,11 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 		}
 		free(mcost_num);
 	#endif
+
+	for(i=0; i<j; i++){
+		tm[i] = tm_save[i];
+	}
+	free(tm_save);
 
 	// for(k=0; k< Y_SIZE * X_SIZE * 2 + X_SIZE; k++){
 	for(k=0; k < j; k++){
