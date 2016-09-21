@@ -307,7 +307,7 @@ typedef struct {
 	int temp_cl;
 	int w_gr;
 	int function_number;
-	RESTORE_SIDE *r_side;
+	// RESTORE_SIDE *r_side;
 } ENCODER;
 
 typedef struct {
@@ -374,7 +374,7 @@ void init_array(int *, int , int);
 void init_2d_array(int **, int , int, int);
 void init_3d_array(int ***, int , int, int, int);
 int cmp(const void*, const void*);
-void save_info(ENCODER*, int);
+void save_info(ENCODER*, RESTORE_SIDE*, int);
 
 /***** FUNC - rc.c ********************************/
 RANGECODER *rc_init(void);

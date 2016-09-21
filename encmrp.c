@@ -483,12 +483,12 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 	enc->array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
 	init_3d_array(enc->array, enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, 0);
 #endif
-	enc->r_side = (RESTORE_SIDE *)alloc_mem(sizeof(RESTORE_SIDE));
+	/*enc->r_side = (RESTORE_SIDE *)alloc_mem(sizeof(RESTORE_SIDE));
 	enc->r_side->th_s = (int **)alloc_2d_array(enc->num_class, enc->num_group, sizeof(int));
 	enc->r_side->prd_s = (int **)alloc_2d_array(enc->num_class, enc->max_prd_order, sizeof(int));
 	enc->r_side->uq_s = (char **)alloc_2d_array(enc->num_class, (MAX_UPARA + 1), sizeof(char));
 	enc->r_side->prd_cl_s = (int ***)alloc_3d_array(enc->height, enc->width, enc->num_class, sizeof(int));
-	enc->r_side->class = (char **)alloc_2d_array(enc->height, enc->width, sizeof(char));
+	enc->r_side->class = (char **)alloc_2d_array(enc->height, enc->width, sizeof(char));*/
 	return (enc);
 }
 
@@ -4162,12 +4162,14 @@ cost_t auto_del_class(ENCODER *enc, cost_t pre_cost)
 {
 	int x, y, k, del_cl, blk;
 	cost_t cost, min_cost, sc=0;
+	char **class=0;
+	class = (char **)alloc_2d_array(enc->height, enc->width, sizeof(char));
 
-	/*for (y = 0; y < enc->height; y++) {
+	for (y = 0; y < enc->height; y++) {
 		for (x = 0; x < enc->width; x++) {
-			enc->r_side->class[y][x] = enc->class[y][x];
+			class[y][x] = enc->class[y][x];
 		}
-	}*/
+	}
 	min_cost = 1E10;
 	del_cl = 0;
 	for (k = 0; k < enc->num_class; k++) {	//各クラスを削除してみて一番コストが小さくなったクラスを見つける
@@ -4197,7 +4199,7 @@ cost_t auto_del_class(ENCODER *enc, cost_t pre_cost)
 	} else {
 		for (y = 0; y < enc->height; y++) {
 			for (x = 0; x < enc->width; x++) {
-				enc->class[y][x] = enc->r_side->class[y][x];
+				enc->class[y][x] = class[y][x];
 			}
 		}
 	}
@@ -4225,7 +4227,7 @@ cost_t auto_del_class(ENCODER *enc, cost_t pre_cost)
 int main(int argc, char **argv)
 {
 	cost_t cost, min_cost, side_cost, sc;
-	int i, j, k, x, y, xx, yy, cl, gr, bits, **prd_save, **th_save, sw, flg;
+	int i, j, k, x, y, xx, yy, cl, gr, bits, **prd_save, **th_save, sw;
 	int header_info, class_info, pred_info, th_info, mask_info, err_info, side_info_back=0;
 	int num_class_save, before_cost;
 	char **class_save, **mask_save;
@@ -4248,7 +4250,10 @@ int main(int argc, char **argv)
 	char *infile, *outfile;
 	FILE *fp;
 #if RENEW_ADC
-	int cost_save=0;
+	int cost_save=0, flg=0;
+	RESTORE_SIDE *min_cost_side, *before_side;
+	min_cost_side = (RESTORE_SIDE *)alloc_mem(sizeof(RESTORE_SIDE));
+	before_side = (RESTORE_SIDE *)alloc_mem(sizeof(RESTORE_SIDE));
 #endif
 
 	cpu_time();
@@ -4531,6 +4536,18 @@ int main(int argc, char **argv)
 	enc->temp_peak_num = TEMPLATE_CLASS_NUM;
 	enc->w_gr = W_GR;
 #endif
+#if RENEW_ADC
+	min_cost_side->th_s = (int **)alloc_2d_array(enc->num_class, enc->num_group, sizeof(int));
+	min_cost_side->prd_s = (int **)alloc_2d_array(enc->num_class, enc->max_prd_order, sizeof(int));
+	min_cost_side->uq_s = (char **)alloc_2d_array(enc->num_class, (MAX_UPARA + 1), sizeof(char));
+	min_cost_side->prd_cl_s = (int ***)alloc_3d_array(enc->height, enc->width, enc->num_class, sizeof(int));
+	min_cost_side->class = (char **)alloc_2d_array(enc->height, enc->width, sizeof(char));
+	before_side->th_s = (int **)alloc_2d_array(enc->num_class, enc->num_group, sizeof(int));
+	before_side->prd_s = (int **)alloc_2d_array(enc->num_class, enc->max_prd_order, sizeof(int));
+	before_side->uq_s = (char **)alloc_2d_array(enc->num_class, (MAX_UPARA + 1), sizeof(char));
+	before_side->prd_cl_s = (int ***)alloc_3d_array(enc->height, enc->width, enc->num_class, sizeof(int));
+	before_side->class = (char **)alloc_2d_array(enc->height, enc->width, sizeof(char));
+#endif
 	for (i = j = 0; i < max_iteration; i++) {
 		printf("(%2d)cost=", i);
 		if (f_optpred) {
@@ -4581,7 +4598,7 @@ int main(int argc, char **argv)
 				}
 			#elif RENEW_ADC
 				sw = enc->num_class;
-				save_info(enc, 0);
+				save_info(enc, min_cost_side, 0);
 				yy = xx =0;
 				// side_info_back = 1;
 				cost_save = min_cost;
@@ -4597,7 +4614,7 @@ int main(int argc, char **argv)
 					if(cost < cost_save){
 						cost_save = cost;
 						xx = yy;
-						save_info(enc, 0);
+						save_info(enc, min_cost_side, 0);
 						flg = 1;
 						#if CHECK_DEBUG
 							printf(" *");
@@ -4605,7 +4622,7 @@ int main(int argc, char **argv)
 					} else {
 						if(cost < before_cost && flg == 0){
 							before_cost = cost;
-							save_info(enc, 0);
+							save_info(enc, before_side, 0);
 							#if CHECK_DEBUG
 								printf(" +");
 							#endif
@@ -4614,7 +4631,11 @@ int main(int argc, char **argv)
 					yy++;
 					if(sw == enc->num_class)	break;
 				}
-				save_info(enc, 1);
+				if(flg == 1){
+					save_info(enc, min_cost_side, 1);
+				} else {
+					save_info(enc, before_side, 1);
+				}
 			#endif
 				printf("->%d[%d]", (int)cost, enc->num_class);
 			}
