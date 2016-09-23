@@ -483,12 +483,6 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 	enc->array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
 	init_3d_array(enc->array, enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, 0);
 #endif
-	/*enc->r_side = (RESTORE_SIDE *)alloc_mem(sizeof(RESTORE_SIDE));
-	enc->r_side->th_s = (int **)alloc_2d_array(enc->num_class, enc->num_group, sizeof(int));
-	enc->r_side->prd_s = (int **)alloc_2d_array(enc->num_class, enc->max_prd_order, sizeof(int));
-	enc->r_side->uq_s = (char **)alloc_2d_array(enc->num_class, (MAX_UPARA + 1), sizeof(char));
-	enc->r_side->prd_cl_s = (int ***)alloc_3d_array(enc->height, enc->width, enc->num_class, sizeof(int));
-	enc->r_side->class = (char **)alloc_2d_array(enc->height, enc->width, sizeof(char));*/
 	return (enc);
 }
 
@@ -4538,6 +4532,7 @@ int main(int argc, char **argv)
 #endif
 #if RENEW_ADC
 	min_cost_side->th_s = (int **)alloc_2d_array(enc->num_class, enc->num_group, sizeof(int));
+	init_2d_array(min_cost_side->th_s, enc->num_class, enc->num_group, 0);
 	min_cost_side->prd_s = (int **)alloc_2d_array(enc->num_class, enc->max_prd_order, sizeof(int));
 	min_cost_side->uq_s = (char **)alloc_2d_array(enc->num_class, (MAX_UPARA + 1), sizeof(char));
 	min_cost_side->prd_cl_s = (int ***)alloc_3d_array(enc->height, enc->width, enc->num_class, sizeof(int));
