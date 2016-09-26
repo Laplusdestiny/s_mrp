@@ -39,7 +39,7 @@
 #define AUTO_DEL_CL		1
 #define AUTO_PRD_ORDER	1
 #if AUTO_DEL_CL
-	#define RENEW_ADC	1
+	#define RENEW_ADC	0
 	#if RENEW_ADC
 		#define	PAST_ADC	0
 	#else
@@ -145,13 +145,13 @@
 #define MANHATTAN_SORT	0
 #define AREA			6
 #define Y_SIZE			20
-#define X_SIZE			40	//調査結果より80*20がいいかも？
+#define X_SIZE			20	//調査結果より80*20がいいかも？
 #define NAS_ACCURACY	1000
 #define MAX_DATA_SAVE	50
 #define MAX_DATA_SAVE_DOUBLE 	MAX_DATA_SAVE*4
 #define W_GR 			7
 #define WEIGHT_CN		2
-#define TEMPLATE_CLASS_NUM	50
+#define TEMPLATE_CLASS_NUM	30
 #define TEMPLATEM_LOG_OUTPUT	1
 
 #else
@@ -303,6 +303,7 @@ typedef struct {
 	int ***array;
 	int **mmc;
 	int temp_peak_num;
+	// int *w_gr;
 #endif
 	int temp_cl;
 	int w_gr;

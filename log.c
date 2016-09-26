@@ -886,7 +886,7 @@ void init_log_sheet(ENCODER *enc, char *outfile)
 
 		fprintf(fp, "Auto_Del_CL,	Auto_Set_Coef,BASE_BSIZE,QUADTREE_DEPTH,\
 			MIN_BSIZE,MAX_BSIZE,COEF_PRECISION,PM_ACCURACY,NUM_GROUP,\
-			UPEL_DIST,MAX_ITERATION,CTX_WEIGHT,TEMPLATE_MATCHING,ZNCC,MANHATTAN_SORT,\
+			UPEL_DIST,MAX_ITERATION,CTX_WEIGHT,TEMPLATE_MATCHING,COST FUNCTION,MANHATTAN_SORT,\
 			Search Window,");
 		// fprintf(fp, "\n");
 		fclose(fp);
@@ -939,9 +939,11 @@ void finish_log_sheet(ENCODER *enc, int header_info, int class_info, int pred_in
 		fprintf(fp, "ON,");
 #if TEMPLATE_MATCHING_ON
 		if(ZNCC){
-			fprintf(fp, "ON,");
+			fprintf(fp, "ZNCC,");
+		} else if(ZSAD){
+			fprintf(fp, "ZSAD,");
 		} else {
-			fprintf(fp, "OFF,");
+			fprintf(fp, "SSD,");
 		}
 
 		if(MANHATTAN_SORT){

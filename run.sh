@@ -1,11 +1,11 @@
 #! /bin/sh
 
-for image in 10 #1 2 3 4 5 6 7 8 9 10 11 12 13
+for image in 6 #1 2 3 4 5 6 7 8 9 10 11 12 13
 do
 
 	DIR="/rda2/DATABASE/TMW"
 
-	FLAG="-o -f"$@""
+	FLAG="-o"$@""
 
 	## IMAGE ##
 	if   [ "$image" = 1 ]; then IMG=$DIR/airplane.pgm;		NAME="airplane"

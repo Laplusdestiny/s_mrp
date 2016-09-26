@@ -1100,7 +1100,7 @@ void decode_mask(FILE *fp, DECODER *dec)
 
 void init_mask()
 {
-	int peak_num = MAX_PEAK_NUM + TEMPLATE_CLASS_NUM;
+	int peak_num = MAX_PEAK_NUM*2 + TEMPLATE_CLASS_NUM;
 	mask = (MASK *)alloc_mem(sizeof(MASK));
 	mask->weight = (int *)alloc_mem(peak_num * sizeof(int));
 	mask->class = (char *)alloc_mem(peak_num * sizeof(char));

@@ -482,6 +482,7 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 	enc->temp_num = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
 	enc->array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
 	init_3d_array(enc->array, enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, 0);
+	// enc->w_gr = (int *)alloc_mem(enc->num_group * sizeof(int));
 #endif
 	return (enc);
 }
@@ -546,7 +547,7 @@ void init_class(ENCODER *enc)
 
 void init_mask()
 {
-	int peak_num = MAX_PEAK_NUM + TEMPLATE_CLASS_NUM;
+	int peak_num = MAX_PEAK_NUM*2 + TEMPLATE_CLASS_NUM;
 	mask = (MASK *)alloc_mem(sizeof(MASK));
 	mask->weight = (int *)alloc_mem(peak_num * sizeof(int));
 	mask->class = (char *)alloc_mem(peak_num * sizeof(char));
@@ -1308,6 +1309,7 @@ cost_t calc_cost(ENCODER *enc, int tly, int tlx, int bry, int brx)		//コスト�
 			cost += pm->cost[base + e] + pm->subcost[base];
 		}
 	}
+	if(cost < 0) cost = INT_MAX;
 	return (cost);
 }
 
@@ -2836,6 +2838,105 @@ void set_mask_parameter_optimize2(ENCODER *enc,int y, int x, int u)
 }
 
 #if TEMPLATE_MATCHING_ON
+void make_th(ENCODER *enc){
+	int gr=0, y, x, u, peak, e, prd, th1, th0, frac, **trellis, cl=0, base, k;
+	double a;
+	cost_t cost, **cbuf, *cbuf_p, *dpcost, *thc_p, min_cost;
+	PMODEL *pm;
+
+	trellis = (int **)alloc_2d_array(enc->num_group, MAX_UPARA + 2,
+		sizeof(int));
+	dpcost = (cost_t *)alloc_mem((MAX_UPARA + 2) * sizeof(cost_t));
+	cbuf = (cost_t **)alloc_2d_array(enc->num_group, MAX_UPARA + 2,
+		sizeof(cost_t));
+	thc_p = enc->th_cost;
+	a = 1.0 / log(2.0);
+
+	for (gr = 0; gr < enc->num_group; gr++) {
+		cbuf_p = cbuf[gr];
+		for (u = 0; u < MAX_UPARA + 2; u++) {
+			cbuf_p[u] = 0;
+		}
+	}
+	for (y = 0; y < enc->height; y++) {
+		for (x = 0; x < enc->width; x++) {
+			// if (enc->weight[y][x][cl] == 0) continue;
+			if (enc->class[y][x] != enc->temp_cl) continue;
+			cl = enc->class[y][x];
+			u = enc->upara[y][x] + 1;
+			peak = set_mask_parameter_optimize(enc, y, x, u-1,cl);
+			e = enc->encval[y][x];
+			prd = enc->prd_class[y][x][cl];
+			prd = CLIP(0, enc->maxprd, prd);
+			frac = enc->fconv[prd];
+			for (gr = 0; gr < enc->num_group; gr++) {
+				mask->pm[peak] = enc->pmlist[gr] + frac;
+				if (mask->num_peak == 1){
+					base = mask->base[0];
+					pm = mask->pm[0];
+					cbuf[gr][u] += pm->cost[base + e] + pm->subcost[base];
+				}else{
+					set_pmodel_mult_cost(mask,enc->maxval+1,e);
+					cbuf[gr][u] += a * (log(mask->cumfreq)-log(mask->freq));
+				}
+			}
+		}
+	}
+
+	for (gr = 0; gr < enc->num_group; gr++) {
+		cbuf_p = cbuf[gr];
+		for (u = 1; u < MAX_UPARA + 2; u++) {
+			cbuf_p[u] += cbuf_p[u - 1];
+		}
+	}
+	cbuf_p = cbuf[0];
+	for (u = 0; u < MAX_UPARA + 2; u++) {
+		dpcost[u] = cbuf_p[u] + thc_p[u];
+	}
+	for (gr = 1; gr < enc->num_group - 1; gr++) {
+		cbuf_p = cbuf[gr];
+		/* minimize (cbuf_p[th1] - cbuf_p[th0] + dpcost[th0]) */
+		for (th1 = MAX_UPARA + 1; th1 >= 0; th1--) {
+			th0 = th1;
+			min_cost = dpcost[th1] - cbuf_p[th1] + thc_p[0];
+			for (k = 0; k < th1; k++) {
+				cost = dpcost[k] - cbuf_p[k] + thc_p[th1 - k];
+				if (cost < min_cost) {
+					min_cost = cost;
+					th0 = k;
+				}
+			}
+			dpcost[th1] = min_cost + cbuf_p[th1];
+			trellis[gr][th1] = th0;
+		}
+	}
+	cbuf_p = cbuf[gr];
+	/* minimize (cbuf_p[th1] - cbuf_p[th0] + dpcost[th0]) for last group */
+	th1 = MAX_UPARA + 1;
+	th0 = th1;
+	min_cost = dpcost[th1] - cbuf_p[th1];
+	for (k = 0; k < th1; k++) {
+		cost = dpcost[k] - cbuf_p[k];
+		if (cost < min_cost) {
+			min_cost = cost;
+			th0 = k;
+		}
+	}
+	trellis[gr][th1] = th0;
+	for (gr = enc->num_group - 1; gr > 0; gr--) {
+		th1 = trellis[gr][th1];
+		enc->th[cl][gr - 1] = th1;
+	}
+/*** set***/
+	u = 0;
+	for (gr = 0; gr < enc->num_group; gr++) {
+		for (; u < enc->th[cl][gr]; u++) {
+			enc->uquant[cl][u] = gr;
+		}
+	}
+/*** *****/
+}
+
 cost_t optimize_template(ENCODER *enc){
 	int temp_num, min_temp_num=0;
 	int min_gr = 0, gr;
@@ -4223,7 +4324,7 @@ int main(int argc, char **argv)
 	cost_t cost, min_cost, side_cost, sc;
 	int i, j, k, x, y, xx, yy, cl, gr, bits, **prd_save, **th_save, sw;
 	int header_info, class_info, pred_info, th_info, mask_info, err_info, side_info_back=0;
-	int num_class_save, before_cost;
+	int num_class_save;
 	char **class_save, **mask_save;
 	char **qtmap_save[QUADTREE_DEPTH];
 	double rate;
@@ -4244,7 +4345,7 @@ int main(int argc, char **argv)
 	char *infile, *outfile;
 	FILE *fp;
 #if RENEW_ADC
-	int cost_save=0, flg=0;
+	int cost_save=0, flg=0, before_cost=0;
 	RESTORE_SIDE *min_cost_side, *before_side;
 	min_cost_side = (RESTORE_SIDE *)alloc_mem(sizeof(RESTORE_SIDE));
 	before_side = (RESTORE_SIDE *)alloc_mem(sizeof(RESTORE_SIDE));
@@ -4357,7 +4458,7 @@ int main(int argc, char **argv)
 #endif
 
 #if TEMPLATE_MATCHING_ON
-	num_class++;
+	// num_class++;
 	int temp_peak_num_save=0, w_gr_save = 0;
 #endif
 
@@ -4605,7 +4706,7 @@ int main(int argc, char **argv)
 					#endif
 					sw = enc->num_class;
 					cost = auto_del_class(enc, cost);
-					if(cost < 0) continue;
+					// if(cost < 0) continue;
 					if(cost < cost_save){
 						cost_save = cost;
 						xx = yy;
@@ -4614,14 +4715,12 @@ int main(int argc, char **argv)
 						#if CHECK_DEBUG
 							printf(" *");
 						#endif
-					} else {
-						if(cost < before_cost && flg == 0){
+					} else if(cost < before_cost && flg == 0){
 							before_cost = cost;
 							save_info(enc, before_side, 0);
 							#if CHECK_DEBUG
 								printf(" +");
 							#endif
-						}
 					}
 					yy++;
 					if(sw == enc->num_class)	break;
