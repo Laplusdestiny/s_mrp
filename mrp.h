@@ -39,7 +39,7 @@
 #define AUTO_DEL_CL		1
 #define AUTO_PRD_ORDER	1
 #if AUTO_DEL_CL
-	#define RENEW_ADC	0
+	#define RENEW_ADC	1
 	#if RENEW_ADC
 		#define	PAST_ADC	0
 	#else
@@ -151,8 +151,8 @@
 #define MAX_DATA_SAVE_DOUBLE 	MAX_DATA_SAVE*4
 #define W_GR 			7
 #define WEIGHT_CN		2
-#define TEMPLATE_CLASS_NUM	30
-#define TEMPLATEM_LOG_OUTPUT	1
+#define TEMPLATE_CLASS_NUM	50
+#define TEMPLATEM_LOG_OUTPUT	0
 
 #else
 #define TEMPLATE_CLASS_NUM	0
@@ -303,10 +303,10 @@ typedef struct {
 	int ***array;
 	int **mmc;
 	int temp_peak_num;
-	// int *w_gr;
+	int *w_gr;
 #endif
 	int temp_cl;
-	int w_gr;
+	// int w_gr;
 	int function_number;
 	// RESTORE_SIDE *r_side;
 } ENCODER;
@@ -352,10 +352,11 @@ typedef struct {
 	int **temp_num;
 	int *array;
 	int temp_peak_num;
+	int *w_gr;
 #endif
 	int temp_cl;
 	int **org;
-	int w_gr;
+	// int w_gr;
 } DECODER;
 
 /***** FUNC - common.c ****************************/
@@ -375,7 +376,6 @@ void init_array(int *, int , int);
 void init_2d_array(int **, int , int, int);
 void init_3d_array(int ***, int , int, int, int);
 int cmp(const void*, const void*);
-void save_info(ENCODER*, RESTORE_SIDE*, int);
 
 /***** FUNC - rc.c ********************************/
 RANGECODER *rc_init(void);

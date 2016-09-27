@@ -145,12 +145,13 @@ DECODER *init_decoder(FILE *fp)
 	dec->quadtree_depth = (getbits(fp, 1))? QUADTREE_DEPTH : -1;
 
 #if TEMPLATE_MATCHING_ON
-	dec->temp_cl = getbits(fp, 6);
-	printf("TEMP_CL : %d | ", dec->temp_cl);
+	dec->temp_cl = 0;
+	// dec->temp_cl = getbits(fp, 6);
+	// printf("TEMP_CL : %d | ", dec->temp_cl);
 	dec->temp_peak_num = getbits(fp, 6);
 	printf("TEMP_PEAK_NUM: %d |", dec->temp_peak_num);
-	dec->w_gr = getbits(fp, 4);
-	printf("w_gr: %d\n", dec->w_gr);
+	// dec->w_gr = getbits(fp, 4);
+	// printf("w_gr: %d\n", dec->w_gr);
 #else
 	dec->temp_cl = -1;
 	printf("TEMP_CL : %d\n", dec->temp_cl);
@@ -227,6 +228,7 @@ DECODER *init_decoder(FILE *fp)
 	dec->temp_num = (int **)alloc_2d_array(dec->height, dec->width, sizeof(int));
 	decval = (int **)alloc_2d_array(dec->height, dec->width, sizeof(int));
 	init_2d_array(decval, dec->height, dec->width, 0);
+	dec->w_gr = (int *)alloc_mem(dec->num_group * sizeof(int));
 #endif
 
 	return (dec);
@@ -914,6 +916,45 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 	}*/
 
 }
+
+void decode_w_gr_threshold(FILE *fp, DECODER *dec)
+{
+	int gr, m, k;
+	PMODEL *pm;
+
+	pm = &dec->spm;
+	pm->size = 16;
+	pm->cumfreq[0] = 0;
+	for (k = 0; k < pm->size; k++) {
+		pm->freq[k] = 1;
+		pm->cumfreq[k + 1] = pm->cumfreq[k] + pm->freq[k];
+	}
+	m = rc_decode(fp, dec->rc, pm, 0, pm->size);
+	set_spmodel(pm, MAX_UPARA + 2, m);
+	// for (cl = 0; cl < dec->num_class; cl++) {
+		k = 0;
+		for (gr = 1; gr < dec->num_group; gr++) {
+			if (k <= MAX_UPARA) {
+				k += rc_decode(fp, dec->rc, pm, 0, pm->size - k);
+			}
+			// dec->th[cl][gr - 1] = k;
+			dec->w_gr[gr-1] = k;
+		}
+	// }
+
+	if (dec->num_pmodel > 1) {
+		pm->size = dec->num_pmodel;
+		pm->freq[0] = 0;
+		for (k = 0; k < pm->size; k++) {
+			pm->freq[k] = 1;
+			pm->cumfreq[k + 1] = pm->cumfreq[k] + pm->freq[k];
+		}
+		for (gr = 0; gr < dec->num_group; gr++) {
+			dec->pm_idx[gr] = rc_decode(fp, dec->rc, pm, 0, pm->size);
+		}
+	}
+	return;
+}
 #endif
 
 int calc_prd(IMAGE *img, DECODER *dec, int cl, int y, int x)
@@ -1132,7 +1173,7 @@ double continuous_GGF(DECODER *dec, double e, int gr)
 	return(p);
 }
 
-int temp_mask_parameter(DECODER *dec, int y, int x , int u, int peak, int cl, int weight_all, int bmask, int shift, int r_cl)
+int temp_mask_parameter(DECODER *dec, int y, int x , int u, int peak, int cl, int weight_all, int bmask, int shift, int r_cl, int w_gr)
 {
 	int i, m_gr, m_prd, m_base, *th_p, template_peak = dec->temp_peak_num;
 	double weight[template_peak], sum_weight=0, weight_coef=0;
@@ -1156,7 +1197,7 @@ int temp_mask_parameter(DECODER *dec, int y, int x , int u, int peak, int cl, in
 	}
 
 	for(i=0; i<template_peak; i++){
-		weight[i] = continuous_GGF(dec, (double)tempm_array[i*4+3] / NAS_ACCURACY, dec->w_gr);
+		weight[i] = continuous_GGF(dec, (double)tempm_array[i*4+3] / NAS_ACCURACY, w_gr);
 		sum_weight += weight[i];
 	}
 	weight_coef = (double)weight_all / sum_weight;
@@ -1211,7 +1252,10 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 		if (count_cl[cl]!=0){
 			if(cl == dec->temp_cl){
 				#if TEMPLATE_MATCHING_ON
-					peak = temp_mask_parameter(dec, y, x, u, peak, cl, (count_cl[cl] << W_SHIFT) / sample, bmask, shift, r_cl);
+					for(m_gr =0; m_gr < dec->num_group; m_gr++){
+						if(u < dec->w_gr[m_gr])	break;
+					}
+					peak = temp_mask_parameter(dec, y, x, u, peak, cl, (count_cl[cl] << W_SHIFT) / sample, bmask, shift, r_cl, m_gr);
 					if( cl == r_cl)	r_prd = exam_array[y][x][0];
 				#endif
 			} else {
@@ -1438,6 +1482,9 @@ int main(int argc, char **argv)
 #if  MULT_PEAK_MODE
 	decode_mask(fp, dec);
 	init_mask();
+#endif
+#if TEMPLATE_MATCHING_ON
+	decode_w_gr_threshold(fp, dec);
 #endif
 	img = decode_image(fp, dec);
 	fclose(fp);
