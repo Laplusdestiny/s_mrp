@@ -1,7 +1,7 @@
 #Makefile
 
-# CC = icc
-CC = gcc
+CC = icc
+# CC = gcc
 ifeq ($(CC), icc)
   CFLAG = -O3 -ip -axsse4.1 -msse3 -g -unroll
 else

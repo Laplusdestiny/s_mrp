@@ -1061,7 +1061,6 @@ for(y = 0 ; y < enc->height ; y++){
 		#endif
 	}//x fin
 }//y fin
-// printf("number of hours worked:%lf[s]\n",(float)(end - start)/CLOCKS_PER_SEC);
 TemplateM_Log_Output(enc, outfile, tempm_array, exam_array);
 free(tm_array);
 free(encval);
@@ -1072,7 +1071,6 @@ TemplateM_Log_Input(enc, outfile, tempm_array, exam_array);
 printf("Calculating Template Matching Fin\n");
 
 	return(0);
-	// return(array);
 }
 
 double continuous_GGF(ENCODER *enc, double e,int w_gr){
@@ -4050,7 +4048,7 @@ cost_t calc_side_info(ENCODER *enc, cost_t cost){
 	cost_t sc;
 
 	#if CHECK_DEBUG
-		printf("(%d,", (int)cost);
+		printf("(%d, ", (int)cost);
 	#endif
 
 	cost += sc = encode_class(NULL, enc, 1);
@@ -4060,7 +4058,7 @@ cost_t calc_side_info(ENCODER *enc, cost_t cost){
 
 	cost += sc = encode_predictor(NULL, enc, 1);
 	#if CHECK_DEBUG
-		printf("%d, ", (int)sc);
+		printf("%d(%d), ", (int)sc, enc->num_class);
 	#endif
 
 	cost += sc = encode_threshold(NULL, enc, 1);
@@ -4745,7 +4743,7 @@ int main(int argc, char **argv)
 			}
 			side_info_back = 0;
 		} else {
-			if(i - j >= (EXTRA_ITERATION / 2) && side_info_back == 0){
+			/*if(i - j >= (EXTRA_ITERATION / 2) && side_info_back == 0){
 				for (y = 0; y < enc->height; y++) {
 					for (x = 0; x < enc->width; x++) {
 						enc->class[y][x] = class_save[y][x];
@@ -4765,7 +4763,7 @@ int main(int argc, char **argv)
 				}
 				side_info_back = 1;
 				printf(" !");
-			}
+			}*/
 			printf("\n");
 		}
 		if (i - j >= EXTRA_ITERATION) break;
@@ -4807,7 +4805,7 @@ int main(int argc, char **argv)
 			enc->mask[i][j] = INIT_MASK;	//マスクの初期化(=0)
 		}
 	}
-	printf("INIT_MASK = %d\n", INIT_MASK);	//マスクサイズのパラメータ(1,9,25...) / 0であればマスクを用いた多峰性確率モデルではなく，従来の単峰性確率モデル
+	// printf("INIT_MASK = %d\n", INIT_MASK);	//マスクサイズのパラメータ(1,9,25...) / 0であればマスクを用いた多峰性確率モデルではなく，従来の単峰性確率モデル
 	set_weight_flag(enc);	//各画素毎にマスクのサイズに応じた隣のブロックにかかる画素の数を算出
 
 	/* 2nd loop */
@@ -4844,7 +4842,7 @@ int main(int argc, char **argv)
 #if TEMPLATE_MATCHING_ON
 		cost = optimize_template(enc);
 		side_cost += sc = encode_w_gr_threshold(NULL, enc, 1);
-		printf("%d(%d)[%d]->", (int)cost, enc->temp_peak_num, (int)sc);
+		printf("%d(%2d)[%d]->", (int)cost, enc->temp_peak_num, (int)sc);
 #endif
 #if OPTIMIZE_MASK_LOOP
 		cost = optimize_group_mult(enc);
@@ -4921,7 +4919,8 @@ int main(int argc, char **argv)
 				} else {
 					save_info(enc, before_side, 1);
 				}
-				cost = calc_cost2(enc, 0, 0, enc->height, enc->width);
+				// cost = calc_cost2(enc, 0, 0, enc->height, enc->width);
+				cost = calc_side_info(enc, calc_cost2(enc, 0, 0, enc->height, enc->width));
 			#endif
 				printf("->%d[%d]", (int)cost, enc->num_class);
 			}

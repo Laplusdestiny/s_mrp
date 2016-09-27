@@ -142,7 +142,7 @@
 #define ZSAD			1
 #endif
 
-#define MANHATTAN_SORT	0
+#define MANHATTAN_SORT	0	//市街地距離で近い順に事例を更に並び替える
 #define AREA			6
 #define Y_SIZE			20
 #define X_SIZE			20	//調査結果より80*20がいいかも？
@@ -150,9 +150,9 @@
 #define MAX_DATA_SAVE	50
 #define MAX_DATA_SAVE_DOUBLE 	MAX_DATA_SAVE*4
 #define W_GR 			7
-#define WEIGHT_CN		2
+#define WEIGHT_CN		2	//ラプラス関数
 #define TEMPLATE_CLASS_NUM	50
-#define TEMPLATEM_LOG_OUTPUT	0
+#define TEMPLATEM_LOG_OUTPUT	1	//テンプレートマッチングの結果を書き出す
 
 #else
 #define TEMPLATE_CLASS_NUM	0
