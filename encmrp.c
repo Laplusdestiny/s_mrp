@@ -2959,7 +2959,7 @@ void make_th(ENCODER *enc){
 	dpcost = (cost_t *)alloc_mem((MAX_UPARA + 2) * sizeof(cost_t));
 	cbuf = (cost_t **)alloc_2d_array(enc->num_group, MAX_UPARA + 2,
 		sizeof(cost_t));
-	thc_p = enc->th_cost;
+	thc_p = enc->th_cost;	//閾値の符号化に必要な符号量
 	a = 1.0 / log(2.0);
 
 	for (gr = 0; gr < enc->num_group; gr++) {
@@ -2997,7 +2997,7 @@ void make_th(ENCODER *enc){
 	for (gr = 0; gr < enc->num_group; gr++) {
 		cbuf_p = cbuf[gr];
 		for (u = 1; u < MAX_UPARA + 2; u++) {
-			cbuf_p[u] += cbuf_p[u - 1];
+			cbuf_p[u] += cbuf_p[u - 1];	//cbuf_p:ある特徴量までの特徴量の総和が格納
 		}
 	}
 	cbuf_p = cbuf[0];
@@ -3039,23 +3039,32 @@ void make_th(ENCODER *enc){
 		// enc->th[cl][gr - 1] = th1;
 		enc->w_gr[gr - 1] = th1;
 	}
+	enc->w_gr[0] = 0;
+	enc->w_gr[enc->num_group-1] = MAX_UPARA+1;
+	return;
 }
 
 cost_t optimize_template(ENCODER *enc){
-	int temp_num, min_temp_num=0;
+	int temp_num, min_temp_num=0, i;
 	// int min_gr = 0, gr;
 	cost_t cost, min_cost = INT_MAX;
 	enc->function_number = 6;
 
 // コンテクスト毎の重み
 	make_th(enc);
+	/* for(i=0; i<enc->num_group; i++){
+		printf("%d, %d\n", i, enc->w_gr[i]);
+	} */
 
 // ピークの数の最適化
+	if(enc->cl_hist[enc->temp_cl] == 0)	return(calc_cost2(enc, 0, 0, enc->height, enc->width));
+
 	for(temp_num = 1; temp_num<=TEMPLATE_CLASS_NUM; temp_num++){
 		enc->temp_peak_num = temp_num;
 		// for(gr=0; gr<enc->num_group; gr++){
 			// enc->w_gr = gr;
 			cost = calc_cost2(enc, 0, 0, enc->height, enc->width);
+			// printf("%d,%f\n", temp_num, cost);
 			if(cost < min_cost){
 				min_cost = cost;
 				min_temp_num = temp_num;
@@ -4425,6 +4434,9 @@ void save_info(ENCODER *enc, RESTORE_SIDE *r_side, int restore){
 				// r_side->uq_s[i][j] = enc->uquant[i][j];
 			}
 		}
+#if AUTO_PRD_ORDER
+		set_prd_pels(enc);
+#endif
 		optimize_class(enc);
 	} else {
 		r_side->num_class_s = enc->num_class;
@@ -4845,7 +4857,7 @@ int main(int argc, char **argv)
 #if TEMPLATE_MATCHING_ON
 		cost = optimize_template(enc);
 		side_cost += sc = encode_w_gr_threshold(NULL, enc, 1);
-		printf("%d(%2d)[%d]->", (int)cost, enc->temp_peak_num, (int)sc);
+		printf(" %d(%2d)[%d]->", (int)cost, enc->temp_peak_num, (int)sc);
 #endif
 #if OPTIMIZE_MASK_LOOP
 		cost = optimize_group_mult(enc);
@@ -4900,22 +4912,28 @@ int main(int argc, char **argv)
 					cost = auto_del_class(enc, cost);
 					// if(cost < 0) continue;
 					if(cost < cost_save){
+						#if CHECK_DEBUG
+							printf(" *");
+						#endif
 						cost_save = cost;
 						xx = yy;
 						save_info(enc, min_cost_side, 0);
 						flg = 1;
-						#if CHECK_DEBUG
-							printf(" *");
-						#endif
 					} else if(cost < before_cost && flg == 0){
-						before_cost = cost;
-						save_info(enc, before_side, 0);
-						flg = 2;
 						#if CHECK_DEBUG
 							printf(" +");
 						#endif
+						before_cost = cost;
+						save_info(enc, before_side, 0);
+						flg = 2;
+					} else {
+						if(flg == 3)	break;
+						if(flg == 0)	flg = 3;
 					}
 					yy++;
+					#if CHECK_DEBUG
+						printf("[%d]", flg);
+					#endif
 					if(sw == enc->num_class)	break;
 				}
 				if(flg == 1){
