@@ -1,9 +1,11 @@
 #! /bin/sh
 make clean
 make
-# make job
-# sjob -v run.sh &
-sjob -h c25 run.sh &
-sleep 10s
-# `sjob run.sh &` && `tail -f nohup.out`
-tail -f nohup.out
+if [ `hostname` == 'itohws10' ] ; then
+	sjob -v run.sh &
+	sleep 10s
+	tail -f nohup.out
+else
+	sh run.sh &
+fi
+

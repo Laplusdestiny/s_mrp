@@ -1184,6 +1184,9 @@ int encode_w_gr_threshold(FILE *fp, ENCODER *enc, int flag)
 			k = 0;
 			for (gr = 1; gr < enc->num_group; gr++) {
 				// i = enc->th[cl][gr - 1] - k;
+				#if CHECK_DEBUG
+					printf("w_gr,%d\n", enc->w_gr[gr]);
+				#endif
 				i = enc->w_gr[gr-1] - k;
 				rc_encode(fp, enc->rc, pm->cumfreq[i],  pm->freq[i],
 					pm->cumfreq[pm->size - k]);
@@ -4889,7 +4892,7 @@ int main(int argc, char **argv)
 				cost_save = min_cost;
 				before_cost = cost;
 				flg = 0;
-				while(yy - xx < (EXTRA_ITERATION / 2) ){
+				while(yy - xx < (EXTRA_ITERATION / 3) ){
 					#if CHECK_DEBUG
 						printf("\n");
 					#endif
@@ -4905,19 +4908,22 @@ int main(int argc, char **argv)
 							printf(" *");
 						#endif
 					} else if(cost < before_cost && flg == 0){
-							before_cost = cost;
-							save_info(enc, before_side, 0);
-							#if CHECK_DEBUG
-								printf(" +");
-							#endif
+						before_cost = cost;
+						save_info(enc, before_side, 0);
+						flg = 2;
+						#if CHECK_DEBUG
+							printf(" +");
+						#endif
 					}
 					yy++;
 					if(sw == enc->num_class)	break;
 				}
 				if(flg == 1){
 					save_info(enc, min_cost_side, 1);
-				} else {
+				} else if(flg == 2){
 					save_info(enc, before_side, 1);
+				} else {
+					save_info(enc, min_cost_side, 1);
 				}
 				// cost = calc_cost2(enc, 0, 0, enc->height, enc->width);
 				cost = calc_side_info(enc, calc_cost2(enc, 0, 0, enc->height, enc->width));
