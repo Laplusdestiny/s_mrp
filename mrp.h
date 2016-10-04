@@ -34,7 +34,7 @@
 
 /****** OPTIMIZE ***************************/
 #define OPT_SIDEINFO		1 // 1 : side-info into consideration (standard), 0 : neglect side-info
-#define MAX_ITERATION	100	//100
+#define MAX_ITERATION 	2	//100
 #define EXTRA_ITERATION	10
 #define AUTO_DEL_CL		1
 #define AUTO_PRD_ORDER	1
@@ -152,7 +152,7 @@
 #define W_GR 			7
 #define WEIGHT_CN		2	//ラプラス関数
 #define TEMPLATE_CLASS_NUM	50
-#define TEMPLATEM_LOG_OUTPUT	1	//テンプレートマッチングの結果を書き出す
+#define TEMPLATEM_LOG_OUTPUT	0	//テンプレートマッチングの結果を書き出す
 
 #else
 #define TEMPLATE_CLASS_NUM	0
@@ -162,14 +162,14 @@
 #define TEMPLATE_FLAG	2 << COEF_PRECISION
 
 /*********DEBUG******************************/
-#define CHECK_TM 		0
-#define CHECK_TM_DETAIL	0
+#define CHECK_TM 		1
+#define CHECK_TM_DETAIL	1
 #define CHECK_DEBUG 		1
-#define CHECK_PMODEL	0
+#define CHECK_PMODEL	1
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
-#define check_y			24
-#define check_x			403
+#define check_y			0
+#define check_x			155
 #define F_NUM			8
 
 /****************** PARARELL ***************/

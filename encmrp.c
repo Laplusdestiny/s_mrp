@@ -6,6 +6,7 @@
 #include <limits.h>
 #include "mrp.h"
 #include <omp.h>
+#include <time.h>
 
 extern CPOINT dyx[];
 extern double sigma_a[];
@@ -765,7 +766,8 @@ int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出
 
 #if TEMPLATE_MATCHING_ON
 void*** TemplateM (ENCODER *enc, char *outfile) {
-
+	clock_t start=0, end=0;
+	start = clock();
 #if TEMPLATEM_LOG_OUTPUT
 	int x , y , bx , by , i , j=0 , k , count , area1[AREA] , area_o[AREA] , *tm_array ,
 		*roff_p , *org_p , x_size = X_SIZE , sum1 , sum_o, temp_x, temp_y, break_flag=0,
@@ -1068,7 +1070,8 @@ free(encval);
 printf("Restoring Template Matching\r");
 TemplateM_Log_Input(enc, outfile, tempm_array, exam_array);
 #endif
-printf("Calculating Template Matching Fin\n");
+end = clock();
+printf("Calculating Template Matching Fin[%f sec]\n", (float)(end-start)/CLOCKS_PER_SEC);
 
 	return(0);
 }
@@ -1193,7 +1196,7 @@ int encode_w_gr_threshold(FILE *fp, ENCODER *enc, int flag)
 				k += i;
 				if (k > MAX_UPARA) break;
 			}
-		// }
+
 		if (enc->num_pmodel > 1) {
 			for (gr = 0; gr < enc->num_group; gr++) {
 				pm = enc->pmlist[gr];
@@ -4060,33 +4063,33 @@ cost_t calc_side_info(ENCODER *enc, cost_t cost){
 	cost_t sc;
 
 	#if CHECK_DEBUG
-		printf("(%d, ", (int)cost);
+		printf("(%d,", (int)cost);
 	#endif
 
 	cost += sc = encode_class(NULL, enc, 1);
 	#if CHECK_DEBUG
-		printf("%d, ", (int)sc);
+		printf("%d,", (int)sc);
 	#endif
 
 	cost += sc = encode_predictor(NULL, enc, 1);
 	#if CHECK_DEBUG
-		printf("%d(%d), ", (int)sc, enc->num_class);
+		printf("%d(%d),", (int)sc, enc->num_class);
 	#endif
 
 	cost += sc = encode_threshold(NULL, enc, 1);
 	#if CHECK_DEBUG
-		printf("%d, ", (int)sc);
+		printf("%d,", (int)sc);
 	#endif
 
 #if TEMPLATE_MATCHING_ON
 	cost += sc = encode_w_gr_threshold(NULL, enc, 1);
 	#if CHECK_DEBUG
-		printf("%d, ", (int)sc);
+		printf("%d,", (int)sc);
 	#endif
 #endif
 
 	#if CHECK_DEBUG
-		printf("|%d)", (int)cost);
+		printf("| %d)", (int)cost);
 	#endif
 	return(cost);
 }
@@ -4404,6 +4407,21 @@ cost_t opcl(ENCODER *enc, int k, int *blk, int restore)
 	return(cost);
 }
 
+RESTORE_SIDE* init_renew_adc(ENCODER *enc){
+	RESTORE_SIDE * side;
+	side = (RESTORE_SIDE *)alloc_mem(sizeof(RESTORE_SIDE));
+	side->th_s = (int **)alloc_2d_array(enc->num_class, enc->num_group, sizeof(int));
+	// init_2d_array(side->th_s, enc->num_class, enc->num_group, 0);
+	side->prd_s = (int **)alloc_2d_array(enc->num_class, enc->max_prd_order, sizeof(int));
+	// init_2d_array(side->prd_s, enc->num_class, enc->max_prd_order, 0);
+	side->uq_s = (char **)alloc_2d_array(enc->num_class, (MAX_UPARA + 1), sizeof(char));
+	// init_2d_array(side->uq_s, enc->num_class, MAX_UPARA+1, 0);
+	side->prd_cl_s = (int ***)alloc_3d_array(enc->height, enc->width, enc->num_class, sizeof(int));
+	// init_3d_array(side->prd_cl_s, enc->height, enc->width, enc->num_class, 0);
+	side->class = (char **)alloc_2d_array(enc->height, enc->width, sizeof(char));
+	// init_2d_array(side->class, enc->height, enc->width, 0);
+	return(side);
+}
 
 void save_info(ENCODER *enc, RESTORE_SIDE *r_side, int restore){
 	int y, x, i, j;
@@ -4541,12 +4559,6 @@ int main(int argc, char **argv)
 	int max_iteration = MAX_ITERATION;
 	char *infile, *outfile;
 	FILE *fp;
-#if RENEW_ADC
-	int cost_save=0, flg=0, before_cost=0;
-	RESTORE_SIDE *min_cost_side, *before_side;
-	min_cost_side = (RESTORE_SIDE *)alloc_mem(sizeof(RESTORE_SIDE));
-	before_side = (RESTORE_SIDE *)alloc_mem(sizeof(RESTORE_SIDE));
-#endif
 
 	cpu_time();
 	setbuf(stdout, 0);
@@ -4834,17 +4846,10 @@ int main(int argc, char **argv)
 	// enc->w_gr = W_GR;
 #endif
 #if RENEW_ADC
-	min_cost_side->th_s = (int **)alloc_2d_array(enc->num_class, enc->num_group, sizeof(int));
-	init_2d_array(min_cost_side->th_s, enc->num_class, enc->num_group, 0);
-	min_cost_side->prd_s = (int **)alloc_2d_array(enc->num_class, enc->max_prd_order, sizeof(int));
-	min_cost_side->uq_s = (char **)alloc_2d_array(enc->num_class, (MAX_UPARA + 1), sizeof(char));
-	min_cost_side->prd_cl_s = (int ***)alloc_3d_array(enc->height, enc->width, enc->num_class, sizeof(int));
-	min_cost_side->class = (char **)alloc_2d_array(enc->height, enc->width, sizeof(char));
-	before_side->th_s = (int **)alloc_2d_array(enc->num_class, enc->num_group, sizeof(int));
-	before_side->prd_s = (int **)alloc_2d_array(enc->num_class, enc->max_prd_order, sizeof(int));
-	before_side->uq_s = (char **)alloc_2d_array(enc->num_class, (MAX_UPARA + 1), sizeof(char));
-	before_side->prd_cl_s = (int ***)alloc_3d_array(enc->height, enc->width, enc->num_class, sizeof(int));
-	before_side->class = (char **)alloc_2d_array(enc->height, enc->width, sizeof(char));
+	int cost_save=0, flg=0, before_cost=0;
+	RESTORE_SIDE *min_cost_side, *before_side;
+	min_cost_side = init_renew_adc(enc);
+	before_side = init_renew_adc(enc);
 #endif
 	for (i = j = 0; i < max_iteration; i++) {
 		printf("(%2d)cost=", i);
@@ -4887,6 +4892,7 @@ int main(int argc, char **argv)
 #endif
 		cost += side_cost;
 #if AUTO_DEL_CL
+		if(i ==max_iteration - 2)sw = enc->num_class;
 		if (sw != 0) {	//コスト削減に一度でも失敗した場合に入る
 			if( enc->num_class > 1) {
 			#if PAST_ADC
@@ -4927,14 +4933,20 @@ int main(int argc, char **argv)
 						save_info(enc, before_side, 0);
 						flg = 2;
 					} else {
-						if(flg == 3)	break;
-						if(flg == 0)	flg = 3;
+						if(flg ==4 && yy - xx == 3){
+							break;
+						} else if(flg == 3){
+							flg++;
+						} else if(flg == 0){
+							flg = 3;
+						}
 					}
 					yy++;
 					#if CHECK_DEBUG
 						printf("[%d]", flg);
 					#endif
-					if(sw == enc->num_class)	break;
+					// if(sw == enc->num_class)	break;
+					break;
 				}
 				if(flg == 1){
 					save_info(enc, min_cost_side, 1);
@@ -5011,6 +5023,21 @@ int main(int argc, char **argv)
 		}
 		elapse += cpu_time();
 	}	//loop fin
+
+#if RENEW_ADC
+	free(min_cost_side->th_s);
+	free(min_cost_side->prd_s);
+	free(min_cost_side->uq_s);
+	free(min_cost_side->prd_cl_s);
+	free(min_cost_side->class);
+	free(min_cost_side);
+	free(before_side->th_s);
+	free(before_side->prd_s);
+	free(before_side->uq_s);
+	free(before_side->prd_cl_s);
+	free(before_side->class);
+	free(before_side);
+#endif
 
 	if (f_optpred) {
 		enc->num_class = num_class_save;
