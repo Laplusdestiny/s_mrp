@@ -1325,7 +1325,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 						pm = &dec->mult_pm;
 						set_pmodel_mult(pm,mask,dec->maxval+1);
 						#if CHECK_PMODEL
-							if(y==check_y && x==check_x)	printmodel(pm, dec		->maxval+1);
+							if(y==check_y && x==check_x)	printmodel(pm, dec->maxval+1);
 						#endif
 						dec->rc->y = y;
 						dec->rc->x = x;

@@ -28,8 +28,11 @@ RANGECODER *rc_init(void)
 void rc_encode(FILE *fp, RANGECODER *rc, uint cumfreq, uint freq, uint totfreq)
 {
 	rc->range /= totfreq;
+	if(rc->y == check_y && rc->x == check_x) printf("range:%d | totfreq: %d\n", rc->range, totfreq);
 	rc->low += cumfreq * rc->range;
+	if(rc->y == check_y && rc->x == check_x) printf("low:%d | cumfreq: %d\n", rc->low, cumfreq);
 	rc->range *= freq;
+	if(rc->y == check_y && rc->x == check_x) printf("range:%d | freq: %d\n", rc->range, freq);
 
 	while((rc->low ^ (rc->low + rc->range)) < RANGE_TOP){
 		putc(rc->low >> (RANGE_SIZE - 8), fp);
@@ -40,6 +43,7 @@ void rc_encode(FILE *fp, RANGECODER *rc, uint cumfreq, uint freq, uint totfreq)
 		}
 		rc->range <<= 8;
 		rc->low <<= 8;
+		if(rc->y == check_y && rc->x == check_x) printf("range:%d | low: %d | code: %d\n", rc->range, rc->range, rc->code);
 	}
 	while(rc->range < RANGE_BOT){
 		putc(rc->low >> (RANGE_SIZE - 8), fp);

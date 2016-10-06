@@ -1187,9 +1187,9 @@ int encode_w_gr_threshold(FILE *fp, ENCODER *enc, int flag)
 			k = 0;
 			for (gr = 1; gr < enc->num_group; gr++) {
 				// i = enc->th[cl][gr - 1] - k;
-				#if CHECK_DEBUG
+				/*#if CHECK_DEBUG
 					printf("w_gr,%d\n", enc->w_gr[gr]);
-				#endif
+				#endif*/
 				i = enc->w_gr[gr-1] - k;
 				rc_encode(fp, enc->rc, pm->cumfreq[i],  pm->freq[i],
 					pm->cumfreq[pm->size - k]);
@@ -4131,9 +4131,6 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 					pm->freq[e],
 					pm->cumfreq[enc->maxval + 1]);
 			}
-			#if CHECK_DEBUG
-				// printf("e[%3d][%3d]: %d | err: %d\n", y, x, e, enc->err[y][x]);
-			#endif
 		}
 	}
 	rc_finishenc(fp, enc->rc);
@@ -4892,7 +4889,6 @@ int main(int argc, char **argv)
 #endif
 		cost += side_cost;
 #if AUTO_DEL_CL
-		if(i ==max_iteration - 2)sw = enc->num_class;
 		if (sw != 0) {	//コスト削減に一度でも失敗した場合に入る
 			if( enc->num_class > 1) {
 			#if PAST_ADC
@@ -4945,8 +4941,7 @@ int main(int argc, char **argv)
 					#if CHECK_DEBUG
 						printf("[%d]", flg);
 					#endif
-					// if(sw == enc->num_class)	break;
-					break;
+					if(sw == enc->num_class)	break;
 				}
 				if(flg == 1){
 					save_info(enc, min_cost_side, 1);

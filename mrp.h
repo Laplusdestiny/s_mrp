@@ -99,17 +99,17 @@
 /***** RangeCoder **************************/
 #define HAVE_64BIT_INTEGER	1
 #if HAVE_64BIT_INTEGER
-#  define RANGE_SIZE 		64
-#  if defined(__INTEL_COMPILER) || defined(_MSC_VER) || defined(__BORLANDC__)
-#    define range_t unsigned __int64
-#  else
-#    define range_t unsigned long long
-#  endif
-#  define MAX_TOTFREQ (1 << 20)	/* must be < RANGE_BOT */
+	#define RANGE_SIZE 		64
+	#if defined(__INTEL_COMPILER) || defined(_MSC_VER) || defined(__BORLANDC__)
+		#define range_t unsigned __int64
+	#else
+		#define range_t unsigned long long
+	#endif
+	#define MAX_TOTFREQ (1 << 20)	/* must be < RANGE_BOT */
 #else
-#  define RANGE_SIZE 32
-#  define range_t unsigned int
-#  define MAX_TOTFREQ (1 << 14)	/* must be < RANGE_BOT */
+	#define RANGE_SIZE 32
+	#define range_t unsigned int
+	#define MAX_TOTFREQ (1 << 14)	/* must be < RANGE_BOT */
 #endif
 #define RANGE_TOP  ((range_t)1 << (RANGE_SIZE - 8))
 #define RANGE_BOT  ((range_t)1 << (RANGE_SIZE - 16))
@@ -162,10 +162,10 @@
 #define TEMPLATE_FLAG	2 << COEF_PRECISION
 
 /*********DEBUG******************************/
-#define CHECK_TM 		1
-#define CHECK_TM_DETAIL	1
+#define CHECK_TM 		0
+#define CHECK_TM_DETAIL	0
 #define CHECK_DEBUG 		1
-#define CHECK_PMODEL	1
+#define CHECK_PMODEL	0
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
 #define check_y			0
