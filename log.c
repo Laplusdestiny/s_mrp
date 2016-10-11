@@ -117,7 +117,7 @@ void print_predictor(int **predictor, int prd_order, int num_class, int max_coef
 
 /* Write Threshold */
 void print_threshold(int **th, int num_group, int num_class,
-					 PMODEL **pmlist, int *pm_idx, char *outfile)
+					 PMODEL **pmlist, int *pm_idx, int *w_gr, char *outfile)
 {
 	int cl, gr;
 	char *name;
@@ -128,7 +128,8 @@ void print_threshold(int **th, int num_group, int num_class,
 	name++;
 	sprintf(file, LOG_TH_DIR"%s_th.csv", name);
 	fp = fileopen(file, "wb");
-	for (cl = 0; cl < num_class; cl++){
+	fprintf(fp, ",");
+	for (cl = 1; cl < num_group; cl++){
 		fprintf(fp, "[%d],", cl);
 	}
 	fprintf(fp, "\n");
@@ -151,6 +152,12 @@ void print_threshold(int **th, int num_group, int num_class,
 			fprintf(fp, "%d,", pm_idx[gr]);
 		}
 		fprintf(fp, "\n");
+	}
+	if (w_gr !=NULL){
+		fprintf(fp, "w_gr threshold\n");
+		for( gr=0; gr < num_group; gr++){
+			fprintf(fp, "%d,", w_gr[gr]);
+		}
 	}
 	fclose(fp);
 	return;
@@ -1063,7 +1070,7 @@ void TemplateM_Log_Output(ENCODER *enc, char *outfile, int ***tempm_array, int *
 			for(k=0; k<TEMPLATE_CLASS_NUM; k++){
 				fprintf(fp, "%d,", exam_array[y][x][k]);
 			}
-			fprintf(fp,"\n");
+			fprintf(fp,"%d\n", enc->temp_num[y][x]);
 		}
 	}
 	fclose(fp);
@@ -1142,7 +1149,7 @@ void TemplateM_Log_Input(ENCODER *enc, char *outfile, int ***tempm_array, int **
 			for(k=0; k<TEMPLATE_CLASS_NUM; k++){
 				fscanf(fp, "%d,", &exam_array[y][x][k]);
 			}
-			fscanf(fp,"\n");
+			fscanf(fp,"%d\n", &enc->temp_num[y][x]);
 		}
 	}
 	fclose(fp);

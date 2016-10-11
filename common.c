@@ -224,6 +224,17 @@ int cmp(const void *p, const void *q){
 	return ((TM_Member*)p)->sum - ((TM_Member*)q)->sum;
 }
 
+int round_int(double x){	//四捨五入
+	if(x>=0){
+		x = x+0.5;
+		return((int)x);
+	} else{
+		x = -x;
+		x = x + 0.5;
+		return((int)-x);
+	}
+}
+
 /*
 Natural logarithm of the gamma function
 cf. "Numerical Recipes in C", 6.1
@@ -364,15 +375,12 @@ void set_pmodel_mult(PMODEL *m_pm, MASK *mask,int size)	//ピークの数に合�
 	}
 	for(i = 0; i < size; i++){	//size = maxvalue+1
 		for (p = 0; p < mask->num_peak; p++){
+			if(mask->weight[p] == 0)	continue;
 			base = mask->base[p];
 			pm = mask->pm[p];
 			m_pm->freq[i] += (mask->weight[p] * (pm->freq[base + i] - MIN_FREQ)) >> W_SHIFT;
 		}
-
-		// printf("%d m_pm->freq[%d] = [%d]\n", mask->num_peak,i,m_pm->freq[i]);
 		m_pm->cumfreq[i + 1] = m_pm->cumfreq[i] + m_pm->freq[i];
-		// printf("%d m_pm->cumfreq[%d] = [%d]\n", mask->num_peak,i,m_pm->cumfreq[i]);
-
 	}
 	return;
 }

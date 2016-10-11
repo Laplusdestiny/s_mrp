@@ -150,8 +150,6 @@ DECODER *init_decoder(FILE *fp)
 	// printf("TEMP_CL : %d | ", dec->temp_cl);
 	dec->temp_peak_num = getbits(fp, 6);
 	printf("TEMP_PEAK_NUM: %d |", dec->temp_peak_num);
-	// dec->w_gr = getbits(fp, 4);
-	// printf("w_gr: %d\n", dec->w_gr);
 #else
 	dec->temp_cl = -1;
 	printf("TEMP_CL : %d\n", dec->temp_cl);
@@ -1165,9 +1163,9 @@ double continuous_GGF(DECODER *dec, double e, int gr)
 	eta = exp(0.5*(lgamma(3.0/shape)-lgamma(1.0/shape))) / sigma;//一般化ガウス関数.ηのみ
 
 	if(e <= accuracy){
-		p = 10;
+		p = 1.0;
 	}else{
-		p = 10 * exp(-pow(eta * (e), shape));
+		p = exp(-pow(eta * (e), shape));
 	}
 
 	return(p);
@@ -1181,7 +1179,7 @@ int temp_mask_parameter(DECODER *dec, int y, int x , int u, int peak, int cl, in
 	if(template_peak > dec->temp_num[y][x])	template_peak = dec->temp_num[y][x];
 	if(template_peak == 0){
 		mask->class[peak] = cl;
-		mask->weight[peak] = 1;
+		mask->weight[peak] = weight_all;
 		th_p = dec->th[cl];
 		for(m_gr = 0; m_gr < dec->num_group - 1; m_gr++){
 			if( u < *th_p++)	break;
@@ -1204,7 +1202,7 @@ int temp_mask_parameter(DECODER *dec, int y, int x , int u, int peak, int cl, in
 
 	for(i=0; i<template_peak; i++){
 		mask->class[peak] = cl;
-		mask->weight[peak] = (int)(weight[i] * weight_coef);
+		mask->weight[peak] = (int)(weight[i] * weight_coef * NAS_ACCURACY);
 		th_p = dec->th[cl];
 		for(m_gr = 0; m_gr < dec->num_group - 1; m_gr++){
 			if( u < *th_p++)	break;
@@ -1304,6 +1302,8 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 	printf("Start Decode Image\n");
 	for (y = 0; y < dec->height; y++) {
 		for (x = 0; x < dec->width; x++) {
+			dec->rc->y = y;
+			dec->rc->x = x;
 			u = calc_udec2(dec, y, x);
 
 #if TEMPLATE_MATCHING_ON
@@ -1485,6 +1485,7 @@ int main(int argc, char **argv)
 #endif
 #if TEMPLATE_MATCHING_ON
 	decode_w_gr_threshold(fp, dec);
+	mask->temp_cl = dec->temp_cl;
 #endif
 	img = decode_image(fp, dec);
 	fclose(fp);
@@ -1501,7 +1502,7 @@ int main(int argc, char **argv)
 	}
 #endif
 	print_predictor(dec->predictor, dec->max_prd_order, dec->num_class, dec->max_coef, outfile);
-	print_threshold(dec->th, dec->num_group, dec->num_class, NULL, dec->pm_idx, outfile);
+	print_threshold(dec->th, dec->num_group, dec->num_class, NULL, dec->pm_idx, dec->w_gr, outfile);
 //	print_class(dec->class, dec->num_class, dec->height, dec->width, outfile);
 	print_class_color(dec->class, dec->num_class, dec->height, dec->width, outfile);
 	print_class_and_block(dec->class, dec->num_class, dec->qtmap, dec->quadtree_depth, dec->height, dec->width, outfile);

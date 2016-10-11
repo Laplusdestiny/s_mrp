@@ -650,9 +650,6 @@ void set_pmodel_mult_cost(MASK *mask,int size, int e)
 	for (p = 0; p < mask->num_peak; p++){
 		base = mask->base[p];
 		pm = mask->pm[p];
-//		#if CHECK_TM
-		//printf("mask->freq: %d | mask->weight[%d]: %d | base+e: %d | pm: %d\n", mask->freq, p, mask->weight[p], base+e, pm->freq[base+e]);
-//		#endif
 		mask->freq += (mask->weight[p] * (pm->freq[base + e] - MIN_FREQ)) >> W_SHIFT;
 		mask->cumfreq += (mask->weight[p] * (pm->cumfreq[base + size] - pm->cumfreq[base])) >> W_SHIFT;
 	}
@@ -1087,9 +1084,9 @@ double continuous_GGF(ENCODER *enc, double e,int w_gr){
 	eta = exp(0.5*(lgamma(3.0/shape)-lgamma(1.0/shape))) / sigma;//一般化ガウス関数.ηのみ
 
 	if(e <= accuracy){
-		p = 10;
+		p = 1.0;
 	}else{
-		p = 10 * exp(-pow(eta * (e), shape));
+		p = exp(-pow(eta * (e), shape));
 	}
 
 	return(p);
@@ -1097,12 +1094,12 @@ double continuous_GGF(ENCODER *enc, double e,int w_gr){
 
 int temp_mask_parameter(ENCODER *enc, int y, int x, int u, int peak, int cl, int weight_all, int w_gr)
 {
-	int i, m_gr, m_prd, m_frac, template_peak= enc->temp_peak_num;
+	int i, m_gr, m_prd, m_frac, template_peak = enc->temp_peak_num;
 	double weight[template_peak], sum_weight = 0, weight_coef=0;
 	if(template_peak > enc->temp_num[y][x])	template_peak = enc->temp_num[y][x];
 	if(template_peak == 0){
 		mask->class[peak] = cl;
-		mask->weight[peak] = 1;
+		mask->weight[peak] = weight_all;
 		m_gr = enc->uquant[cl][u];
 		m_prd = enc->maxprd > 1;
 		m_prd = CLIP(0, enc->maxprd, m_prd);
@@ -1115,19 +1112,22 @@ int temp_mask_parameter(ENCODER *enc, int y, int x, int u, int peak, int cl, int
 
 	for(i=0; i<template_peak; i++){
 		weight[i] = continuous_GGF(enc, (double)tempm_array[y][x][i*4+3] / NAS_ACCURACY, w_gr);
+		// if(y== check_y && x==check_x)	printf("weight[%d]: %.20f\n", i, weight[i]);
 		sum_weight += weight[i];
 	}
 	weight_coef = (double)weight_all / sum_weight;
 
 	for(i=0; i<template_peak; i++){
 		mask->class[peak] = cl;
+		// if(y==check_y && x==check_x)	printf("weight[%d]:%f\n", i, weight[i] * weight_coef);
 		mask->weight[peak] = (int)(weight[i] * weight_coef);
+		if(mask->weight[peak] == 0)	continue;
 		m_gr = enc->uquant[cl][u];
 		m_prd = exam_array[y][x][i];
 		// m_prd = enc->prd_class[y][x][cl];
 		m_prd = CLIP(0, enc->maxprd, m_prd);
 		#if CHECK_DEBUG
-			if( y == check_y && x == check_x && enc->function_number == F_NUM)	printf("[temp_mask_parameter] m_prd[%d]: %d[%2d] | weight: %d | u: %d | gr: %d\n", peak, m_prd, cl, mask->weight[peak], u, m_gr);
+			if( y == check_y && x == check_x && enc->function_number == F_NUM)	printf("[temp_mask_parameter]\tm_prd[%d]: %d[%2d] | weight: %d | u: %d | gr: %d\n", peak, m_prd, cl, mask->weight[peak], u, m_gr);
 		#endif
 
 		mask->base[peak] = enc->bconv[m_prd];
@@ -1250,7 +1250,7 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 				m_prd = enc->prd_class[y][x][cl];
 				m_prd = CLIP(0, enc->maxprd, m_prd);
 				#if CHECK_DEBUG
-					if( y == check_y && x == check_x && enc->function_number == F_NUM)	printf("[set_mask_parameter] m_prd[%d]: %d[%2d] | weight: %d | u: %d | gr: %d\n", 	peak, m_prd, cl, mask->weight[peak], u, m_gr);
+					if( y == check_y && x == check_x && enc->function_number== F_NUM)	printf("[set_mask_parameter]\tm_prd[%d]: %d[%2d] | weight: %d | u: %d | gr: %d\n", 	peak, m_prd, cl, mask->weight[peak], u, m_gr);
 				#endif
 
 				mask->base[peak] = enc->bconv[m_prd];
@@ -1341,7 +1341,7 @@ cost_t calc_cost2(ENCODER *enc, int tly, int tlx, int bry, int brx)
 				set_pmodel_mult_cost(mask,enc->maxval+1,e);
 				cost += a * (log(mask->cumfreq)-log(mask->freq)) ;
 			}
-			if(enc->function_number== F_NUM) printf("(%3d,%3d) cost: %d | cl: %d\n", y, x, (int)cost, cl );
+			// if(enc->function_number== F_NUM) printf("(%3d,%3d) cost: %d | cl: %d\n", y, x, (int)cost, cl );
 		}
 	}
 	return (cost);
@@ -1999,14 +1999,19 @@ cost_t optimize_class(ENCODER *enc)
 			if(enc->predictor[cl][0] == TEMPLATE_FLAG){
 				enc->temp_cl = cl;
 				break;
+			} else {
+				enc->temp_cl = -1;
 			}
 		} else if(enc->optimize_loop==2){
 			if(enc->nzconv[cl][0] == -1){
 				enc->temp_cl = cl;
 				break;
+			} else {
+				enc->temp_cl = -1;
 			}
 		}
 	}
+	if(enc->optimize_loop == 2)	mask->temp_cl = enc->temp_cl;
 #endif
 #if CHECK_CLASS
 	if(enc->optimize_loop == 1){
@@ -3048,10 +3053,11 @@ void make_th(ENCODER *enc){
 }
 
 cost_t optimize_template(ENCODER *enc){
-	int temp_num, min_temp_num=0, i;
-	// int min_gr = 0, gr;
+	char temp_num;
+	int min_temp_num=0, i;
 	cost_t cost, min_cost = INT_MAX;
 	enc->function_number = 6;
+	if(enc->temp_cl == -1)	return(calc_cost2(enc, 0, 0, enc->height, enc->width));
 
 // コンテクスト毎の重み
 	make_th(enc);
@@ -3439,8 +3445,6 @@ int write_header(ENCODER *enc, FILE *fp)
 	// printf("TEMP_CL : %d | ", enc->temp_cl);
 	bits += putbits(fp, 6, enc->temp_peak_num);
 	printf("TEMP_PEAK_NUM: %d\n", enc->temp_peak_num);
-	// bits += putbits(fp, 4, enc->w_gr);
-	// printf("w_gr: %d\n", enc->w_gr);
 #endif
 
 	return (bits);
@@ -4840,7 +4844,7 @@ int main(int argc, char **argv)
 	side_info_back = 0;
 #if TEMPLATE_MATCHING_ON
 	enc->temp_peak_num = TEMPLATE_CLASS_NUM;
-	// enc->w_gr = W_GR;
+	mask->temp_cl = enc->temp_cl;
 #endif
 #if RENEW_ADC
 	int cost_save=0, flg=0, before_cost=0;
@@ -4929,7 +4933,7 @@ int main(int argc, char **argv)
 						save_info(enc, before_side, 0);
 						flg = 2;
 					} else {
-						if(flg ==4 && yy - xx == 3){
+						if(flg ==4){
 							break;
 						} else if(flg == 3){
 							flg++;
@@ -5143,7 +5147,11 @@ int main(int argc, char **argv)
 
 #if LOG_PUT_OUT_ENC
 	print_predictor(enc->predictor, enc->max_prd_order, enc->num_class, enc->max_coef, outfile);
-	print_threshold(enc->th, enc->num_group, enc->num_class, enc->pmlist, NULL, outfile);
+	#if TEMPLATE_MATCHING_ON
+		print_threshold(enc->th, enc->num_group, enc->num_class, enc->pmlist, NULL, enc->w_gr, outfile);
+	#else
+		print_threshold(enc->th, enc->num_group, enc->num_class, enc->pmlist, NULL, NULL, outfile);
+	#endif
 	// print_class(enc->class, enc->num_class, enc->height, enc->width, outfile);
 	print_class_color(enc->class, enc->num_class, enc->height, enc->width, outfile);
 	output_class_map(enc->class, enc->num_class, enc->height, enc->width, outfile);

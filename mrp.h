@@ -29,12 +29,12 @@
 
 /****** MRP-VERSION ************************/
 #define MAGIC_NUMBER	('M' << 8) + 'R'
-#define BANNER		"ENCMRP/DECMRP version %.2f (Jan. 2016)"
+#define BANNER		"ENCMRP/DECMRP version %.2f ( Jan. 2016 )"
 #define VERSION		611
 
 /****** OPTIMIZE ***************************/
 #define OPT_SIDEINFO		1 // 1 : side-info into consideration (standard), 0 : neglect side-info
-#define MAX_ITERATION 	2	//100
+#define MAX_ITERATION 	10	//100
 #define EXTRA_ITERATION	10
 #define AUTO_DEL_CL		1
 #define AUTO_PRD_ORDER	1
@@ -81,7 +81,7 @@
 #define NUM_UPELS       (UPEL_DIST * (UPEL_DIST + 1))
 #define CTX_WEIGHT		1	// 1 : weight on (standard) , 0 : weight off
 #if CTX_WEIGHT
-#	define MHD_WEIGHT	1	// 1 : Manhattan Distance (standard), 0 : Euclid Distance
+	#define MHD_WEIGHT	1	// 1 : Manhattan Distance (standard), 0 : Euclid Distance
 #endif
 
 /***** PMODEL ******************************/
@@ -103,7 +103,7 @@
 	#if defined(__INTEL_COMPILER) || defined(_MSC_VER) || defined(__BORLANDC__)
 		#define range_t unsigned __int64
 	#else
-		#define range_t unsigned long long
+		#define range_t unsigned long long int
 	#endif
 	#define MAX_TOTFREQ (1 << 20)	/* must be < RANGE_BOT */
 #else
@@ -165,11 +165,11 @@
 #define CHECK_TM 		0
 #define CHECK_TM_DETAIL	0
 #define CHECK_DEBUG 		1
-#define CHECK_PMODEL	0
+#define CHECK_PMODEL	1
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
 #define check_y			0
-#define check_x			155
+#define check_x			179
 #define F_NUM			8
 
 /****************** PARARELL ***************/
@@ -196,13 +196,16 @@ typedef struct {
 } PMODEL;
 
 typedef struct {
-		char num_peak;
-		char *class;
-		int *base;
-		PMODEL **pm;
-		int *weight;
-		int freq;
-		int cumfreq;
+	char num_peak;
+	char *class;
+	int *base;
+	PMODEL **pm;
+	int *weight;
+	int freq;
+	int cumfreq;
+#if TEMPLATE_MATCHING_ON
+	char temp_cl;
+#endif
 } MASK;
 
 typedef struct {
@@ -301,14 +304,11 @@ typedef struct {
 #if TEMPLATE_MATCHING_ON
 	int **temp_num;
 	int ***array;
-	int **mmc;
-	int temp_peak_num;
+	char temp_peak_num;
 	int *w_gr;
 #endif
-	int temp_cl;
-	// int w_gr;
-	int function_number;
-	// RESTORE_SIDE *r_side;
+	char temp_cl;
+	char function_number;
 } ENCODER;
 
 typedef struct {
@@ -351,12 +351,11 @@ typedef struct {
 #if TEMPLATE_MATCHING_ON
 	int **temp_num;
 	int *array;
-	int temp_peak_num;
+	char temp_peak_num;
 	int *w_gr;
 #endif
-	int temp_cl;
+	char temp_cl;
 	int **org;
-	// int w_gr;
 } DECODER;
 
 /***** FUNC - common.c ****************************/
@@ -376,6 +375,7 @@ void init_array(int *, int , int);
 void init_2d_array(int **, int , int, int);
 void init_3d_array(int ***, int , int, int, int);
 int cmp(const void*, const void*);
+int round_int(double);
 
 /***** FUNC - rc.c ********************************/
 RANGECODER *rc_init(void);
@@ -386,7 +386,7 @@ void rc_startdec(FILE *, RANGECODER *);
 
 /***** FUNC - log.c *******************************/
 void print_predictor(int **, int, int, int, char *);
-void print_threshold(int **, int, int, PMODEL **, int *, char *);
+void print_threshold(int **, int, int, PMODEL **, int *, int*,  char *);
 void print_class(char **, int, int, int, char *);
 void output_class_map(char **, int, int, int, char *);
 void print_class_color(char **, int, int, int, char *);
