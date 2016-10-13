@@ -152,7 +152,7 @@
 #define W_GR 			7
 #define WEIGHT_CN		2	//ラプラス関数
 #define TEMPLATE_CLASS_NUM	50
-#define TEMPLATEM_LOG_OUTPUT	0	//テンプレートマッチングの結果を書き出す
+#define TEMPLATEM_LOG_OUTPUT	1	//テンプレートマッチングの結果を書き出す
 
 #else
 #define TEMPLATE_CLASS_NUM	0
@@ -162,14 +162,14 @@
 #define TEMPLATE_FLAG	2 << COEF_PRECISION
 
 /*********DEBUG******************************/
-#define CHECK_TM 		0
-#define CHECK_TM_DETAIL	0
+#define CHECK_TM 		1
+#define CHECK_TM_DETAIL	1
 #define CHECK_DEBUG 		1
 #define CHECK_PMODEL	1
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
-#define check_y			0
-#define check_x			179
+#define check_y			62
+#define check_x			138
 #define F_NUM			8
 
 /****************** PARARELL ***************/
@@ -225,8 +225,15 @@ typedef struct{
 	int bx;
 	int sum;
 	int ave_o;
+
+#if MANHATTAN_SORT
 	int mhd;
+#endif
+
+#if ZNCC
 	double s_devian;
+#endif
+
 } TM_Member;
 
 typedef struct{

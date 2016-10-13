@@ -87,7 +87,7 @@ int rc_decode(FILE *fp, RANGECODER *rc, PMODEL *pm, int min, int max)
 		exit(1);
 	}
 	i = min;
-	j = max;
+	j = max - 1;
 	while (i < j) {
 		k = (i + j) / 2;
 		// if(rc->y == check_y && rc->x == check_x)	printf("%d %d %d\n", k, i, j);

@@ -788,13 +788,15 @@ void*** TemplateM (ENCODER *enc, char *outfile) {
 /////////////////////////
 
 	tm_array = (int *)alloc_mem((Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE) * 4 * sizeof(int)) ;
-	encval = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
+	encval = (int **)alloc_2d_array(enc->height+1, enc->width, sizeof(int));
 
-	for(y=0; y<enc->height; y++){
+	/*for(y=0; y<enc->height; y++){
 		for(x=0; x<enc->width; x++){
 			encval[y][x] = enc->org[y][x] << enc->coef_precision;
 		}
-	}
+	}*/
+	init_2d_array(encval, enc->height, enc->width, 0);
+	encval[enc->height][0] = (int)(enc->maxval + 1) << enc->coef_precision;
 
 ///////////////////////////
 ////////画像の走査/////////
@@ -804,7 +806,22 @@ for(y = 0 ; y < enc->height ; y++){
 	for (x = 0; x < enc->width; x++){
 		if(y==0 && x==0) {
 			enc->temp_num[y][x] = 0;
+			// encval[y][x] = enc->org[y][x] << enc->coef_precision;
 			continue;
+		}
+
+		init_2d_array(encval, enc->height, enc->width, 0);
+		for(i=0; i<enc->height; i++){
+			if( i != y){
+				for(j=0; j<enc->width; j++){
+					encval[i][j] = enc->org[i][j] << enc->coef_precision;
+				}
+			} else if(i == y){
+				for(j=0; j<x; j++){
+					encval[i][j] = enc->org[i][j] << enc->coef_precision;
+				}
+			}
+			if(i == y)break;
 		}
 
 		// bzero(&tm, sizeof(tm));
@@ -938,7 +955,13 @@ for(y = 0 ; y < enc->height ; y++){
 				#endif
 
 				#if CHECK_TM
-					if(y == check_y && x == check_x)	printf("B[%3d](%3d,%3d) sum: %d | ave: %d | devian: %f\n", tm[j].id, tm[j].by, tm[j].bx, tm[j].sum, tm[j].ave_o, tm[j].s_devian);
+					if(y == check_y && x == check_x){
+						printf("B[%3d](%3d,%3d) sum: %d | ave: %d", tm[j].id, tm[j].by, tm[j].bx, tm[j].sum, tm[j].ave_o);
+						#if ZNCC
+							printf(" | devian: %f", tm[j].s_devian);
+						#endif
+						printf("\n");
+					}
 				#endif
 
 				j++;
@@ -1014,7 +1037,13 @@ for(y = 0 ; y < enc->height ; y++){
 			tm_array[k * 4 + count] = 0;
 			tm_array[k * 4 + count] = tm[k].sum;
 			#if CHECK_TM
-				if(y == check_y && x == check_x)	printf("A[%3d](%3d,%3d) sum: %d | ave: %d | devian: %f\n", tm[k].id, tm[k].by, tm[k].bx, tm[k].sum, tm[k].ave_o, tm[k].s_devian);
+				if(y == check_y && x == check_x){
+					printf("A[%3d](%3d,%3d) sum: %d | ave: %d", tm[k].id, tm[k].by, tm[k].bx, tm[k].sum, tm[k].ave_o);
+					#if ZNCC
+						printf(" | devian: %f\n", tm[k].s_devian);
+					#endif
+					printf("\n");
+				}
 			#endif
 		}
 
@@ -1058,6 +1087,7 @@ for(y = 0 ; y < enc->height ; y++){
 		#if CHECK_TM
 			if(y==check_y && x==check_x)	printf("(%3d,%3d)org: %d\n", y, x, encval[y][x]);
 		#endif
+		// encval[y][x] = enc->org[y][x] << enc->coef_precision;
 	}//x fin
 }//y fin
 TemplateM_Log_Output(enc, outfile, tempm_array, exam_array);
@@ -1111,11 +1141,17 @@ int temp_mask_parameter(ENCODER *enc, int y, int x, int u, int peak, int cl, int
 	}
 
 	for(i=0; i<template_peak; i++){
-		weight[i] = continuous_GGF(enc, (double)tempm_array[y][x][i*4+3] / NAS_ACCURACY, w_gr);
+		weight[i] = continuous_GGF(enc, (double)(tempm_array[y][x][i*4+3] >> enc->coef_precision) / NAS_ACCURACY, w_gr);
 		// if(y== check_y && x==check_x)	printf("weight[%d]: %.20f\n", i, weight[i]);
 		sum_weight += weight[i];
+		if(y == check_y && x== check_x && enc->function_number == F_NUM)	printf("sum: %.20f | weight: %.20f\n", sum_weight, weight[i]);
 	}
-	weight_coef = (double)weight_all / sum_weight;
+	if(sum_weight == 0){
+		weight_coef = (double)weight_all;
+	} else {
+		weight_coef = (double)weight_all / sum_weight;
+	}
+	if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("weight_coef: %.20f | sum_weight: %.20f\n", weight_coef, sum_weight);
 
 	for(i=0; i<template_peak; i++){
 		mask->class[peak] = cl;
@@ -4539,7 +4575,7 @@ int main(int argc, char **argv)
 {
 	cost_t cost, min_cost, side_cost, sc;
 	int i, j, k, x, y, xx, yy, cl, gr, bits, **prd_save, **th_save, sw;
-	int header_info, class_info, pred_info, th_info, mask_info, err_info, side_info_back=0;
+	int header_info, class_info, pred_info, th_info, mask_info, err_info;
 	int num_class_save;
 	char **class_save, **mask_save;
 	char **qtmap_save[QUADTREE_DEPTH];
@@ -4769,29 +4805,7 @@ int main(int argc, char **argv)
 					th_save[cl][k] = enc->th[cl][k];		//閾値の保存
 				}
 			}
-			side_info_back = 0;
 		} else {
-			/*if(i - j >= (EXTRA_ITERATION / 2) && side_info_back == 0){
-				for (y = 0; y < enc->height; y++) {
-					for (x = 0; x < enc->width; x++) {
-						enc->class[y][x] = class_save[y][x];
-					}
-				}
-				for (cl = 0; cl < enc->num_class; cl++) {
-					for (k= 0; k < enc->max_prd_order; k++) {
-						enc->predictor[cl][k] = prd_save[cl][k];
-					}
-					xx = 0;
-					for (k= 0; k < enc->num_group; k++) {
-						enc->th[cl][k] = th_save[cl][k];
-						for (; xx < enc->th[cl][k]; xx++) {
-							enc->uquant[cl][xx] = k;
-						}
-					}
-				}
-				side_info_back = 1;
-				printf(" !");
-			}*/
 			printf("\n");
 		}
 		if (i - j >= EXTRA_ITERATION) break;
@@ -4841,7 +4855,6 @@ int main(int argc, char **argv)
 	enc->optimize_loop = 2;
 	min_cost = INT_MAX;
 	sw = 0;
-	side_info_back = 0;
 #if TEMPLATE_MATCHING_ON
 	enc->temp_peak_num = TEMPLATE_CLASS_NUM;
 	mask->temp_cl = enc->temp_cl;
@@ -4906,7 +4919,6 @@ int main(int argc, char **argv)
 				sw = enc->num_class;
 				save_info(enc, min_cost_side, 0);
 				yy = xx =0;
-				// side_info_back = 1;
 				cost_save = min_cost;
 				before_cost = cost;
 				flg = 0;
@@ -4945,7 +4957,8 @@ int main(int argc, char **argv)
 					#if CHECK_DEBUG
 						printf("[%d]", flg);
 					#endif
-					if(sw == enc->num_class)	break;
+					// if(sw == enc->num_class)	break;
+					break;
 				}
 				if(flg == 1){
 					save_info(enc, min_cost_side, 1);
