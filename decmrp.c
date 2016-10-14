@@ -936,10 +936,13 @@ void decode_w_gr_threshold(FILE *fp, DECODER *dec)
 			}
 			// dec->th[cl][gr - 1] = k;
 			dec->w_gr[gr-1] = k;
+			printf("w_gr[%d]\t%d\n", gr-1, dec->w_gr[gr-1]);
 		}
+		dec->w_gr[0] = 0;
+		dec->w_gr[dec->num_group - 1] = MAX_UPARA + 1;
 	// }
 
-	if (dec->num_pmodel > 1) {
+	/*if (dec->num_pmodel > 1) {
 		pm->size = dec->num_pmodel;
 		pm->freq[0] = 0;
 		for (k = 0; k < pm->size; k++) {
@@ -949,7 +952,7 @@ void decode_w_gr_threshold(FILE *fp, DECODER *dec)
 		for (gr = 0; gr < dec->num_group; gr++) {
 			dec->pm_idx[gr] = rc_decode(fp, dec->rc, pm, 0, pm->size);
 		}
-	}
+	}*/
 	return;
 }
 #endif
@@ -1192,18 +1195,18 @@ int temp_mask_parameter(DECODER *dec, int y, int x , int u, int peak, int cl, in
 		peak++;
 		return(peak);
 	}
-
+	// if(y==check_y && x==check_x)	printf("w_gr: %d\n", w_gr);
 	for(i=0; i<template_peak; i++){
 		weight[i] = continuous_GGF(dec, (double)(tempm_array[i*4+3] >> dec->coef_precision) / NAS_ACCURACY, w_gr);
 		sum_weight += weight[i];
-		if(y == check_y && x== check_x)	printf("sum: %.20f | weight: %.20f\n", sum_weight, weight[i]);
+		// if(y == check_y && x== check_x)	printf("sum: %.20f | weight: %.20f\n", sum_weight, weight[i]);
 	}
 	if(sum_weight == 0){
 		weight_coef = (double)weight_all;
 	} else {
 		weight_coef = (double)weight_all / sum_weight;
 	}
-	if(y==check_y && x==check_x)	printf("weight_coef: %.20f | sum_weight: %.20f\n", weight_coef, sum_weight);
+	// if(y==check_y && x==check_x)	printf("weight_coef: %.20f | sum_weight: %.20f\n", weight_coef, sum_weight);
 
 	for(i=0; i<template_peak; i++){
 		mask->class[peak] = cl;
@@ -1259,6 +1262,7 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 					for(m_gr =0; m_gr < dec->num_group; m_gr++){
 						if(u < dec->w_gr[m_gr])	break;
 					}
+					if(m_gr >= dec->num_group)	m_gr = dec->num_group - 1;
 					peak = temp_mask_parameter(dec, y, x, u, peak, cl, (count_cl[cl] << W_SHIFT) / sample, bmask, shift, r_cl, m_gr);
 					if( cl == r_cl)	r_prd = exam_array[y][x][0];
 				#endif

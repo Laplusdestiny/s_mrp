@@ -1139,19 +1139,19 @@ int temp_mask_parameter(ENCODER *enc, int y, int x, int u, int peak, int cl, int
 		peak++;
 		return(peak);
 	}
-
+	// if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("w_gr: %d\n", w_gr);
 	for(i=0; i<template_peak; i++){
 		weight[i] = continuous_GGF(enc, (double)(tempm_array[y][x][i*4+3] >> enc->coef_precision) / NAS_ACCURACY, w_gr);
 		// if(y== check_y && x==check_x)	printf("weight[%d]: %.20f\n", i, weight[i]);
 		sum_weight += weight[i];
-		if(y == check_y && x== check_x && enc->function_number == F_NUM)	printf("sum: %.20f | weight: %.20f\n", sum_weight, weight[i]);
+		// if(y == check_y && x== check_x && enc->function_number == F_NUM)	printf("sum: %.20f | weight: %.20f\n", sum_weight, weight[i]);
 	}
 	if(sum_weight == 0){
 		weight_coef = (double)weight_all;
 	} else {
 		weight_coef = (double)weight_all / sum_weight;
 	}
-	if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("weight_coef: %.20f | sum_weight: %.20f\n", weight_coef, sum_weight);
+	// if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("weight_coef: %.20f | sum_weight: %.20f\n", weight_coef, sum_weight);
 
 	for(i=0; i<template_peak; i++){
 		mask->class[peak] = cl;
@@ -1223,9 +1223,6 @@ int encode_w_gr_threshold(FILE *fp, ENCODER *enc, int flag)
 			k = 0;
 			for (gr = 1; gr < enc->num_group; gr++) {
 				// i = enc->th[cl][gr - 1] - k;
-				/*#if CHECK_DEBUG
-					printf("w_gr,%d\n", enc->w_gr[gr]);
-				#endif*/
 				i = enc->w_gr[gr-1] - k;
 				rc_encode(fp, enc->rc, pm->cumfreq[i],  pm->freq[i],
 					pm->cumfreq[pm->size - k]);
@@ -1233,12 +1230,12 @@ int encode_w_gr_threshold(FILE *fp, ENCODER *enc, int flag)
 				if (k > MAX_UPARA) break;
 			}
 
-		if (enc->num_pmodel > 1) {
+		/*if (enc->num_pmodel > 1) {
 			for (gr = 0; gr < enc->num_group; gr++) {
 				pm = enc->pmlist[gr];
 				rc_encode(fp, enc->rc, pm->id, 1, enc->num_pmodel);
 			}
-		}
+		}*/
 		bits = (int)enc->rc->code;
 		enc->rc->code = 0;
 	}
@@ -1277,6 +1274,7 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 				for(m_gr=0; m_gr < enc->num_group; m_gr++){
 					if(u < enc->w_gr[m_gr])	break;
 				}
+				if(m_gr >= enc->num_group)	m_gr = enc->num_group - 1;
 				peak = temp_mask_parameter(enc, y, x, u, peak, cl, (count_cl[cl] << W_SHIFT) / sample, m_gr);
 			} else {
 		#endif
