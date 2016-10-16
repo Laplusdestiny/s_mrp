@@ -352,12 +352,12 @@ void printmodel(PMODEL *pm, int size)
 
 	printf("print pmodel\n");
 	for (i = 0; i < size; i++) {
-		num = pm->freq[i] / Q + 1;
+		num = pm->cumfreq[i] / Q + 1;
 		printf("[%3d] ", i);
 		for (j = 0; j < num; j++) {
 			putchar('*');
 		}
-		printf(" (%4d 回)\n", pm->freq[i]);
+		printf(" (%4d 回)\n", pm->cumfreq[i]);
 	}
 	printf("cumfreq: %d\n", pm->cumfreq[size-1]);
 

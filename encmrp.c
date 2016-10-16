@@ -3117,9 +3117,7 @@ cost_t optimize_template(ENCODER *enc){
 	}
 	if(min_temp_num <= 0 || min_temp_num > TEMPLATE_CLASS_NUM)	min_temp_num = TEMPLATE_CLASS_NUM;
 	enc->temp_peak_num = min_temp_num;
-	// if(min_gr <0 || min_gr >= enc->num_group) min_gr = enc->num_group-1;
-	// enc->w_gr = min_gr;
-	// printf(" %d", (int)min_cost, enc->temp_peak_num);
+
 	return(min_cost);
 }
 #endif
@@ -4572,7 +4570,7 @@ cost_t auto_del_class(ENCODER *enc, cost_t pre_cost)
 int main(int argc, char **argv)
 {
 	cost_t cost, min_cost, side_cost, sc;
-	int i, j, k, x, y, xx, yy, cl, gr, bits, **prd_save, **th_save, sw;
+	int i, j, k, l, x, y, xx, yy, cl, gr, bits, **prd_save, **th_save, sw;
 	int header_info, class_info, pred_info, th_info, mask_info, err_info;
 	int num_class_save;
 	char **class_save, **mask_save;
@@ -4853,6 +4851,7 @@ int main(int argc, char **argv)
 	enc->optimize_loop = 2;
 	min_cost = INT_MAX;
 	sw = 0;
+	l=0;
 #if TEMPLATE_MATCHING_ON
 	enc->temp_peak_num = TEMPLATE_CLASS_NUM;
 	mask->temp_cl = enc->temp_cl;
@@ -4914,13 +4913,14 @@ int main(int argc, char **argv)
 					cost = auto_del_class(enc, cost);
 				}
 			#elif RENEW_ADC
-				sw = enc->num_class;
+				// sw = enc->num_class;
 				save_info(enc, min_cost_side, 0);
 				yy = xx =0;
 				cost_save = min_cost;
 				before_cost = cost;
 				flg = 0;
-				while(yy - xx < (EXTRA_ITERATION / 3) ){
+				cl = 0;
+				while(yy - xx < (EXTRA_ITERATION / 3) && cl < MAX_DEL_CLASS && l< 3) {
 					#if CHECK_DEBUG
 						printf("\n");
 					#endif
@@ -4935,6 +4935,7 @@ int main(int argc, char **argv)
 						xx = yy;
 						save_info(enc, min_cost_side, 0);
 						flg = 1;
+						cl++;
 					} else if(cost < before_cost && flg == 0){
 						#if CHECK_DEBUG
 							printf(" +");
@@ -4955,15 +4956,17 @@ int main(int argc, char **argv)
 					#if CHECK_DEBUG
 						printf("[%d]", flg);
 					#endif
-					// if(sw == enc->num_class)	break;
-					break;
+					if(sw == enc->num_class)	break;
+					// break;
 				}
 				if(flg == 1){
 					save_info(enc, min_cost_side, 1);
+					if(l > 0)	l--;
 				} else if(flg == 2){
 					save_info(enc, before_side, 1);
 				} else {
 					save_info(enc, min_cost_side, 1);
+					l++;
 				}
 				// cost = calc_cost2(enc, 0, 0, enc->height, enc->width);
 				cost = calc_side_info(enc, calc_cost2(enc, 0, 0, enc->height, enc->width));

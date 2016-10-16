@@ -936,7 +936,7 @@ void decode_w_gr_threshold(FILE *fp, DECODER *dec)
 			}
 			// dec->th[cl][gr - 1] = k;
 			dec->w_gr[gr-1] = k;
-			printf("w_gr[%d]\t%d\n", gr-1, dec->w_gr[gr-1]);
+			// printf("w_gr[%2d]\t%d\n", gr-1, dec->w_gr[gr-1]);
 		}
 		dec->w_gr[0] = 0;
 		dec->w_gr[dec->num_group - 1] = MAX_UPARA + 1;

@@ -34,7 +34,7 @@
 
 /****** OPTIMIZE ***************************/
 #define OPT_SIDEINFO		1 // 1 : side-info into consideration (standard), 0 : neglect side-info
-#define MAX_ITERATION 	10	//100
+#define MAX_ITERATION 	100	//100
 #define EXTRA_ITERATION	10
 #define AUTO_DEL_CL		1
 #define AUTO_PRD_ORDER	1
@@ -42,6 +42,7 @@
 	#define RENEW_ADC	1
 	#if RENEW_ADC
 		#define	PAST_ADC	0
+		#define MAX_DEL_CLASS	5
 	#else
 		#define PAST_ADC	1
 	#endif
@@ -164,12 +165,12 @@
 /*********DEBUG******************************/
 #define CHECK_TM 		0
 #define CHECK_TM_DETAIL	0
-#define CHECK_DEBUG 		0
-#define CHECK_PMODEL	0
+#define CHECK_DEBUG 		1
+#define CHECK_PMODEL	1
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
-#define check_y			55
-#define check_x			109
+#define check_y			26
+#define check_x			202
 #define F_NUM			8
 
 /****************** PARARELL ***************/

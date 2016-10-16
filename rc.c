@@ -34,7 +34,7 @@ void rc_encode(FILE *fp, RANGECODER *rc, uint cumfreq, uint freq, uint totfreq)
 	rc->range *= freq;
 	// if(rc->y == check_y && rc->x == check_x) printf("range\t%lld | freq\t%lld\n", rc->range, freq);
 	// if(rc->y == check_y && rc->x == check_x) printf("%lld\n%lld\n", (rc->low ^ (rc->low + rc->range)), RANGE_TOP);
-	while((rc->low ^ (rc->low + rc->range)) < RANGE_TOP){
+	while((rc->low ^ (rc->low + rc->range)) < RANGE_TOP){	//最正規化処理(1)
 		putc(rc->low >> (RANGE_SIZE - 8), fp);
 		// if(rc->y == check_y && rc->x == check_x)	printf("putc\t%lld\n", rc->low >> (RANGE_SIZE - 8));
 		rc->code += 8;
@@ -46,7 +46,7 @@ void rc_encode(FILE *fp, RANGECODER *rc, uint cumfreq, uint freq, uint totfreq)
 		rc->low <<= 8;
 		// if(rc->y == check_y && rc->x == check_x) printf("range\t%lld | low\t%lld | code\t%lld\n", rc->range, rc->range, rc->code);
 	}
-	while(rc->range < RANGE_BOT){
+	while(rc->range < RANGE_BOT){	//最正規化処理(2)
 		putc(rc->low >> (RANGE_SIZE - 8), fp);
 		// if(rc->y == check_y && rc->x == check_x)	printf("putc2\t%lld\n", rc->low >> (RANGE_SIZE - 8));
 		rc->code += 8;
@@ -80,19 +80,21 @@ int rc_decode(FILE *fp, RANGECODER *rc, PMODEL *pm, int min, int max)
 
 	offset = pm->cumfreq[min];
 	totfreq = pm->cumfreq[max] - offset;
-	rc->range /= (range_t)totfreq;
+	rc->range /= totfreq;
 	rfreq = (rc->code - rc->low) / rc->range;
 	if (rfreq >= totfreq) {
 		fprintf(stderr, "Data is corrupted!\n");
 		exit(1);
 	}
+	if(rc->y==check_y && rc->x == check_x)	printf("rfreq: %d\n", rfreq);
 	i = min;
-	j = max - 1;
+	// j = max - 1;
+	j = max;
 	while (i < j) {
 		k = (i + j) / 2;
 		// if(rc->y == check_y && rc->x == check_x)	printf("%d %d %d\n", k, i, j);
 		if ((pm->cumfreq[k+1] - offset) <= rfreq) {
-			i = k+1;
+			i = k + 1;
 		} else {
 			j = k;
 		}
