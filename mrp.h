@@ -152,7 +152,7 @@
 #define MAX_DATA_SAVE_DOUBLE 	MAX_DATA_SAVE*4
 #define W_GR 			7
 #define WEIGHT_CN		2	//ラプラス関数
-#define TEMPLATE_CLASS_NUM	50
+#define TEMPLATE_CLASS_NUM	30
 #define TEMPLATEM_LOG_OUTPUT	1	//テンプレートマッチングの結果を書き出す
 
 #else
@@ -165,8 +165,8 @@
 /*********DEBUG******************************/
 #define CHECK_TM 		0
 #define CHECK_TM_DETAIL	0
-#define CHECK_DEBUG 		1
-#define CHECK_PMODEL	1
+#define CHECK_DEBUG 	0
+#define CHECK_PMODEL	0
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
 #define check_y			26
