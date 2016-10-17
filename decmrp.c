@@ -121,6 +121,95 @@ int ***init_ref_offset(int height, int width, int prd_order)
 	return (roff);
 }
 
+#if PREDICT_FROM_EXAMPLES
+void ***init_temp_ref_offset(int ***roff, int height, int width, int y, int x, int prd_order)
+{
+	int *ptr, *array;
+	int dx, dy, k;
+	int order, min_dx, max_dx, min_dy;
+
+	min_dx = max_dx = min_dy = 0;
+	order = (prd_order > NUM_UPELS)? prd_order : NUM_UPELS;
+	/*for (k = 0; k < order; k++) {
+		dy = dyx[k].y;
+		dx = dyx[k].x;
+		if (dy < min_dy) min_dy = dy;
+		if (dx < min_dx) min_dx = dx;
+		if (dx > max_dx) max_dx = dx;
+	}*/
+	min_dy = -Y_SIZE;
+	min_dx = -X_SIZE;
+	max_dx = X_SIZE;
+	// roff = (int ***)alloc_2d_array(height, width, sizeof(int *));
+	if (min_dy != 0) {
+		ptr = (int *)alloc_mem((1 - min_dy) * (1 + max_dx - min_dx) * order * sizeof(int));
+	}else {
+		ptr = (int *)alloc_mem((2 + max_dx - min_dx) * order * sizeof(int));
+	}
+	// for (y = 0; y < height; y++) {
+		// for (x = 0; x < width; x++) {
+			array = exam_array[y][x];
+			if (y == 0) {
+				if (x == 0) {
+					roff[y][x] = ptr;
+					dx = 0;
+					dy = height;
+					for (k = 0; k < order; k++) {
+						*ptr++ = dy * width + dx;
+					}
+				} else if (x + min_dx <= 0 || x + max_dx >= width) {
+					roff[y][x] = ptr;
+					dy = 0;
+					for (k = 0; k < order; k++) {
+						dx = array[k * 4 + 3];
+						if (x + dx < 0) dx = -x;
+						else if (dx >= 0) dx = -1;
+						*ptr++ = dy * width + dx;
+					}
+				} else {
+					roff[y][x] = roff[y][x - 1];
+				}
+				// for K = 1 and NUM_UPELS = 1
+			} else if (min_dy == 0 && y == 1 && x == 0) {
+				roff[y][x] = ptr;
+				dy = -1;
+				dx = 0;
+				*ptr++ = dy * width + dx;
+			} else if (y + min_dy <= 0) {
+				if (x == 0) {
+					roff[y][x] = ptr;
+					for (k = 0; k < order; k++) {
+						dy = array[k * 4 + 2];
+						if (y + dy < 0) dy = -y;
+						else if (dy >= 0) dy = -1;
+						dx = array[k * 4 + 3];
+						if (x + dx < 0) dx = -x;
+						*ptr++ = dy * width + dx;
+					}
+				} else if (x + min_dx <= 0 || x + max_dx >= width) {
+					roff[y][x] = ptr;
+					for (k = 0; k < order; k++) {
+						dy = array[k * 4 + 2];
+						if (y + dy < 0) dy = -y;
+						dx = array[k * 4 + 3];
+						if (x + dx < 0) dx = -x;
+						else if (x + dx >= width) {
+							dx = width - x - 1;
+						}
+						*ptr++ = dy * width + dx;
+					}
+				} else {
+					roff[y][x] = roff[y][x - 1];
+				}
+			} else {
+				roff[y][x] = roff[y - 1][x];
+			}
+		// }
+	// }
+	// return (roff);
+}
+#endif
+
 DECODER *init_decoder(FILE *fp)
 {
 	DECODER *dec;
@@ -228,6 +317,7 @@ DECODER *init_decoder(FILE *fp)
 	init_2d_array(decval, dec->height, dec->width, 0);
 	decval[dec->height][0] = (int)(dec->maxval+1) << dec->coef_precision;
 	dec->w_gr = (int *)alloc_mem(dec->num_group * sizeof(int));
+	dec->temp_roff = (int***)alloc_2d_array(dec->height, dec->width, sizeof(int*));
 #endif
 
 	return (dec);
@@ -1318,10 +1408,12 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 
 #if TEMPLATE_MATCHING_ON
 			TemplateM(dec, y, x);
+			init_temp_ref_offset(dec->temp_roff, dec->height, dec->width, y, x, MAX_DATA_SAVE);
 #endif
 
 			if (dec->mask[y][x] == 0){
 				cl = dec->class[y][x];
+				#if !PREDICT_FROM_EXAMPLES
 				if(cl == dec->temp_cl){
 					prd = set_mask_parameter(img, dec, y, x, u, bitmask, shift);
 					if (mask->num_peak == 1){	// single_peak
@@ -1342,6 +1434,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 						p = rc_decode(fp, dec->rc, pm, 0, dec->maxval+1);
 					}
 				} else {
+				#endif
 					th_p = dec->th[cl];
 					for (gr = 0; gr < dec->num_group - 1; gr++) {
 						if (u < *th_p++) break;
@@ -1357,7 +1450,9 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 					dec->rc->x = x;
 					p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
 						- base;
+				#if !PREDICT_FROM_EXAMPLES
 				}
+				#endif
 			}else{	//mult_peak
 
 				prd = set_mask_parameter(img, dec, y, x, u, bitmask, shift);

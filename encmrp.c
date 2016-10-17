@@ -179,7 +179,7 @@ IMAGE *read_pgm(char *filename)
 	return (img);
 }
 
-int ***init_ref_offset(int height, int width, int prd_order, CPOINT *yx_array)
+int ***init_ref_offset(int height, int width, int prd_order)
 {
 	int ***roff, *ptr;
 	int x, y, dx, dy, k;
@@ -188,8 +188,8 @@ int ***init_ref_offset(int height, int width, int prd_order, CPOINT *yx_array)
 	min_dx = max_dx = min_dy = 0;
 	order = (prd_order > NUM_UPELS)? prd_order : NUM_UPELS;
 	for (k = 0; k < order; k++) {
-		dy = yx_array[k].y;
-		dx = yx_array[k].x;
+		dy = dyx[k].y;
+		dx = dyx[k].x;
 		if (dy < min_dy) min_dy = dy;
 		if (dx < min_dx) min_dx = dx;
 		if (dx > max_dx) max_dx = dx;
@@ -214,7 +214,7 @@ int ***init_ref_offset(int height, int width, int prd_order, CPOINT *yx_array)
 					roff[y][x] = ptr;
 					dy = 0;
 					for (k = 0; k < order; k++) {
-						dx = yx_array[k].x;
+						dx = dyx[k].x;
 						if (x + dx < 0) dx = -x;
 						else if (dx >= 0) dx = -1;
 						*ptr++ = dy * width + dx;
@@ -232,19 +232,19 @@ int ***init_ref_offset(int height, int width, int prd_order, CPOINT *yx_array)
 				if (x == 0) {
 					roff[y][x] = ptr;
 					for (k = 0; k < order; k++) {
-						dy = yx_array[k].y;
+						dy = dyx[k].y;
 						if (y + dy < 0) dy = -y;
 						else if (dy >= 0) dy = -1;
-						dx = yx_array[k].x;
+						dx = dyx[k].x;
 						if (x + dx < 0) dx = -x;
 						*ptr++ = dy * width + dx;
 					}
 				} else if (x + min_dx <= 0 || x + max_dx >= width) {
 					roff[y][x] = ptr;
 					for (k = 0; k < order; k++) {
-						dy = yx_array[k].y;
+						dy = dyx[k].y;
 						if (y + dy < 0) dy = -y;
-						dx = yx_array[k].x;
+						dx = dyx[k].x;
 						if (x + dx < 0) dx = -x;
 						else if (x + dx >= width) {
 							dx = width - x - 1;
@@ -261,6 +261,95 @@ int ***init_ref_offset(int height, int width, int prd_order, CPOINT *yx_array)
 	}
 	return (roff);
 }
+
+#if PREDICT_FROM_EXAMPLES
+int ***init_temp_ref_offset(int height, int width, int prd_order)
+{
+	int ***roff, *ptr, *array;
+	int x, y, dx, dy, k;
+	int order, min_dx, max_dx, min_dy;
+
+	min_dx = max_dx = min_dy = 0;
+	order = (prd_order > NUM_UPELS)? prd_order : NUM_UPELS;
+	/*for (k = 0; k < order; k++) {
+		dy = dyx[k].y;
+		dx = dyx[k].x;
+		if (dy < min_dy) min_dy = dy;
+		if (dx < min_dx) min_dx = dx;
+		if (dx > max_dx) max_dx = dx;
+	}*/
+	min_dy = -Y_SIZE;
+	min_dx = -X_SIZE;
+	max_dx = X_SIZE;
+	roff = (int ***)alloc_2d_array(height, width, sizeof(int *));
+	if (min_dy != 0) {
+		ptr = (int *)alloc_mem((1 - min_dy) * (1 + max_dx - min_dx) * order * sizeof(int));
+	}else {
+		ptr = (int *)alloc_mem((2 + max_dx - min_dx) * order * sizeof(int));
+	}
+	for (y = 0; y < height; y++) {
+		for (x = 0; x < width; x++) {
+			array = exam_array[y][x];
+			if (y == 0) {
+				if (x == 0) {
+					roff[y][x] = ptr;
+					dx = 0;
+					dy = height;
+					for (k = 0; k < order; k++) {
+						*ptr++ = dy * width + dx;
+					}
+				} else if (x + min_dx <= 0 || x + max_dx >= width) {
+					roff[y][x] = ptr;
+					dy = 0;
+					for (k = 0; k < order; k++) {
+						dx = array[k * 4 + 3];
+						if (x + dx < 0) dx = -x;
+						else if (dx >= 0) dx = -1;
+						*ptr++ = dy * width + dx;
+					}
+				} else {
+					roff[y][x] = roff[y][x - 1];
+				}
+				// for K = 1 and NUM_UPELS = 1
+			} else if (min_dy == 0 && y == 1 && x == 0) {
+				roff[y][x] = ptr;
+				dy = -1;
+				dx = 0;
+				*ptr++ = dy * width + dx;
+			} else if (y + min_dy <= 0) {
+				if (x == 0) {
+					roff[y][x] = ptr;
+					for (k = 0; k < order; k++) {
+						dy = array[k * 4 + 2];
+						if (y + dy < 0) dy = -y;
+						else if (dy >= 0) dy = -1;
+						dx = array[k * 4 + 3];
+						if (x + dx < 0) dx = -x;
+						*ptr++ = dy * width + dx;
+					}
+				} else if (x + min_dx <= 0 || x + max_dx >= width) {
+					roff[y][x] = ptr;
+					for (k = 0; k < order; k++) {
+						dy = array[k * 4 + 2];
+						if (y + dy < 0) dy = -y;
+						dx = array[k * 4 + 3];
+						if (x + dx < 0) dx = -x;
+						else if (x + dx >= width) {
+							dx = width - x - 1;
+						}
+						*ptr++ = dy * width + dx;
+					}
+				} else {
+					roff[y][x] = roff[y][x - 1];
+				}
+			} else {
+				roff[y][x] = roff[y - 1][x];
+			}
+		}
+	}
+	return (roff);
+}
+#endif
 
 ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 					  int prd_order, int coef_precision, int quadtree_depth,
@@ -350,7 +439,7 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 	}
 
 //*************
-	enc->roff = init_ref_offset(enc->height, enc->width, enc->max_prd_order, dyx);
+	enc->roff = init_ref_offset(enc->height, enc->width, enc->max_prd_order);
 	enc->org = (int **)alloc_2d_array(enc->height+1, enc->width, sizeof(int));
 	enc->err = (int **)alloc_2d_array(enc->height+1, enc->width, sizeof(int));
 	if (enc->quadtree_depth > 0) {
@@ -674,7 +763,15 @@ void predict_region(ENCODER *enc, int tly, int tlx, int bry, int brx)	//予測�
 		prd_p = &enc->prd[y][tlx];
 		for (x = tlx; x < brx; x++) {
 			cl = *class_p++;
+			#if PREDICT_FROM_EXAMPLES
+			if(cl == enc->temp_cl){
+				roff_p = enc->temp_roff[y][x];
+			} else {
+				roff_p = enc->roff[y][x];
+			}
+			#else
 			roff_p = *roff_pp++;
+			#endif
 			coef_p = enc->predictor[cl];
 			nzc_p = enc->nzconv[cl];
 			prd = 0;
@@ -1097,6 +1194,9 @@ free(encval);
 printf("Restoring Template Matching\r");
 TemplateM_Log_Input(enc, outfile, tempm_array, exam_array);
 #endif
+#if PREDICT_FROM_EXAMPLES
+enc->temp_roff = init_temp_ref_offset(enc->height, enc->width, MAX_DATA_SAVE);
+#endif
 end = clock();
 printf("Calculating Template Matching Fin[%f sec]\n", (float)(end-start)/CLOCKS_PER_SEC);
 
@@ -1269,7 +1369,7 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 
 	for(cl = peak = 0; cl < enc->num_class; cl++){
 		if (count_cl[cl]!=0){
-		#if TEMPLATE_MATCHING_ON
+		#if (TEMPLATE_MATCHING_ON && !PREDICT_FROM_EXAMPLES)
 			if(cl == enc->temp_cl){
 				for(m_gr=0; m_gr < enc->num_group; m_gr++){
 					if(u < enc->w_gr[m_gr])	break;
@@ -1291,7 +1391,7 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 				m_frac = enc->fconv[m_prd];
 				mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
 				peak++;
-		#if TEMPLATE_MATCHING_ON
+		#if (TEMPLATE_MATCHING_ON && !PREDICT_FROM_EXAMPLES)
 			}
 		#endif
 		}
@@ -1443,6 +1543,7 @@ cost_t design_predictor(ENCODER *enc, int f_mmse)
 	for (cl = 0; cl < enc->num_class; cl++) {
 		nzc_p = enc->nzconv[cl];
 #if TEMPLATE_MATCHING_ON
+		#if !PREDICT_FROM_EXAMPLES
 		if(cl == 0){
 			nzc_p[0] = -1;	//nzcの頭にフラグを入れる
 			for(i=0; i < enc->prd_order; i++){
@@ -1451,6 +1552,7 @@ cost_t design_predictor(ENCODER *enc, int f_mmse)
 			enc->predictor[cl][0] = TEMPLATE_FLAG;
 			continue;
 		}
+		#endif
 #endif
 		for (i = 0; i < enc->prd_order; i++) {
 			for (j = 0; j <= enc->prd_order; j++) {
@@ -1464,7 +1566,11 @@ cost_t design_predictor(ENCODER *enc, int f_mmse)
 					continue;
 				}
 				gr = enc->group[y][x];
-				roff_p = enc->roff[y][x];
+				#if PREDICT_FROM_EXAMPLES
+					roff_p = enc->temp_roff[y][x];
+				#else
+					roff_p = enc->roff[y][x];
+				#endif
 				org_p = &enc->org[y][x];
 				for (i = 0; i < enc->prd_order; i++) {
 					w = weight[gr] * org_p[roff_p[nzc_p[i]]];

@@ -155,6 +155,8 @@
 #define TEMPLATE_CLASS_NUM	30
 #define TEMPLATEM_LOG_OUTPUT	1	//テンプレートマッチングの結果を書き出す
 
+#define PREDICT_FROM_EXAMPLES	1
+
 #else
 #define TEMPLATE_CLASS_NUM	0
 
@@ -314,6 +316,7 @@ typedef struct {
 	int ***array;
 	char temp_peak_num;
 	int *w_gr;
+	int ***temp_roff;
 #endif
 	char temp_cl;
 	char function_number;
@@ -361,6 +364,7 @@ typedef struct {
 	int *array;
 	char temp_peak_num;
 	int *w_gr;
+	int ***temp_roff;
 #endif
 	char temp_cl;
 	int **org;
