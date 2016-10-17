@@ -13,6 +13,7 @@ extern CPOINT dyx[];
 extern MASK *mask;
 extern  int win_sample[];
 extern int mask_x[], mask_y[];
+extern double sigma_a[];
 
 char pallet[256][3] = {
 {255, 128, 128}, {255, 255, 128}, {128, 255, 128}, {0, 255, 128},   {128, 255, 255},
@@ -1074,6 +1075,37 @@ void TemplateM_Log_Output(ENCODER *enc, char *outfile, int ***tempm_array, int *
 		}
 	}
 	fclose(fp);
+
+	int j=0;
+	double **cost_sum=0, max_sum=0, step;
+	cost_sum = (double **)alloc_2d_array(enc->height, enc->width, sizeof(double));
+	name = 0;
+	name = strrchr(outfile, BS);
+	name++;
+	sprintf(file, LOG_TEMP_DIR"%s_temp_map.pgm", name);
+	fp = fileopen(file, "wb");
+	fprintf(fp, "P5\n%d %d\n255\n", enc->width, enc->height);
+
+	for(y=0; y<enc->height; y++){
+		for(x=0; x<enc->width; x++){
+			cost_sum[y][x]=0;
+			j=enc->temp_num[y][x];
+			for(k=0; k<j; k++){
+				cost_sum[y][x] += (double)(tempm_array[y][x][k*4+3] >> COEF_PRECISION);
+			}
+			cost_sum[y][x] /= j;
+			if(cost_sum[y][x] > max_sum)	max_sum = cost_sum[y][x];
+		}
+	}
+	step = (double)255.0 / max_sum;
+	for(y=0; y<enc->height; y++){
+		for(x=0; x<enc->width; x++){
+			if(cost_sum[y][x] < 0)cost_sum[y][x] = max_sum;
+			putc((int)(cost_sum[y][x] * step), fp);
+		}
+	}
+	fclose(fp);
+	free(cost_sum);
 	return;
 }
 

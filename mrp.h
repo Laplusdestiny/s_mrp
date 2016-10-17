@@ -34,7 +34,7 @@
 
 /****** OPTIMIZE ***************************/
 #define OPT_SIDEINFO		1 // 1 : side-info into consideration (standard), 0 : neglect side-info
-#define MAX_ITERATION 	100	//100
+#define MAX_ITERATION 	10	//100
 #define EXTRA_ITERATION	10
 #define AUTO_DEL_CL		1
 #define AUTO_PRD_ORDER	1
@@ -53,7 +53,7 @@
 #define OPTIMIZE_MASK_LOOP		1
 #define WIN_BSIZE			32
 #define NUM_MASK			5
-#define W_SHIFT			7
+#define W_SHIFT			8	// 7
 #define INIT_MASK			0   // 0 1 2 3 4
 #define MAX_PEAK_NUM		25
 

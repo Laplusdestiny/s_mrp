@@ -6,6 +6,7 @@ Arithmetic coder based on "carryless rangecoder" by D. Subbotin.
 (C impelementation by M. Lundqvist)
 * H. Okumura: C magazine, Vol.14, No.7, pp.13-35, Jul. 2002
 (Tutorial of data compression with sample codes, in japanese).
+https://www.amazon.co.jp/gp/product/B00XM7IP4Q/ref=oh_aui_d_detailpage_o00_?ie=UTF8&psc=1
 */
 #if defined(_MSC_VER)
 #	pragma warning (disable : 4146) //disregard a warning C4146.
@@ -28,15 +29,10 @@ RANGECODER *rc_init(void)
 void rc_encode(FILE *fp, RANGECODER *rc, uint cumfreq, uint freq, uint totfreq)
 {
 	rc->range /= totfreq;
-	// if(rc->y == check_y && rc->x == check_x) printf("range\t%lld | totfreq\t%lld\n", rc->range, totfreq);
 	rc->low += cumfreq * rc->range;
-	// if(rc->y == check_y && rc->x == check_x) printf("low\t%lld | cumfreq\t%lld\n", rc->low, cumfreq);
 	rc->range *= freq;
-	// if(rc->y == check_y && rc->x == check_x) printf("range\t%lld | freq\t%lld\n", rc->range, freq);
-	// if(rc->y == check_y && rc->x == check_x) printf("%lld\n%lld\n", (rc->low ^ (rc->low + rc->range)), RANGE_TOP);
 	while((rc->low ^ (rc->low + rc->range)) < RANGE_TOP){	//最正規化処理(1)
 		putc(rc->low >> (RANGE_SIZE - 8), fp);
-		// if(rc->y == check_y && rc->x == check_x)	printf("putc\t%lld\n", rc->low >> (RANGE_SIZE - 8));
 		rc->code += 8;
 		if (rc->code > 1E8) {
 			fprintf(stderr, "Too large!\n");
@@ -44,11 +40,9 @@ void rc_encode(FILE *fp, RANGECODER *rc, uint cumfreq, uint freq, uint totfreq)
 		}
 		rc->range <<= 8;
 		rc->low <<= 8;
-		// if(rc->y == check_y && rc->x == check_x) printf("range\t%lld | low\t%lld | code\t%lld\n", rc->range, rc->range, rc->code);
 	}
 	while(rc->range < RANGE_BOT){	//最正規化処理(2)
 		putc(rc->low >> (RANGE_SIZE - 8), fp);
-		// if(rc->y == check_y && rc->x == check_x)	printf("putc2\t%lld\n", rc->low >> (RANGE_SIZE - 8));
 		rc->code += 8;
 		if (rc->code > 1E8) {
 			fprintf(stderr, "Too large!\n");
@@ -56,7 +50,6 @@ void rc_encode(FILE *fp, RANGECODER *rc, uint cumfreq, uint freq, uint totfreq)
 		}
 		rc->range = ((-rc->low) & (RANGE_BOT - 1)) << 8;
 		rc->low <<= 8;
-		// if(rc->y == check_y && rc->x == check_x) printf("range\t%lld | low\t%lld | code\t%lld\n", rc->range, rc->range, rc->code);
 	}
 	return;
 }
@@ -86,23 +79,18 @@ int rc_decode(FILE *fp, RANGECODER *rc, PMODEL *pm, int min, int max)
 		fprintf(stderr, "Data is corrupted!\n");
 		exit(1);
 	}
-	if(rc->y==check_y && rc->x == check_x)	printf("rfreq: %d\n", rfreq);
 	i = min;
-	// j = max - 1;
 	j = max;
 	while (i < j) {
 		k = (i + j) / 2;
-		// if(rc->y == check_y && rc->x == check_x)	printf("%d %d %d\n", k, i, j);
 		if ((pm->cumfreq[k+1] - offset) <= rfreq) {
 			i = k + 1;
 		} else {
 			j = k;
 		}
 	}
-	// if(rc->y == check_y && rc->x == check_x)	printf("(%d,%d)\n", i, j);
 	rc->low += (pm->cumfreq[i] - offset) * rc->range;
 	rc->range *= pm->freq[i];
-	// if(rc->y == check_y && rc->x == check_x)	printf("low\t%lld | range\t%lld\n", rc->low, rc->range);
 	while((rc->low ^ (rc->low + rc->range)) < RANGE_TOP){
 		rc->code = (rc->code << 8) | getc(fp);
 		rc->range <<= 8;
