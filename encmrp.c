@@ -750,7 +750,7 @@ int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出
 		u += err_p[*roff_p++] * (*wt_p++);
 		// u += err_p[roff_p[k]] * wt_p[k];
 		#if CHECK_DEBUG
-			// if(y==check_y && x==check_x && enc->function_number == 8)	printf("u: %d | err: %d(%3d) | wt_p: %d\n", u, err_p[k], roff_p[k], wt_p[k]);
+			if(y==check_y && x==check_x && enc->function_number == 8)	printf("u: %d | err: %d(%3d) | wt_p: %d\n", u, err_p[roff_p[k]], roff_p[k], wt_p[k]);
 		#endif
 	}
 	u >>= 6;

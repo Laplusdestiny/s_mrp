@@ -888,14 +888,9 @@ void init_log_sheet(ENCODER *enc, char *outfile)
 
 	if ((fp = fopen(LOG_LIST, "rb")) == NULL) {
 		fp = fileopen(LOG_LIST, "wb");
-		fprintf(fp, "Date,Input,Height,Width,Init_Class,Use_Class,Prd_Order,\
-			Header[bits],Class[bits],Predictor[bits],Threshold[bits],\
-			Pred. Errors[bits],Total info.[bits],Coding Rate[bits/pel],Time[s], ,");
+		fprintf(fp, "Date,Input,Height,Width,Init_Class,Use_Class,Prd_Order,Header[bits],Class[bits],Predictor[bits],Threshold[bits],Pred. Errors[bits],Total info.[bits],Coding Rate[bits/pel],Time[s], ,");
 
-		fprintf(fp, "Auto_Del_CL,	Auto_Set_Coef,BASE_BSIZE,QUADTREE_DEPTH,\
-			MIN_BSIZE,MAX_BSIZE,COEF_PRECISION,PM_ACCURACY,NUM_GROUP,\
-			UPEL_DIST,MAX_ITERATION,CTX_WEIGHT,TEMPLATE_MATCHING,COST FUNCTION,MANHATTAN_SORT,\
-			Search Window,");
+		fprintf(fp, "Auto_Del_CL,Auto_Set_Coef,BASE_BSIZE,QUADTREE_DEPTH,MIN_BSIZE,MAX_BSIZE,COEF_PRECISION,PM_ACCURACY,NUM_GROUP,UPEL_DIST,MAX_ITERATION,CTX_WEIGHT,TEMPLATE_MATCHING,COST FUNCTION,MANHATTAN_SORT,Search Window,TEMPLATE_PEAK_NUM,");
 		// fprintf(fp, "\n");
 		fclose(fp);
 	}
@@ -960,7 +955,7 @@ void finish_log_sheet(ENCODER *enc, int header_info, int class_info, int pred_in
 			fprintf(fp, "OFF,");
 		}
 
-		fprintf(fp, "%d*%d,", X_SIZE*2+1, Y_SIZE);
+		fprintf(fp, "%d*%d,%d,", X_SIZE*2+1, Y_SIZE, enc->temp_peak_num);
 #endif
 	} else {
 		fprintf(fp, "OFF,");

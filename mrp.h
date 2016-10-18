@@ -153,7 +153,7 @@
 #define W_GR 			7
 #define WEIGHT_CN		2	//ラプラス関数
 #define TEMPLATE_CLASS_NUM	30
-#define TEMPLATEM_LOG_OUTPUT	1	//テンプレートマッチングの結果を書き出す
+#define TEMPLATEM_LOG_OUTPUT	0	//テンプレートマッチングの結果を書き出す
 
 #else
 #define TEMPLATE_CLASS_NUM	0
@@ -165,12 +165,12 @@
 /*********DEBUG******************************/
 #define CHECK_TM 		0
 #define CHECK_TM_DETAIL	0
-#define CHECK_DEBUG 	0
-#define CHECK_PMODEL	0
+#define CHECK_DEBUG 	1
+#define CHECK_PMODEL	1
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
-#define check_y			26
-#define check_x			202
+#define check_y			0
+#define check_x			706
 #define F_NUM			8
 
 /****************** PARARELL ***************/

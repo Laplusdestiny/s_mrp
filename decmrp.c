@@ -149,7 +149,7 @@ DECODER *init_decoder(FILE *fp)
 	// dec->temp_cl = getbits(fp, 6);
 	// printf("TEMP_CL : %d | ", dec->temp_cl);
 	dec->temp_peak_num = getbits(fp, 6);
-	printf("TEMP_PEAK_NUM: %d |", dec->temp_peak_num);
+	printf("TEMP_PEAK_NUM: %d\n", dec->temp_peak_num);
 #else
 	dec->temp_cl = -1;
 	printf("TEMP_CL : %d\n", dec->temp_cl);
@@ -603,7 +603,7 @@ int calc_udec2(DECODER *dec, int y, int x)
 	for(k=0; k<NUM_UPELS; k++){
 		u += err_p[*roff_p++] * (*wt_p++);
 		#if CHECK_DEBUG
-			if(y==check_y && x==check_x)	printf("u: %d | err: %d(%3d) | wt_p: %d\n", u, err_p[k], roff_p[k], wt_p[k]);
+			if(y==check_y && x==check_x)	printf("u: %d | err: %d(%3d) | wt_p: %d\n", u, err_p[roff_p[k]], roff_p[k], wt_p[k]);
 		#endif
 	}
 
@@ -1295,7 +1295,7 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 
 IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 {
-	int x, y, cl, gr, prd, u, p, bitmask, shift, base;
+	int x, y, cl, gr, prd, u, p, bitmask, shift, base, e;
 	int *th_p;
 	IMAGE *img;
 	PMODEL *pm;
@@ -1386,10 +1386,9 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 			if (e < 0) e = -(e + 1);
 			dec->err[y][x] = e;*/
 			dec->err[y][x] = dec->econv[p][prd];	//特徴量算出に用いる
-			// printf("%d|%d|err:|%d|org:|%d|prd:|%d\n", y, x, dec->err[y][x], p << 1, prd);
-			#if TEMPLATE_MATCHING_ON
+			// #if TEMPLATE_MATCHING_ON
 				// decval[y][x] = p << dec->coef_precision;
-			#endif
+			// #endif
 			#if CHECK_DEBUG
 				// printf("d[%d][%d]: %d(%d) | err: %d\n", y, x, p, prd, e);
 				printf("%d\n", p);
