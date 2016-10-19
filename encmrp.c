@@ -750,13 +750,13 @@ int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出
 		u += err_p[*roff_p++] * (*wt_p++);
 		// u += err_p[roff_p[k]] * wt_p[k];
 		#if CHECK_DEBUG
-			if(y==check_y && x==check_x && enc->function_number == 8)	printf("u: %d | err: %d(%3d) | wt_p: %d\n", u, err_p[roff_p[k]], roff_p[k], wt_p[k]);
+			if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("u: %d | err: %d(%3d) | wt_p: %d\n", u, err_p[roff_p[k]], roff_p[k], wt_p[k]);
 		#endif
 	}
 	u >>= 6;
 	if (u > MAX_UPARA) u = MAX_UPARA;
 	#if CHECK_DEBUG
-		// if(y==check_y && x==check_x)	printf("u: %d\n", u);
+		if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("u: %d\n", u);
 	#endif
 	return (u);
 }
@@ -4102,11 +4102,6 @@ cost_t calc_side_info(ENCODER *enc, cost_t cost){
 		printf("(%d,", (int)cost);
 	#endif
 
-	cost += sc = encode_class(NULL, enc, 1);
-	#if CHECK_DEBUG
-		printf("%d,", (int)sc);
-	#endif
-
 	cost += sc = encode_predictor(NULL, enc, 1);
 	#if CHECK_DEBUG
 		printf("%d(%d),", (int)sc, enc->num_class);
@@ -4123,6 +4118,10 @@ cost_t calc_side_info(ENCODER *enc, cost_t cost){
 		printf("%d,", (int)sc);
 	#endif
 #endif
+	cost += sc = encode_class(NULL, enc, 1);
+	#if CHECK_DEBUG
+		printf("%d,", (int)sc);
+	#endif
 
 	#if CHECK_DEBUG
 		printf("| %d)", (int)cost);
@@ -4167,6 +4166,7 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 					pm->freq[e],
 					pm->cumfreq[enc->maxval + 1]);
 			}
+			printf("%d,%d,prd,%d,org,%d\n", y, x, enc->prd_class[y][x][enc->class[y][x]] >> (enc->coef_precision-1), enc->org[y][x]);
 		}
 	}
 	rc_finishenc(fp, enc->rc);
@@ -4571,7 +4571,7 @@ int main(int argc, char **argv)
 {
 	cost_t cost, min_cost, side_cost, sc;
 	int i, j, k, l, x, y, xx, yy, cl, gr, bits, **prd_save, **th_save, sw;
-	int header_info, class_info, pred_info, th_info, mask_info, err_info;
+	int header_info, class_info, pred_info, th_info, mask_info, err_info, w_gr_info=0;
 	int num_class_save;
 	char **class_save, **mask_save;
 	char **qtmap_save[QUADTREE_DEPTH];
@@ -4701,7 +4701,7 @@ int main(int argc, char **argv)
 
 #if TEMPLATE_MATCHING_ON
 	// num_class++;
-	int temp_peak_num_save=0, *w_gr_save = 0, w_gr_info=0;
+	int temp_peak_num_save=0, *w_gr_save = 0;
 #endif
 
 	printf("%s -> %s (%dx%d)\n", infile, outfile, img->width, img->height);
@@ -5123,7 +5123,7 @@ int main(int argc, char **argv)
 #if AUTO_PRD_ORDER
 	set_prd_pels(enc);
 #endif
-
+//Start Encode
 	bits = header_info = write_header(enc, fp);
 	printf("header info.\t:%10d bits\n", header_info);
 	enc->rc = rc_init();
@@ -5156,7 +5156,7 @@ int main(int argc, char **argv)
 	calc_ratio_of_model_to_rate(enc);
 
 #if LOG_LIST_MODE
-	finish_log_sheet(enc, header_info, class_info, pred_info, th_info, err_info, bits, rate, elapse);
+	finish_log_sheet(enc, header_info, class_info, pred_info, th_info, err_info, w_gr_info, bits, rate, elapse);
 #endif
 
 #if LOG_PUT_OUT_ENC

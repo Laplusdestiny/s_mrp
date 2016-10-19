@@ -34,7 +34,7 @@
 
 /****** OPTIMIZE ***************************/
 #define OPT_SIDEINFO		1 // 1 : side-info into consideration (standard), 0 : neglect side-info
-#define MAX_ITERATION 	10	//100
+#define MAX_ITERATION 	6	//100
 #define EXTRA_ITERATION	10
 #define AUTO_DEL_CL		1
 #define AUTO_PRD_ORDER	1
@@ -360,8 +360,8 @@ typedef struct {
 	int **temp_num;
 	int *array;
 	char temp_peak_num;
-	int *w_gr;
 #endif
+	int *w_gr;
 	char temp_cl;
 	int **org;
 } DECODER;
@@ -408,7 +408,7 @@ void print_rate_compare_class_map(ENCODER *, char *);
 void print_block_size(int **, char ***, int, int, int, char *);
 void calc_var_upara( ENCODER *, char *);
 void init_log_sheet(ENCODER *, char *);
-void finish_log_sheet(ENCODER *, int, int, int, int, int, int, double, double);
+void finish_log_sheet(ENCODER *, int, int, int, int, int, int, int, double, double);
 void TemplateM_Log_Output(ENCODER *, char *, int ***, int ***);
 void TemplateM_Log_Input(ENCODER *, char *, int ***, int ***);
 

@@ -888,7 +888,7 @@ void init_log_sheet(ENCODER *enc, char *outfile)
 
 	if ((fp = fopen(LOG_LIST, "rb")) == NULL) {
 		fp = fileopen(LOG_LIST, "wb");
-		fprintf(fp, "Date,Input,Height,Width,Init_Class,Use_Class,Prd_Order,Header[bits],Class[bits],Predictor[bits],Threshold[bits],Pred. Errors[bits],Total info.[bits],Coding Rate[bits/pel],Time[s], ,");
+		fprintf(fp, "Date,Input,Height,Width,Init_Class,Use_Class,Prd_Order,Header[bits],Class[bits],Predictor[bits],Threshold[bits],Pred. Errors[bits],w_gr Threshold[bits],Total info.[bits],Coding Rate[bits/pel],Time[s], ,");
 
 		fprintf(fp, "Auto_Del_CL,Auto_Set_Coef,BASE_BSIZE,QUADTREE_DEPTH,MIN_BSIZE,MAX_BSIZE,COEF_PRECISION,PM_ACCURACY,NUM_GROUP,UPEL_DIST,MAX_ITERATION,CTX_WEIGHT,TEMPLATE_MATCHING,COST FUNCTION,MANHATTAN_SORT,Search Window,TEMPLATE_PEAK_NUM,");
 		// fprintf(fp, "\n");
@@ -903,13 +903,13 @@ void init_log_sheet(ENCODER *enc, char *outfile)
 }
 
 void finish_log_sheet(ENCODER *enc, int header_info, int class_info, int pred_info,
-		int th_info, int err_info, int total_info, double rate, double time)
+		int th_info, int err_info, int w_gr_info, int total_info, double rate, double time)
 {
 	FILE *fp;
 
 	fp = fileopen(LOG_LIST, "ab");
 	fprintf(fp, "%d,%d,", enc->num_class, enc->max_prd_order);
-	fprintf(fp, "%d,%d,%d,%d,%d,%d,", header_info, class_info, pred_info, th_info, err_info, total_info);
+	fprintf(fp, "%d,%d,%d,%d,%d,%d,%d,", header_info, class_info, pred_info, th_info, err_info, w_gr_info, total_info);
 	fprintf(fp, "%f,%f, ,", rate, time);
 
 	if(AUTO_DEL_CL) {

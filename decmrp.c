@@ -189,6 +189,7 @@ DECODER *init_decoder(FILE *fp)
 			k= (i << 1) - j -1;
 			if(k<0)	k = -(k+1);
 			dec->econv[i][j] = k;
+			// printf("[%d][%d]%d\n",i,j,k);
 		}
 	}
 	dec->class = (char **)alloc_2d_array(dec->height, dec->width,
@@ -228,6 +229,8 @@ DECODER *init_decoder(FILE *fp)
 	init_2d_array(decval, dec->height, dec->width, 0);
 	decval[dec->height][0] = (int)(dec->maxval+1) << dec->coef_precision;
 	dec->w_gr = (int *)alloc_mem(dec->num_group * sizeof(int));
+#else
+	dec->w_gr = NULL;
 #endif
 
 	return (dec);
@@ -610,7 +613,7 @@ int calc_udec2(DECODER *dec, int y, int x)
 	u >>= 6;
 	if (u > MAX_UPARA) u = MAX_UPARA;
 	#if CHECK_DEBUG
-		// if(y==check_y && x==check_x)	printf("u: %d\n", u);
+		if(y==check_y && x==check_x)	printf("u: %d\n", u);
 	#endif
 	return (u);
 }
@@ -1314,7 +1317,8 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 		for (x = 0; x < dec->width; x++) {
 			dec->rc->y = y;
 			dec->rc->x = x;
-			u = calc_udec2(dec, y, x);
+			u = calc_udec(dec, y, x);
+			// u = calc_udec2(dec, y, x);
 
 #if TEMPLATE_MATCHING_ON
 			TemplateM(dec, y, x);
@@ -1381,7 +1385,9 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 			}
 
 			img->val[y][x] = dec->org[y][x] = p;
+			prd = CLIP(0, dec->maxprd, prd);
 			prd >>= (dec->coef_precision - 1);
+			printf("%d,%d,prd,%d,org,%d\n", y, x, prd, p);
 			/*e = (p << 1) - prd - 1;
 			if (e < 0) e = -(e + 1);
 			dec->err[y][x] = e;*/
@@ -1391,7 +1397,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 			// #endif
 			#if CHECK_DEBUG
 				// printf("d[%d][%d]: %d(%d) | err: %d\n", y, x, p, prd, e);
-				printf("%d\n", p);
+				// printf("%d\n", p);
 			#endif
 
 		}
