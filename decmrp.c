@@ -1317,8 +1317,8 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 		for (x = 0; x < dec->width; x++) {
 			dec->rc->y = y;
 			dec->rc->x = x;
-			u = calc_udec(dec, y, x);
-			// u = calc_udec2(dec, y, x);
+			// u = calc_udec(dec, y, x);
+			u = calc_udec2(dec, y, x);
 
 #if TEMPLATE_MATCHING_ON
 			TemplateM(dec, y, x);
@@ -1387,17 +1387,17 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 			img->val[y][x] = dec->org[y][x] = p;
 			prd = CLIP(0, dec->maxprd, prd);
 			prd >>= (dec->coef_precision - 1);
-			printf("%d,%d,prd,%d,org,%d\n", y, x, prd, p);
 			/*e = (p << 1) - prd - 1;
 			if (e < 0) e = -(e + 1);
 			dec->err[y][x] = e;*/
 			dec->err[y][x] = dec->econv[p][prd];	//特徴量算出に用いる
+			// printf("%d,%d,prd,%d(%d),org,%d,econv:%d\n", y, x, prd, dec->class[y][x], p, dec->err[y][x]);
 			// #if TEMPLATE_MATCHING_ON
 				// decval[y][x] = p << dec->coef_precision;
 			// #endif
 			#if CHECK_DEBUG
 				// printf("d[%d][%d]: %d(%d) | err: %d\n", y, x, p, prd, e);
-				// printf("%d\n", p);
+				printf("%d\n", p);
 			#endif
 
 		}

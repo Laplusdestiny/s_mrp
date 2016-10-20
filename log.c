@@ -1071,6 +1071,7 @@ void TemplateM_Log_Output(ENCODER *enc, char *outfile, int ***tempm_array, int *
 	}
 	fclose(fp);
 
+//マッチングコストのマップを出力(暗いところほどマッチングコストが小さい)
 	int j=0;
 	double **cost_sum=0, max_sum=0, step;
 	cost_sum = (double **)alloc_2d_array(enc->height, enc->width, sizeof(double));

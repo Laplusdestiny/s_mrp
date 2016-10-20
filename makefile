@@ -7,7 +7,7 @@ ifeq ($(CC), icc)
 else
   # CFLAG = -funroll-loops -Wall -g -fopenmp
   # CFLAG = -O0 -funroll-loops -Wall -g3
-  CFLAG = -O3 -funroll-loops -Wall -g -fopenmp
+  CFLAG = -O3 -funroll-loops -Wall -g
 endif
 
 ENCODER = ENCMRP

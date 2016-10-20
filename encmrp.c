@@ -703,7 +703,7 @@ void predict_region(ENCODER *enc, int tly, int tlx, int bry, int brx)	//予測�
 			prd = CLIP(0, enc->maxprd, prd);
 			prd >>= (enc->coef_precision - 1);
 			*err_p++ = enc->econv[org][prd];
-			// if(enc->function_number == 100)	printf("%d|%d|err:|%d|org:|%d|prd:|%d\n", y, x, enc->err[y][x], org, prd);
+			if(enc->function_number == F_NUM)	printf("%d|%d|err:|%d|org:|%d|prd:|%d\n", y, x, enc->err[y][x], org, prd);
 		}
 	}
 }
@@ -3452,6 +3452,7 @@ void remove_emptyclass(ENCODER *enc)
 	}
 	printf("M = %d\n", cl);
 	enc->num_class = cl;
+	predict_region(enc, 0, 0, enc->height, enc->width);
 }
 
 
@@ -4166,7 +4167,7 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 					pm->freq[e],
 					pm->cumfreq[enc->maxval + 1]);
 			}
-			printf("%d,%d,prd,%d,org,%d\n", y, x, enc->prd_class[y][x][enc->class[y][x]] >> (enc->coef_precision-1), enc->org[y][x]);
+			// printf("%d,%d,prd,%d(%d),org,%d,conv:%d\n", y, x, enc->prd_class[y][x][enc->class[y][x]] >> (enc->coef_precision-1), enc->class[y][x], enc->org[y][x], enc->err[y][x]);
 		}
 	}
 	rc_finishenc(fp, enc->rc);
@@ -4712,10 +4713,6 @@ int main(int argc, char **argv)
 		num_class, MAX_PRD_ORDER, coef_precision, num_pmodel, pm_accuracy, max_iteration, f_mmse, f_optpred, quadtree_depth, TEMPLATE_MATCHING_ON);
 	#if TEMPLATE_MATCHING_ON
 		printf("TM_CLASS_NUM\t= %d\n", TEMPLATE_CLASS_NUM);
-	#endif
-	#if OPENMP_ON
-		omp_set_num_threads(NUM_THREADS);
-		printf("Parallel Threads= %d\n", omp_get_max_threads());
 	#endif
 #else
 	printf("M = %d, K = %d, P = %d, V = %d, A = %d\n",
