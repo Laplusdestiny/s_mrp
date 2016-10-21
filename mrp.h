@@ -153,7 +153,7 @@
 #define W_GR 			7
 #define WEIGHT_CN		2	//ラプラス関数
 #define TEMPLATE_CLASS_NUM	30
-#define TEMPLATEM_LOG_OUTPUT	1	//テンプレートマッチングの結果を書き出す
+#define TEMPLATEM_LOG_OUTPUT	0	//テンプレートマッチングの結果を書き出す
 
 #define PREDICT_FROM_EXAMPLES	1
 
