@@ -1,0 +1,2421 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"lennga",
+				"lennagrey\t(run.sh)"
+			],
+			[
+				"len",
+				"lena\t(run.sh)"
+			],
+			[
+				"bar",
+				"barb2\t(run.sh)"
+			],
+			[
+				"PREDI",
+				"PREDICT_FROM_EXAMPLES"
+			],
+			[
+				"PREI",
+				"PREDICT_FROM_EXAMPLES"
+			],
+			[
+				"PRED",
+				"PREDICT_FROM_EXAMPLES"
+			],
+			[
+				"TEMPLA",
+				"TEMPLATE_CLASS_NUM"
+			],
+			[
+				"MANN",
+				"MANHATTAN_SORT"
+			],
+			[
+				"F",
+				"F_NUM"
+			],
+			[
+				"mincost",
+				"min_cost_side"
+			],
+			[
+				"num_c",
+				"num_class"
+			],
+			[
+				"コンテクスト毎に分散値を",
+				"コンテクスト毎に分散値を決定\t(Home.md)"
+			],
+			[
+				"calc_cost",
+				"calc_cost2"
+			],
+			[
+				"encode_thre",
+				"encode_w_gr_threshold"
+			],
+			[
+				"w_gr",
+				"w_gr_save"
+			],
+			[
+				"alloc",
+				"alloc_mem"
+			],
+			[
+				"TM_",
+				"TM_Member"
+			],
+			[
+				"before_",
+				"before_side"
+			],
+			[
+				"before",
+				"before_side"
+			],
+			[
+				"min_cost",
+				"min_cost_side"
+			],
+			[
+				"TEMPL",
+				"TEMPLATE_MATCHING_ON"
+			],
+			[
+				"RE",
+				"RESTORE_SIDE\t(mrp.h)"
+			],
+			[
+				"AUTO",
+				"AUTO_DEL_CL"
+			],
+			[
+				"prd_cl",
+				"prd_cl_s\t(encmrp.c)"
+			],
+			[
+				"Log",
+				"Log_List.csv"
+			],
+			[
+				"TEMPLATE",
+				"TEMPLATE_MATCHING_ON"
+			],
+			[
+				"side_",
+				"side_info_back"
+			],
+			[
+				"num_clas",
+				"num_class_save"
+			],
+			[
+				"del_cl_fl",
+				"del_cl_flg_save"
+			],
+			[
+				"y_size",
+				"y_size_loop"
+			],
+			[
+				"x_",
+				"x_size"
+			],
+			[
+				"y_",
+				"y_size"
+			],
+			[
+				"x_si",
+				"x_size_loop"
+			],
+			[
+				"x_s",
+				"x_size_loop\t(encmrp.c)"
+			],
+			[
+				"y_si",
+				"y_size_loop"
+			],
+			[
+				"chec",
+				"check1"
+			],
+			[
+				"CL",
+				"CLOCKS_PER_SEC"
+			],
+			[
+				"che",
+				"check1"
+			],
+			[
+				"optimize",
+				"optimize_loop"
+			],
+			[
+				"temp_peak_",
+				"temp_peak_num"
+			],
+			[
+				"temp_peak_num",
+				"temp_peak_num_save"
+			],
+			[
+				"TEMPLATEM",
+				"TEMPLATE_MATCHING_ON"
+			],
+			[
+				"CHECK",
+				"CHECK_SHIFT_FREQ\t(encmrp.c)"
+			],
+			[
+				"function",
+				"function_number"
+			],
+			[
+				"funcit",
+				"function_number\t(mrp.h)"
+			],
+			[
+				"CHECK_",
+				"CHECK_DEBUG"
+			],
+			[
+				"search",
+				"search_flag"
+			],
+			[
+				"MAX_DATA_SAVE_",
+				"MAX_DATA_SAVE_DOUBLE"
+			],
+			[
+				"Template",
+				"Template_log_input\t(encmrp.c)"
+			],
+			[
+				"MAX",
+				"MAX_DATA_SAVE_DOUBLE"
+			],
+			[
+				"LOG_",
+				"LOG_TEMP_DIR"
+			],
+			[
+				"array_ave_",
+				"array_ave_b\t(encmrp.c)"
+			],
+			[
+				"array_ave",
+				"array_ave_g\t(encmrp.c)"
+			],
+			[
+				"MAX_",
+				"MAX_DATA_SAVE_DOUBLE\t(encmrp.c)"
+			],
+			[
+				"check",
+				"check_y"
+			],
+			[
+				"Window",
+				"window"
+			],
+			[
+				"count_",
+				"count_class"
+			],
+			[
+				"CHECK_P",
+				"CHECK_PMODEL\t(encmrp.c)"
+			],
+			[
+				"conti",
+				"continue"
+			],
+			[
+				"MAH",
+				"MANHATTAN_SORT"
+			],
+			[
+				"max_",
+				"max_nas"
+			],
+			[
+				"area1_ave",
+				"area1_ave_g"
+			],
+			[
+				"MAX_DA",
+				"MAX_DATA_SAVE"
+			],
+			[
+				"CHEKC",
+				"CHECK_PREDICTOR"
+			],
+			[
+				"fprintf",
+				"fprintf"
+			],
+			[
+				"TEMPLATE_M",
+				"TEMPLATE_MATCHING_ON"
+			],
+			[
+				"max_data_sa",
+				"MAX_DATA_SAVE_DOUBLE"
+			],
+			[
+				"max_data",
+				"MAX_DATA_SAVE"
+			],
+			[
+				"blk",
+				"blksize"
+			],
+			[
+				"TEMP",
+				"TEMPLATE_CLASS_NUM"
+			],
+			[
+				"TempleteM",
+				"TempleteM"
+			],
+			[
+				"COST_",
+				"COST_OUTPUT"
+			],
+			[
+				"COST",
+				"COST_OUTPUT"
+			],
+			[
+				"omp_",
+				"omp_get_num_threads"
+			],
+			[
+				"CHEDK",
+				"CHECK_DEBUG_TM"
+			],
+			[
+				"break",
+				"break_flag"
+			],
+			[
+				"temp_a",
+				"tempm_array"
+			],
+			[
+				"new_co",
+				"new_cookies"
+			],
+			[
+				"new_",
+				"new_cookies"
+			],
+			[
+				"new",
+				"new_cookies"
+			],
+			[
+				"new_coo",
+				"new_cookies_temp"
+			],
+			[
+				"need",
+				"need_cookies"
+			],
+			[
+				"sec",
+				"second"
+			],
+			[
+				"get_ref",
+				"get_ref_pels_prd"
+			],
+			[
+				"contin",
+				"continue"
+			],
+			[
+				"w_func",
+				"w_func=1"
+			],
+			[
+				"AUTO_D",
+				"AUTO_DIRECTIONAL_PRD"
+			],
+			[
+				"dir",
+				"directional_correlation_model\t(common.c)"
+			],
+			[
+				"print",
+				"printf\tprintf …"
+			],
+			[
+				"MDE",
+				"MODE"
+			],
+			[
+				"multi",
+				"multimodal"
+			],
+			[
+				"multimod",
+				"multimodal"
+			],
+			[
+				"thres",
+				"threshold_save"
+			],
+			[
+				"arae",
+				"area0"
+			],
+			[
+				"wd",
+				"width"
+			],
+			[
+				"sum",
+				"sum_freq_array"
+			],
+			[
+				"freq_rra",
+				"freq_array_save"
+			],
+			[
+				"area0",
+				"area0_ave"
+			],
+			[
+				"sla",
+				"slant_save"
+			],
+			[
+				"pmd",
+				"pmodel_peek"
+			],
+			[
+				"freq_shift",
+				"freq_shift_array"
+			],
+			[
+				"CHEC",
+				"CHECK_ONLY"
+			],
+			[
+				"prd",
+				"prd_AREA"
+			],
+			[
+				"prd_s",
+				"prd_sum\t(encmrp.c)"
+			],
+			[
+				"prd_c",
+				"prd_coef"
+			],
+			[
+				"continu",
+				"continuous_GGF"
+			],
+			[
+				"tm",
+				"tm_x"
+			],
+			[
+				"ERROR",
+				"ERROR_ID\t(encmrp.c)"
+			],
+			[
+				"struc",
+				"struct"
+			],
+			[
+				"max",
+				"maxval"
+			],
+			[
+				"area1",
+				"area1_ave"
+			],
+			[
+				"sum_fr",
+				"sum_freq_shift_array"
+			],
+			[
+				"freq_s",
+				"freq_sum"
+			],
+			[
+				"area_cost",
+				"area_cost_qt"
+			],
+			[
+				"mu",
+				"multimodal"
+			],
+			[
+				"moda",
+				"multimodal"
+			],
+			[
+				"EXAM_",
+				"EXAM_TH_MIN\t(encmrp.c)"
+			],
+			[
+				"sum_fre",
+				"sum_freq_array"
+			],
+			[
+				"w_fun",
+				"w_func=W_FUNC"
+			],
+			[
+				"EXAM_TH",
+				"EXAM_TH_MAX\t(encmrp.c)"
+			],
+			[
+				"EXAM",
+				"EXAM_TH_MIN\t(encmrp.c)"
+			],
+			[
+				"exa",
+				"exam_th"
+			],
+			[
+				"exam",
+				"exam_th\t(encmrp.c)"
+			],
+			[
+				"CHE",
+				"CHECK_ONLY"
+			],
+			[
+				"muti",
+				"multi"
+			],
+			[
+				"invar",
+				"invar=0\t(encmrp.c)"
+			],
+			[
+				"sum_cost",
+				"sum_cost=0\t(encmrp.c)"
+			],
+			[
+				"area_",
+				"area_o"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "encmrp.c",
+			"settings":
+			{
+				"buffer_size": 143635,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "run.sh",
+			"settings":
+			{
+				"buffer_size": 1383,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/E/Users/sumito/OneDrive/Document/s_mrp.wiki/Changing-Log.md",
+			"settings":
+			{
+				"buffer_size": 6353,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "makefile",
+			"settings":
+			{
+				"buffer_size": 825,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "common.c",
+			"settings":
+			{
+				"buffer_size": 11418,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "rc.c",
+			"settings":
+			{
+				"buffer_size": 2588,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "mrp.h",
+			"settings":
+			{
+				"buffer_size": 9700,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "decmrp.c",
+			"settings":
+			{
+				"buffer_size": 41577,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "log.c",
+			"settings":
+			{
+				"buffer_size": 32605,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 150.0,
+		"last_filter": "omnimark",
+		"selected_items":
+		[
+			[
+				"omnimark",
+				"OmniMarkupPreviewer: Preview Current Markup in Browser"
+			],
+			[
+				"abacus",
+				"Abacus: align selection"
+			],
+			[
+				"install",
+				"Package Control: Install Package"
+			],
+			[
+				"package",
+				"Package Control: List Packages"
+			],
+			[
+				"remove",
+				"Package Control: Remove Package"
+			],
+			[
+				"package conrol",
+				"Package Control: Remove Package"
+			],
+			[
+				"csv",
+				"CSV: Insert column"
+			],
+			[
+				"diff",
+				"Diffy Cleanup"
+			],
+			[
+				"sync",
+				"SyncScroll: Toggle Current View Scroll Sync"
+			],
+			[
+				"syncscroll",
+				"SyncScroll: Toggle Current View Scroll Sync"
+			],
+			[
+				"scroll",
+				"SyncScroll: Toggle Current View Scroll Sync"
+			],
+			[
+				"diffy",
+				"Diffy Cleanup"
+			],
+			[
+				"compare",
+				"Diffy Compare"
+			],
+			[
+				"editorconfig",
+				"Set Syntax: EditorConfig"
+			],
+			[
+				"update",
+				"Package Control: Upgrade/Overwrite All Packages"
+			],
+			[
+				"upda",
+				"Package Control: Upgrade Package"
+			],
+			[
+				"sftp",
+				"SFTP: Setup Server…"
+			],
+			[
+				"list ",
+				"Package Control: List Packages"
+			],
+			[
+				"package control up",
+				"Package Control: Upgrade Package"
+			],
+			[
+				"package control",
+				"Package Control: Remove Package"
+			],
+			[
+				"list",
+				"Package Control: List Packages"
+			],
+			[
+				"highlighter",
+				"BracketHighlighter: Enable Debug Mode"
+			],
+			[
+				"upgrade",
+				"Package Control: Upgrade Package"
+			],
+			[
+				"",
+				"Package Control: List Packages"
+			],
+			[
+				"reload",
+				"ConvertToUTF8: Reload with Encoding"
+			]
+		],
+		"width": 528.0
+	},
+	"console":
+	{
+		"height": 126.0,
+		"history":
+		[
+			"import urllib.request,os,hashlib; h = '2915d1851351e5ee549c20394736b442' + '8bc59f460fa1548d1514676163dafc88'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by)",
+			"update",
+			"joinassignment",
+			"import urllib.request,os,hashlib; h = 'eb2297e1a458f27d836c04bb0cbaf282' + 'd0e7a3098092775ccb37ca9d6b2e4b7d'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by)"
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/S/s_mrp",
+		"/S/s_mrp/Log",
+		"/E/Users/sumito/OneDrive/Document/s_mrp.wiki"
+	],
+	"file_history":
+	[
+		"/S/bashfile/all_job.sh",
+		"/S/20161018-fixing_blocksize/all_job.sh",
+		"//hpe1650_1/rda2/DATABASE/TMW/camera.pgm",
+		"/S/bashfile/parallel_job.sh",
+		"/S/code_comparison/dec.csv",
+		"/E/Users/sumito/OneDrive/KanColleViewer/Plugins/RepairTimePlugin.dll",
+		"/S/s_mrp/Log/balloon-161020_1556.txt",
+		"/S/s_mrp/Log/balloon-161020_1413.txt",
+		"/S/s_mrp/Log/balloon-161020_1348.txt",
+		"/S/s_mrp/Log/balloon-161019_2035.txt",
+		"/S/s_mrp/Log/balloon-161020_1204.txt",
+		"/S/s_mrp/decmrp.c",
+		"/S/s_mrp/run2.sh",
+		"/M/temp/Movie/others/ffmpeg.sh",
+		"/S/OTHER_ENC/HM-16.7/bin/LOG/airplane-SF1MB0UR.log",
+		"/S/OTHER_ENC/HM-16.7/bin/run_mrp.sh",
+		"/S/OTHER_ENC/HM-16.7/bin/LOG/camera-SF1MB0UR.log",
+		"/S/OTHER_ENC/HM-16.7/bin/LOG/airplane-S1F1MB0UR.log",
+		"/S/image/PGM_only_value/airplane.pgm",
+		"//hpe1650_1/users/kishi/HEVC/HM-16.7_kishi/bin/run_mrp.sh",
+		"//hpe1650_1/users/kishi/HEVC/HM-16.7_kishi/doc/Makefile",
+		"/S/s_mrp/Log/balloon-161019_1444.txt",
+		"/S/s_mrp/Log/balloon-161018_1845.txt",
+		"/E/Users/sumito/OneDrive/KanColleViewer/MaterialChartPlugin/MaterialChartPlugin-161018-19042019.csv",
+		"/E/Users/sumito/OneDrive/KanColleViewer/MaterialChartPlugin/MaterialChartPlugin-BackUp-161016-23303398.dat",
+		"/S/s_mrp/Log/balloon-161018_1801.txt",
+		"/S/code_comparison/comparison.c",
+		"/S/s_mrp/mrp.h",
+		"/S/s_mrp/Log/balloon-161018_1349.txt",
+		"/S/ssh_key_renew.sh",
+		"/M/temp/Movie/enc.sh",
+		"/S/bashfile/ffmpeg.sh",
+		"/S/s_mrp/Log/airplane-161017_1752.txt",
+		"/S/bashfile/ffmpeg_build.sh",
+		"/C/Users/sumito/Desktop/tools_v6.2.1/kindle.css",
+		"/S/s_mrp/Log/lena-161014_1617.txt",
+		"/S/s_mrp/Log/camera-161014_1315.txt",
+		"/S/s_mrp/Log/camera-161014_1323.txt",
+		"/S/s_mrp/Log/camera-161014_1302.txt",
+		"/S/s_mrp/Log/camera-161014_1255.txt",
+		"/E/Users/sumito/OneDrive/Document/s_mrp.wiki/Home.md",
+		"/E/Users/sumito/OneDrive/Document/s_mrp.wiki/Changing-Log.md",
+		"/S/s_mrp/Log/camera-161013_1935.txt",
+		"/S/s_mrp/Log/camera-161013_1836.txt",
+		"/S/s_mrp/Log/camera-161013_1805.txt",
+		"/C/Users/sumito/AppData/Local/Temp/~EXTMP01/range.c",
+		"/S/s_mrp/rc.c",
+		"/S/s_mrp/common.c",
+		"//hpe1650_1/users/matsuda/4K/dpx2ppm.c",
+		"/C/Users/sumito/AppData/Local/Temp/fz3temp-2/style2.css",
+		"/S/s_mrp/log.c",
+		"/S/s_mrp/encmrp.c",
+		"/C/Users/sumito/AppData/Local/Temp/~EXTMP00/simple_c.c",
+		"/C/Users/sumito/AppData/Local/Temp/~EXTMP00/renorm95.c",
+		"/S/rotate_renew/encmrp.c",
+		"/S/Movie/ffmpeg.sh",
+		"/S/s_mrp/Log/camera-161007_1902.txt",
+		"/S/s_mrp/Log/camera-161007_1839.txt",
+		"/S/1_archive/IEICE2016/common.c",
+		"/S/s_mrp/Log/camera-161007_1634.txt",
+		"/S/s_mrp/Log/camera-161007_1545.txt",
+		"/S/s_mrp/Log/camera-161007_1627.txt",
+		"/S/s_mrp/Log/camera-161007_1502.txt",
+		"/S/s_mrp/Log/camera-161007_1521.txt",
+		"/S/s_mrp/Log/camera-161007_1453.txt",
+		"/S/s_mrp/Log/barb-161006_1922.txt",
+		"//hpe1650_1/users/kishi/Lossless_gaso/cif.sh",
+		"//hpe1650_1/users/kishi/Lossless_gaso/mrp.h",
+		"//hpe1650_1/users/kishi/Lossless_gaso/encmrp.cpp",
+		"//hpe1650_1/rda2/DATABASE/TMW/airplane.pgm",
+		"/M/サーバー係関連/www/style2.css",
+		"/M/サーバー係関連/www/index2.html",
+		"/S/s_mrp/Log/barb-161005_1419.txt",
+		"/C/TEMP/test000.pgm",
+		"//hpe1650_1/users/kishi/ROI/non_MC/encmrp.cpp",
+		"//hpe1650_1/users/kishi/ROI/bandsize_1/BM_1/cif.sh",
+		"/S/s_mrp/Log/barb-161004_1911.txt",
+		"/E/Users/sumito/OneDrive/Document/s_mrp.wiki/Tasks.md",
+		"/S/s_mrp/Log/barb-161001_2325.txt",
+		"/C/Users/sumito/AppData/Roaming/Sublime Text 3/Packages/Codec/Codec.sublime-settings",
+		"/S/20160929-s_mrp_check/s_mrp-4/nohup.out",
+		"/S/20160829-shiba/del_on_depth_4/nohup.out",
+		"/S/timecheck/loop/encmrp.c",
+		"/S/rotate_renew/mrp.h",
+		"/S/rotate_renew/decmrp.c",
+		"/S/rotate_renew/common.c",
+		"//hpe1650_1/users/shibata/workspace/EBM-v2.0/encmrp.c",
+		"//hpe1650_1/users/shibata/workspace/EBM-v2.0/Log/camera.txt",
+		"/S/s_mrp/README.txt",
+		"/S/1_archive/EBM-v2.2/common.c",
+		"/S/1_archive/EBM-v2.2/decmrp.c",
+		"/S/1_archive/EBM-v2.2/mrp.h",
+		"/S/1_archive/EBM-v2.2/encmrp.c",
+		"/C/Users/sumito/AppData/Roaming/Sublime Text 3/Packages/OmniMarkupPreviewer/OmniMarkupPreviewer.sublime-settings",
+		"/C/Users/sumito/AppData/Roaming/Sublime Text 3/Packages/User/bh_core.sublime-settings",
+		"/S/1_archive/mrp-v06.9_mult_30_new/encmrp.c",
+		"/S/0_parallel/20160610-sisa_check2/all_job.sh",
+		"/S/0_parallel/20151229-prd_EBM_ref/all_job.sh",
+		"/S/1_archive/mrp-v06.9_mult_30_new/decmrp.c",
+		"/S/s_mrp/init_directory.sh",
+		"/S/n_temp2contecst/encmrp.c",
+		"/S/1_archive/EBM-v2.1/decmrp.c",
+		"/S/n_temp2contecst/mrp.h",
+		"/S/n_temp2contecst/decmrp.c",
+		"/S/s_mrp/nohup.out",
+		"/S/Tools/background_extracting.c",
+		"/S/bashfile/log_merge.sh",
+		"/S/timecheck/loop/decmrp.c",
+		"/S/timecheck/4120/log.c",
+		"/S/timecheck/4120/mrp.h",
+		"/S/timecheck/4120/decmrp.c",
+		"/S/timecheck/4120/encmrp.c",
+		"/S/timecheck/4020/decmrp.c",
+		"/S/timecheck/4020/encmrp.c",
+		"/S/timecheck/4020/mrp.h",
+		"/S/s_mrp/m",
+		"/S/n_temp2ne/encmrp.c",
+		"/S/n_temp2ne_zncc/decmrp.c",
+		"/S/n_temp2ne_zncc/mrp.h",
+		"/S/n_temp2ne_zncc/encmrp.c",
+		"/S/n_temp2ne/mrp.h",
+		"/S/n_temp2ne/decmrp.c",
+		"/S/1_archive/IEICE2016/encmrp.c",
+		"/S/1_archive/katoi/vseg9com/0007/vseg_com.c",
+		"/S/1_archive/katoi/vseg9com/0007/mrp.h",
+		"/S/1_archive/katoi/vseg9com/0007/outfile_label_all.txt",
+		"/S/1_archive/katoi/7seg9com/0007ry/encmrp.c",
+		"/M/学会/SISA2016/論文/renew_sisa2016_1.tex"
+	],
+	"find":
+	{
+		"height": 37.0
+	},
+	"find_in_files":
+	{
+		"height": 99.0,
+		"where_history":
+		[
+			""
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"\\n",
+			"$2",
+			"2",
+			"$1",
+			"OPENMP",
+			"OPEN_MP",
+			"temp",
+			"rate",
+			"temp",
+			"t",
+			"enc->org",
+			"predict_region",
+			"encode_image",
+			"temp",
+			"auto_del_class",
+			"u",
+			"auto_del_class",
+			"img->val[i][j]",
+			"HIGHT",
+			"dec->w_gr",
+			"enc->qtmap",
+			"enc->prd",
+			"enc->class",
+			"enc->econv",
+			"enc->err",
+			"encode_image",
+			"encode",
+			"encode_image",
+			"enc->err",
+			"calc_uenc",
+			"enc->err",
+			"enc->econv",
+			"err",
+			"temp",
+			"62",
+			"temp",
+			"temp]",
+			"temp",
+			"set",
+			"temp_mask_parameter",
+			"u",
+			"enc->temp_peak_num",
+			"enc->array",
+			"alloc_3d_array",
+			"init_decoder",
+			"write_header",
+			"TEMP_NUM",
+			"putc",
+			"num_pmodel",
+			"enc->num_pmodel",
+			"sigma_a",
+			"enc->sigma",
+			"continuous_GGF",
+			"enc->temp_roff",
+			"predict_from_examples",
+			"dec->temp_roff",
+			"design_predictor",
+			"init_ref_offset",
+			"yx_array",
+			"init_ref_offset",
+			"k",
+			"auto_del_class",
+			"auto_del_cl",
+			"\n",
+			"\\n",
+			"auto_del_class",
+			"freq",
+			"decode_image",
+			"dec->rc",
+			"init_decoder",
+			"u",
+			"set",
+			"qtmap",
+			"u",
+			"set",
+			"dec->w_gr",
+			"set",
+			"dec->w_gr",
+			"set",
+			"main",
+			"set_",
+			"sum",
+			"B[  6",
+			"decval",
+			"encval",
+			"B[  6",
+			"A[  6",
+			"A[",
+			"decval",
+			"dec->org",
+			"decval",
+			"B[  6",
+			"B",
+			"A[",
+			"B[  6]",
+			"( 42,124)",
+			"[A]",
+			"[B]",
+			"u",
+			"auto_del_class",
+			"set_mask_parameter",
+			"optimize_class",
+			"set_pmodel_mult_cost",
+			"TemplateM",
+			"init_decoder",
+			"temp_peak_num",
+			"dec->temp_num",
+			"char",
+			"enc->temp_num",
+			"char",
+			"enc->temp_num",
+			"TemplateM",
+			"int",
+			"enc->temp_cl",
+			"enc->temp_peak_num",
+			"int",
+			"init_mask",
+			"set_pmodel_mu",
+			"set_pmodel_mult",
+			"10",
+			"temp_mask_parameter",
+			"uquant",
+			"temp_mask_",
+			"optimize_",
+			"calc_cost2",
+			"temp_mask_parameter",
+			"set_mask_",
+			"init_mask"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": true,
+		"replace_history":
+		[
+			"\n",
+			"$1",
+			"\\n",
+			"TM_Member",
+			"\n",
+			"enc->quadtree_depth",
+			"\n",
+			"TM_Member",
+			"y_size_loop",
+			"x_size_loop",
+			"TemplateM",
+			"\n",
+			"ei[0][k]",
+			"CHECK_TM_DETAIL",
+			"CHECK_TM",
+			"TemplateM",
+			"Template",
+			"TemplateM",
+			"enc->array",
+			"DIR",
+			"Template",
+			"TEMPLATE",
+			"Template",
+			"__",
+			"",
+			"mmc",
+			"#if TEMPLETE_MATCHING_ON",
+			"\n",
+			"Box sync",
+			"Starting",
+			"Shift_freq(pm, x, y, enc, array, freq_array_save, freq_array, cumfreq_array, sum_freq_array, multi, w_gr, prd_gr, w_func, flg)",
+			"Shift_freq(pm, x, y, enc, array, freq_array_save, freq_array, cumfreq_array, sum_freq_array, multi, w_gr, prd_gr, w_func, flg, exam_th)",
+			"Shift_freq(pm, x, y, enc, array, freq_array_save, freq_array, cumfreq_array, sum_freq_array, multi, w_gr, prd_gr, w_func, flg, -1)",
+			"",
+			"Shift_freq(pm, x, y, enc, array, freq_array_save, freq_array, cumfreq_array, sum_freq_array, multi, w_gr, w_func, flg, exam_th)",
+			"Shift_freq(pm, x, y, enc, array, freq_array_save, freq_array, cumfreq_array, sum_freq_array, multi, w_gr, w_func, flg, -1)",
+			"w_gr_search(enc , array)",
+			"prd_gr",
+			"prd_gr=enc->prd_gr",
+			"continuous_GGF(dec, mc_double, dec->prd_gr, 2)",
+			"continuous_GGF(dec, mc_double, dec->w_gr, 1)",
+			"continuous_GGF(dec, mc_double, dec->prd_gr, 2)",
+			"continuous_GGF(enc, mc_double, prd_gr, 2)",
+			"continuous_GGF(enc, mc_double,w_gr, 1)",
+			"Shift_freq(pm, x, y, enc, array, freq_array_save, freq_array, cumfreq_array, sum_freq_array, multi, w_gr, prd_gr, w_func, flg, exam_th);",
+			"Shift_freq(pm, x, y, enc, array, freq_array_save, freq_array, cumfreq_array, sum_freq_array, multi, w_gr, prd_gr, w_func, flg, -1)",
+			"POINT",
+			"sturct POINT",
+			",",
+			"Shift_freq(pm, x, y, enc, array, freq_array_save, freq_array, cumfreq_array, sum_freq_array, multi, w_gr, w_func, flg, -1)",
+			"Shift_freq(pm , x , y ,enc,array,freq_array_save,freq_array,cumfreq_array,sum_freq_array,multi,w_gr,w_func,flg, -1)",
+			"\\n",
+			"Shift_freq(pm, x, y, enc, array, freq_array_save, freq_array, cumfreq_array, sum_freq_array, multi, w_gr, w_func, flg, exam_th)",
+			"Shift_freq(pm , x , y ,enc,array,freq_array_save,freq_array,cumfreq_array,sum_freq_array,multi,w_gr,w_func,flg,-1)",
+			"\n",
+			"coef_135",
+			"dec_temp",
+			"\n",
+			"enc->height, enc->width",
+			"Shift_freq(pm , x , y ,enc,array,freq_array_save,freq_array,cumfreq_array,sum_freq_array,multi,w_gr,w_func,flg,1)",
+			"\\n",
+			"sum_freq_array,multi,w_gr,w_func,flg)",
+			"Shift_freq(pm , x , y ,enc,array,freq_array_save,freq_array,cumfreq_array,sum_freq_array,multi,w_gr,w_func,flg)",
+			"w_func=W_FUNC",
+			"w_func=0",
+			"Shift_freq(pm , x , y ,enc,array,freq_array_save,freq_array,cumfreq_array,sum_freq_array,multi,w_gr,w_func,flg, -1)",
+			"Shift_freq(pm , x , y ,enc,array,freq_array_save,freq_array,cumfreq_array,sum_freq_array,multi,w_gr,w_func,flg,1);",
+			"\\",
+			"\\n",
+			"tus",
+			"COLOR=blue>欠席\t",
+			"\"FFCCCC\" align=\"center\"><FONT COLOR=red>出席\t",
+			"\"99CCFF\" align=\"center\"><FONT COLOR=blue>欠席\t",
+			"alloc_2d_array(dec->width ,dec->height+1",
+			"alloc_2d_array(dec->width ,dec->height",
+			"alloc_2d_array(enc->width ,enc->height+1",
+			"alloc_2d_array(enc->width ,enc->height",
+			"Starting",
+			"\\n",
+			"E:\\Copy"
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "encmrp.c",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 143635,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								138984,
+								138984
+							]
+						],
+						"settings":
+						{
+							"bracket_highlighter.busy": false,
+							"bracket_highlighter.locations":
+							{
+								"close":
+								{
+								},
+								"icon":
+								{
+								},
+								"open":
+								{
+								},
+								"unmatched":
+								{
+									"1":
+									[
+										138996,
+										138997
+									]
+								}
+							},
+							"bracket_highlighter.regions":
+							[
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content"
+							],
+							"clone_numbers": 1,
+							"incomplete_sync": null,
+							"is_init_dirty_state": false,
+							"origPos":
+							[
+								0.0,
+								107541.0
+							],
+							"origin_encoding": "UTF-8",
+							"remote_loading": false,
+							"sftp_duplicate_views": 0,
+							"syncScroll": false,
+							"synced": false,
+							"syntax": "Packages/C++/C.sublime-syntax",
+							"translate_tabs_to_spaces": false,
+							"word_wrap": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 107541.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "run.sh",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1383,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1215,
+								1215
+							]
+						],
+						"settings":
+						{
+							"bracket_highlighter.busy": false,
+							"bracket_highlighter.locations":
+							{
+								"close":
+								{
+									"1":
+									[
+										1378,
+										1382
+									]
+								},
+								"icon":
+								{
+									"1":
+									[
+										"Packages/BracketHighlighter/icons/dot.png",
+										"brackethighlighter.default"
+									]
+								},
+								"open":
+								{
+									"1":
+									[
+										12,
+										15
+									]
+								},
+								"unmatched":
+								{
+								}
+							},
+							"bracket_highlighter.regions":
+							[
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content"
+							],
+							"incomplete_sync": null,
+							"origPos":
+							[
+								0.0,
+								0.0
+							],
+							"remote_loading": false,
+							"syncScroll": false,
+							"synced": false,
+							"syntax": "Packages/ShellScript/Shell-Unix-Generic.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 5,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "/E/Users/sumito/OneDrive/Document/s_mrp.wiki/Changing-Log.md",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 6353,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								325,
+								325
+							]
+						],
+						"settings":
+						{
+							"auto_complete": false,
+							"bracket_highlighter.busy": false,
+							"bracket_highlighter.locations":
+							{
+								"close":
+								{
+								},
+								"icon":
+								{
+								},
+								"open":
+								{
+								},
+								"unmatched":
+								{
+								}
+							},
+							"bracket_highlighter.regions":
+							[
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content"
+							],
+							"incomplete_sync": null,
+							"origPos":
+							[
+								0.0,
+								0.0
+							],
+							"remote_loading": false,
+							"syncScroll": false,
+							"synced": false,
+							"syntax": "Packages/Markdown/Markdown.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "makefile",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 825,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"bracket_highlighter.busy": false,
+							"bracket_highlighter.locations":
+							{
+								"close":
+								{
+								},
+								"icon":
+								{
+								},
+								"open":
+								{
+								},
+								"unmatched":
+								{
+								}
+							},
+							"bracket_highlighter.regions":
+							[
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content"
+							],
+							"incomplete_sync": null,
+							"origPos":
+							[
+								0.0,
+								0.0
+							],
+							"remote_loading": false,
+							"syncScroll": false,
+							"synced": false,
+							"syntax": "Packages/Makefile/Makefile.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 6,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "common.c",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 11418,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"bracket_highlighter.busy": false,
+							"bracket_highlighter.locations":
+							{
+								"close":
+								{
+								},
+								"icon":
+								{
+								},
+								"open":
+								{
+								},
+								"unmatched":
+								{
+								}
+							},
+							"bracket_highlighter.regions":
+							[
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content"
+							],
+							"incomplete_sync": null,
+							"origPos":
+							[
+								0.0,
+								8580.0
+							],
+							"remote_loading": false,
+							"sftp_duplicate_views": 0,
+							"syncScroll": false,
+							"synced": false,
+							"syntax": "Packages/C++/C.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 8580.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 9,
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "rc.c",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2588,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"bracket_highlighter.busy": false,
+							"bracket_highlighter.locations":
+							{
+								"close":
+								{
+								},
+								"icon":
+								{
+								},
+								"open":
+								{
+								},
+								"unmatched":
+								{
+								}
+							},
+							"bracket_highlighter.regions":
+							[
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content"
+							],
+							"incomplete_sync": null,
+							"origPos":
+							[
+								0.0,
+								420.0
+							],
+							"remote_loading": false,
+							"sftp_duplicate_views": 0,
+							"syncScroll": false,
+							"synced": false,
+							"syntax": "Packages/C++/C.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 420.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 8,
+					"type": "text"
+				}
+			]
+		},
+		{
+			"selected": 2,
+			"sheets":
+			[
+				{
+					"buffer": 6,
+					"file": "mrp.h",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 9700,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								4245,
+								4245
+							]
+						],
+						"settings":
+						{
+							"bracket_highlighter.busy": false,
+							"bracket_highlighter.locations":
+							{
+								"close":
+								{
+									"1":
+									[
+										4527,
+										4533
+									]
+								},
+								"icon":
+								{
+									"1":
+									[
+										"Packages/BracketHighlighter/icons/hash.png",
+										"brackethighlighter.default"
+									]
+								},
+								"open":
+								{
+									"1":
+									[
+										4020,
+										4023
+									]
+								},
+								"unmatched":
+								{
+								}
+							},
+							"bracket_highlighter.regions":
+							[
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content"
+							],
+							"incomplete_sync": null,
+							"origPos":
+							[
+								0.0,
+								2940.0
+							],
+							"remote_loading": false,
+							"syncScroll": false,
+							"synced": false,
+							"syntax": "Packages/C++/C++.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 588.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				},
+				{
+					"buffer": 7,
+					"file": "decmrp.c",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 41577,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"bracket_highlighter.busy": false,
+							"bracket_highlighter.locations":
+							{
+								"close":
+								{
+								},
+								"icon":
+								{
+								},
+								"open":
+								{
+								},
+								"unmatched":
+								{
+								}
+							},
+							"bracket_highlighter.regions":
+							[
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content"
+							],
+							"history_list_is_closing": true,
+							"incomplete_sync": null,
+							"origPos":
+							[
+								0.0,
+								27207.0
+							],
+							"remote_loading": false,
+							"syncScroll": false,
+							"synced": false,
+							"syntax": "Packages/C++/C.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 27207.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 4,
+					"type": "text"
+				},
+				{
+					"buffer": 8,
+					"file": "log.c",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 32605,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								27612,
+								27612
+							]
+						],
+						"settings":
+						{
+							"bracket_highlighter.busy": false,
+							"bracket_highlighter.locations":
+							{
+								"close":
+								{
+									"1":
+									[
+										27799,
+										27800
+									]
+								},
+								"icon":
+								{
+									"1":
+									[
+										"Packages/BracketHighlighter/icons/curly_bracket.png",
+										"brackethighlighter.default"
+									]
+								},
+								"open":
+								{
+									"1":
+									[
+										27433,
+										27434
+									]
+								},
+								"unmatched":
+								{
+								}
+							},
+							"bracket_highlighter.regions":
+							[
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content"
+							],
+							"history_list_is_closing": true,
+							"incomplete_sync": null,
+							"is_init_dirty_state": false,
+							"origPos":
+							[
+								0.0,
+								20307.0
+							],
+							"origin_encoding": "ASCII",
+							"remote_loading": false,
+							"syncScroll": false,
+							"synced": false,
+							"syntax": "Packages/C++/C.sublime-syntax",
+							"translate_tabs_to_spaces": false,
+							"word_wrap": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 20307.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 0,
+					"file": "encmrp.c",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 143635,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"bracket_highlighter.busy": false,
+							"bracket_highlighter.locations":
+							{
+								"close":
+								{
+								},
+								"icon":
+								{
+								},
+								"open":
+								{
+								},
+								"unmatched":
+								{
+								}
+							},
+							"bracket_highlighter.regions":
+							[
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content"
+							],
+							"clone_numbers": 1,
+							"incomplete_sync": null,
+							"is_init_dirty_state": false,
+							"origPos":
+							[
+								0.0,
+								23568.0
+							],
+							"origin_encoding": "UTF-8",
+							"remote_loading": false,
+							"sftp_duplicate_views": 0,
+							"syncScroll": false,
+							"synced": false,
+							"syntax": "Packages/C++/C.sublime-syntax",
+							"translate_tabs_to_spaces": false,
+							"word_wrap": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 23568.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 7,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 29.0
+	},
+	"input":
+	{
+		"height": 34.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			],
+			[
+				1,
+				0,
+				2,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			0.5,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"output.sftp":
+	{
+		"height": 112.0
+	},
+	"output.unsaved_changes":
+	{
+		"height": 112.0
+	},
+	"pinned_build_system": "",
+	"project": "s_mrp.sublime-project",
+	"replace":
+	{
+		"height": 110.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"mr",
+				"s_mrp\\mrp.h"
+			]
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 392.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"",
+				"TempleteM"
+			]
+		],
+		"width": 392.0
+	},
+	"selected_group": 1,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": true,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 126.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

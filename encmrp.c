@@ -1475,6 +1475,7 @@ cost_t design_predictor(ENCODER *enc, int f_mmse)
 				}
 			}
 		}
+		// 掃き出し法
 		for (i = 0; i < enc->prd_order; i++) {
 			index[i] = i;
 			for (j = 0; j < i; j++) {
@@ -1507,7 +1508,7 @@ cost_t design_predictor(ENCODER *enc, int f_mmse)
 				}
 			}
 		}
-		w = (1 << enc->coef_precision);
+		w = (1 << enc->coef_precision);		// 予測係数の精度
 		e = 0.0;
 		for (i = 0; i < enc->prd_order; i++) {
 			if (fabs(mat[index[i]][i]) > 1E-10) {
@@ -4591,6 +4592,7 @@ int main(int argc, char **argv)
 	int num_pmodel = NUM_PMODEL;
 	int pm_accuracy = PM_ACCURACY;
 	int max_iteration = MAX_ITERATION;
+	int num_threads = NUM_THREADS;
 	char *infile, *outfile;
 	FILE *fp;
 
@@ -4644,6 +4646,9 @@ int main(int argc, char **argv)
 			break;
 		case 'f':
 			quadtree_depth = -1;
+			break;
+		case 'n':
+			num_threads = atoi(argv[++i]);
 			break;
 		default:
 			fprintf(stderr, "Unknown option: %s!\n", argv[i]);
@@ -4905,9 +4910,11 @@ int main(int argc, char **argv)
 			#if PAST_ADC
 				sw = enc->num_class;
 				cost = auto_del_class(enc, cost);	//使用していないクラスの削除
-				while (sw != enc->num_class) {	//削除に成功する間
+				cl = 1;
+				while (sw != enc->num_class && cl < 5) {	//削除に成功する間
 					sw = enc->num_class;
 					cost = auto_del_class(enc, cost);
+					cl++;
 				}
 			#elif RENEW_ADC
 				// sw = enc->num_class;
@@ -4954,6 +4961,7 @@ int main(int argc, char **argv)
 						printf("[%d]", flg);
 					#endif
 					if(sw == enc->num_class)	break;
+					if(enc->num_class <= 1)	break;
 					// break;
 				}
 				if(flg == 1){

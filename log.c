@@ -913,7 +913,12 @@ void finish_log_sheet(ENCODER *enc, int header_info, int class_info, int pred_in
 	fprintf(fp, "%f,%f, ,", rate, time);
 
 	if(AUTO_DEL_CL) {
-		fprintf(fp, "ON,");
+		if(RENEW_ADC){
+			fprintf(fp, "RENEW_ADC,");
+		} else if(PAST_ADC){
+			fprintf(fp, "PAST_ADC,");
+		}
+		// fprintf(fp, "ON,");
 	}else {
 		fprintf(fp, "OFF,");
 	}
@@ -1086,6 +1091,7 @@ void TemplateM_Log_Output(ENCODER *enc, char *outfile, int ***tempm_array, int *
 		for(x=0; x<enc->width; x++){
 			cost_sum[y][x]=0;
 			j=enc->temp_num[y][x];
+			if(j > MAX_DATA_SAVE)	j=MAX_DATA_SAVE;
 			for(k=0; k<j; k++){
 				cost_sum[y][x] += (double)(tempm_array[y][x][k*4+3] >> COEF_PRECISION);
 			}

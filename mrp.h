@@ -173,6 +173,8 @@
 #define check_x			4
 #define F_NUM			8
 
+#define NUM_THREADS		8
+
 /***** STRUCTURE ***************************/
 
 typedef struct {
