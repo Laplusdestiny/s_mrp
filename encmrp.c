@@ -747,8 +747,9 @@ int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出
 
 	u = 0;
 	for (k =0; k < NUM_UPELS; k++) {
-		u += err_p[*roff_p++] * (*wt_p++);
-		// u += err_p[roff_p[k]] * wt_p[k];
+		// u += err_p[*roff_p++] * (*wt_p++);
+		if(wt_p[k] > 64)	continue;
+		u += err_p[roff_p[k]] * wt_p[k];
 		#if CHECK_DEBUG
 			if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("u: %d | err: %d(%3d) | wt_p: %d\n", u, err_p[roff_p[k]], roff_p[k], wt_p[k]);
 		#endif
@@ -1772,7 +1773,7 @@ void set_prdbuf(ENCODER *enc, int **prdbuf, int **errbuf,
 					roff_p = enc->roff[y][x];
 					prd = 0;
 					for (k = 0; k < enc->num_nzcoef[cl]; k++) {
-						if(nzc_p[k] == TEMPLATE_FLAG){
+						if(nzc_p[k] == -1){
 							prd = exam_array[y][x][0];
 							break;
 						} else {
@@ -1797,51 +1798,43 @@ cost_t rap_area_cost(ENCODER *enc, int tly, int tlx, int bry, int brx)
 	int d;
 
 	cost = 0;
-			if (tly != 0){
-				if (tlx != 0){//º¸¾å
-					d = enc->mask[tly-1][tlx-1];
-					cost += calc_cost2(enc, tly-d, tlx-d, tly, tlx);
-				}
+	if (tly != 0){
+		if (tlx != 0){
+			d = enc->mask[tly-1][tlx-1];
+			cost += calc_cost2(enc, tly-d, tlx-d, tly, tlx);
+		}
 
-				d = enc->mask[tly-1][tlx];//¾å
-				cost += calc_cost2(enc, tly-d, tlx, tly, brx);
+		d = enc->mask[tly-1][tlx];
+		cost += calc_cost2(enc, tly-d, tlx, tly, brx);
 
-				if (brx != enc->width){//±¦¾å
-					d = enc->mask[tly-1][brx];
-					cost += calc_cost2(enc, tly-d, brx, tly, brx+d);
-				}
-			}
+		if (brx != enc->width){
+			d = enc->mask[tly-1][brx];
+			cost += calc_cost2(enc, tly-d, brx, tly, brx+d);
+		}
+	}
 
-			if (tlx != 0){//º¸
-				d = enc->mask[tly][tlx-1];
-				cost += calc_cost2(enc, tly, tlx-d, bry, tlx);
-#if 1
-				if (bry != enc->height){//º¸²¼
-					d = enc->mask[bry][tlx-1];
-					cost += calc_cost2(enc, bry, tlx-d, bry+d, tlx);
-				}
-#endif
-			}
+	if (tlx != 0){//º¸
+		d = enc->mask[tly][tlx-1];
+		cost += calc_cost2(enc, tly, tlx-d, bry, tlx);
+		if (bry != enc->height){
+			d = enc->mask[bry][tlx-1];
+			cost += calc_cost2(enc, bry, tlx-d, bry+d, tlx);
+		}
+	}
 
-#if 1
-			if (brx != enc->width){//±¦
-				d = enc->mask[tly][brx];
-				cost += calc_cost2(enc, tly, brx, bry, brx+d);
-			}
-#endif
+	if (brx != enc->width){
+		d = enc->mask[tly][brx];
+		cost += calc_cost2(enc, tly, brx, bry, brx+d);
+	}
 
-#if 1
-			if (bry != enc->height){//²¼
-				d = enc->mask[bry][tlx];
-				cost += calc_cost2(enc, bry, tlx, bry+d, brx);
-#if 1
-				if (brx != enc->width){//±¦²¼
-					d = enc->mask[bry][brx];
-					cost += calc_cost2(enc, bry, brx, bry+d, brx+d);
-				}
-#endif
-			}
-#endif
+	if (bry != enc->height){
+		d = enc->mask[bry][tlx];
+		cost += calc_cost2(enc, bry, tlx, bry+d, brx);
+		if (brx != enc->width){
+			d = enc->mask[bry][brx];
+			cost += calc_cost2(enc, bry, brx, bry+d, brx+d);
+		}
+	}
 	return(cost);
 }
 
@@ -1855,7 +1848,7 @@ int find_class(ENCODER *enc, int **prdbuf, int **errbuf,
 	min_cost = 1E8;
 	min_cl = 0;
 
-	for	(cl = 0; cl < enc->num_class; cl++) {
+	for(cl = 0; cl < enc->num_class; cl++) {
 		bufptr = bufsize * (tly % bufsize) + tlx % bufsize;
 		for (y = tly; y < bry; y++) {
 			class_p = &enc->class[y][tlx];
@@ -1874,10 +1867,10 @@ int find_class(ENCODER *enc, int **prdbuf, int **errbuf,
 		err_cost[cl] = cost;
 		if( enc->optimize_loop == 2) {
 #if OPTIMIZE_MASK_LOOP
-			cost += rap_area_cost(enc, tly, tlx, bry, brx);
-		  err_cost[cl] = cost;
+			cost += rap_area_cost(enc, tly, tlx, bry, brx);	// マスクの符号量
+			err_cost[cl] = cost;
 #endif
-			cost += enc->class_cost[enc->mtfbuf[cl]];
+			cost += enc->class_cost[enc->mtfbuf[cl]];	// クラスの符号量
 		}
 		if (cost < min_cost) {
 			min_cost = cost;
@@ -1923,8 +1916,7 @@ cost_t vbs_class(ENCODER *enc, int **prdbuf, int **errbuf, int tly, int tlx,
 	for (k = 0; k < enc->num_class; k++) {
 		mtf_save[k] = enc->mtfbuf[k];
 	}
-	mtf_classlabel(enc->class, enc->mtfbuf, tly, tlx,
-		blksize, width, enc->num_class);
+	mtf_classlabel(enc->class, enc->mtfbuf, tly, tlx, blksize, width, enc->num_class);
 	err_cost = (cost_t *)alloc_mem(enc->num_class * sizeof(cost_t));
 	cl = find_class(enc, prdbuf, errbuf, tly, tlx, bry, brx, bufsize, err_cost);
 	qtcost = enc->class_cost[enc->mtfbuf[cl]];
@@ -1946,6 +1938,7 @@ cost_t vbs_class(ENCODER *enc, int **prdbuf, int **errbuf, int tly, int tlx,
 #if OPTIMIZE_MASK_LOOP
 		cost1 +=  rap_area_cost(enc, tly, tlx, bry, brx);
 #endif
+		// ブロックサイズを小さくしてみる
 		blksize >>= 1;
 		for (k = 0; k < enc->num_class; k++) {
 			enc->mtfbuf[k] = mtf_save[k];
@@ -2056,7 +2049,7 @@ cost_t optimize_class(ENCODER *enc)
 		sizeof(int));
 	for (y = 0; y < enc->height; y += blksize) {
 		for (x = 0; x < enc->width; x += blksize) {
-			set_prdbuf(enc, prdbuf, errbuf, y, x, blksize);
+			set_prdbuf(enc, prdbuf, errbuf, y, x, blksize);	// クラスごとの予測値と予測誤差をprdbuf, errbufに貯める
 			vbs_class(enc, prdbuf, errbuf, y, x,
 				blksize, enc->width, level, &blk);
 		}
@@ -4250,20 +4243,20 @@ int opcl_find_class(ENCODER *enc, int k, int tly, int tlx, int bry, int brx, int
 	int x, y, cl, min_cl, prd, org;
 	char *class_p;
 	int *prd_p, *err_p, *org_p;
-//	int *prd_p, *prdbuf_p, *err_p, *errbuf_p;
+	// int *prd_p, *prdbuf_p, *err_p, *errbuf_p;
 	min_cost = 1E8;
 	min_cl = 0;
 
-	for	(cl = 0; cl < enc->num_class; cl++) {
+	for(cl = 0; cl < enc->num_class; cl++) {
 		if (cl == k) continue;
-//		bufptr = bufsize * (tly % bufsize) + tlx % bufsize;
+		// bufptr = bufsize * (tly % bufsize) + tlx % bufsize;
 		for (y = tly; y < bry; y++) {
 			class_p = &enc->class[y][tlx];
 			prd_p = &enc->prd[y][tlx];
-//			prdbuf_p = &prdbuf[cl][bufptr];
+			// prdbuf_p = &prdbuf[cl][bufptr];
 			err_p = &enc->err[y][tlx];
-//			errbuf_p = &errbuf[cl][bufptr];
-//			bufptr += bufsize;
+			// errbuf_p = &errbuf[cl][bufptr];
+			// bufptr += bufsize;
 			org_p = &enc->org[y][tlx];
 			for (x = tlx; x < brx; x++) {
 				*class_p++ = cl;
@@ -4273,8 +4266,8 @@ int opcl_find_class(ENCODER *enc, int k, int tly, int tlx, int bry, int brx, int
   			prd = CLIP(0, enc->maxprd, prd);
 	  		prd >>= (enc->coef_precision - 1);
   			*err_p++ = enc->econv[org][prd];
-//				*prd_p++ = *prdbuf_p++;
-//				*err_p++ = *errbuf_p++;
+				// *prd_p++ = *prdbuf_p++;
+				// *err_p++ = *errbuf_p++;
 			}
 		}
 		cost = calc_cost2(enc, tly, tlx, bry, brx);
@@ -4288,25 +4281,25 @@ int opcl_find_class(ENCODER *enc, int k, int tly, int tlx, int bry, int brx, int
 		}
 	}
 
-//	bufptr = bufsize * (tly % bufsize) + tlx % bufsize;
+	// bufptr = bufsize * (tly % bufsize) + tlx % bufsize;
 	for (y = tly; y < bry; y++) {
 		class_p = &enc->class[y][tlx];
 		prd_p = &enc->prd[y][tlx];
-//		prdbuf_p = &prdbuf[min_cl][bufptr];
+		// prdbuf_p = &prdbuf[min_cl][bufptr];
 		err_p = &enc->err[y][tlx];
-//		errbuf_p = &errbuf[min_cl][bufptr];
-//		bufptr += bufsize;
+		// errbuf_p = &errbuf[min_cl][bufptr];
+		// bufptr += bufsize;
 		org_p = &enc->org[y][tlx];
 		for (x = tlx; x < brx; x++) {
 			*class_p++ = min_cl;
-					org = *org_p++;
-				prd = enc->prd_class[y][x][min_cl];
-				*prd_p++ = prd;
+			org = *org_p++;
+			prd = enc->prd_class[y][x][min_cl];
+			*prd_p++ = prd;
 			prd = CLIP(0, enc->maxprd, prd);
-  		prd >>= (enc->coef_precision - 1);
+  			prd >>= (enc->coef_precision - 1);
 			*err_p++ = enc->econv[org][prd];
-//			*prd_p++ = *prdbuf_p++;
-//			*err_p++ = *errbuf_p++;
+			// *prd_p++ = *prdbuf_p++;
+			// *err_p++ = *errbuf_p++;
 		}
 	}
 	return (min_cl);
@@ -4750,7 +4743,7 @@ int main(int argc, char **argv)
 	printf("------------------------------------------------------------------\n");
 #if AUTO_PRD_ORDER
 	// printf("M = %d, K = %d, P = %d, V = %d, A = %d, l = %d, m = %d, o = %d, f = %d\n",
-	printf("NUM_CLASS\t= %d\nMAX_PRD_ORDER\t= %d\ncoef_precision\t= %d\nnum_pmodel\t= %d\npm_accuracy\t= %d\nmax_iteration\t= %d\nf_mmse\t\t= %d\nf_optpred\t= %d\nquadtree_depth\t= %d\nParallel Threads\t= %d\nTemplateM\t= %d\n",
+	printf("NUM_CLASS\t= %d\nMAX_PRD_ORDER\t= %d\ncoef_precision\t= %d\nnum_pmodel\t= %d\npm_accuracy\t= %d\nmax_iteration\t= %d\nf_mmse\t\t= %d\nf_optpred\t= %d\nquadtree_depth\t= %d\nParallel Threads= %d\nTemplateM\t= %d\n",
 		num_class, MAX_PRD_ORDER, coef_precision, num_pmodel, pm_accuracy, max_iteration, f_mmse, f_optpred, quadtree_depth, num_threads, TEMPLATE_MATCHING_ON);
 	#if TEMPLATE_MATCHING_ON
 		printf("TM_CLASS_NUM\t= %d\n", TEMPLATE_CLASS_NUM);

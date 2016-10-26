@@ -639,7 +639,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 	CPOINT *template=0, max, dec_org, exam;
 	max.y = dec->height - 1;
 	max.x = dec->width - 1;
-	template = (CPONT *)alloc_mem(AREA * sizeof(CPOINT));
+	template = (CPOINT *)alloc_mem(AREA * sizeof(CPOINT));
 #endif
 
 	tm_array = (int *)alloc_mem( window_size * 4 * sizeof(int));

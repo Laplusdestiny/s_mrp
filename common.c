@@ -431,6 +431,7 @@ int *init_ctx_weight(void)
 #else
 		ctx_weight[k] = (int)(64.0 / sqrt(dy * dy + dx * dx) + 0.5);
 #endif
+		if(ctx_weight[k] > 64)	ctx_weight[k] = 0;
 	}
 	return (ctx_weight);
 }
