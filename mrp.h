@@ -135,15 +135,22 @@
 #define TEMPLATE_MATCHING_ON 	1
 #if TEMPLATE_MATCHING_ON
 
-#define ZNCC			0
+// Template Matching Funtion Mode
+#define ZNCC				0	// コスト関数
+#define MANHATTAN_SORT		0	// 市街地距離で近い順に事例を更に並び替える
+#define ROTATE_TEMPLATE		1	// テンプレートの回転
+#define TEMPLATEM_LOG_OUTPUT	1	// テンプレートマッチングの結果を書き出す
 
 #if ZNCC
 #define	ZSAD			0
 #else
 #define ZSAD			1
 #endif
+#if ROTATE_TEMPLATE
+#define DEGREE_NUM		4
+#endif
 
-#define MANHATTAN_SORT	0	//市街地距離で近い順に事例を更に並び替える
+// Template Matching Parameters
 #define AREA			6
 #define Y_SIZE			20
 #define X_SIZE			20	//調査結果より80*20がいいかも？
@@ -153,7 +160,6 @@
 #define W_GR 			7
 #define WEIGHT_CN		2	//ラプラス関数
 #define TEMPLATE_CLASS_NUM	30
-#define TEMPLATEM_LOG_OUTPUT	1	//テンプレートマッチングの結果を書き出す
 
 #else
 #define TEMPLATE_CLASS_NUM	0
@@ -165,12 +171,12 @@
 /*********DEBUG******************************/
 #define CHECK_TM 		0
 #define CHECK_TM_DETAIL	0
-#define CHECK_DEBUG 	0
-#define CHECK_PMODEL	0
+#define CHECK_DEBUG 		1
+#define CHECK_PMODEL	1
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
 #define check_y			0
-#define check_x			4
+#define check_x			53
 #define F_NUM			8
 
 #define NUM_THREADS		8
@@ -236,7 +242,7 @@ typedef struct{
 } TM_Member;
 
 typedef struct{
-	int num_class_s;
+	int num_class;
 	int **th_s;
 	int **prd_s;
 	char **uq_s;

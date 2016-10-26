@@ -635,6 +635,13 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 	int *mcost_num, max_nas =0, before_nas_num=0;
 #endif
 
+#if ROTATE_TEMPLATE
+	CPOINT *template=0, max, dec_org, exam;
+	max.y = dec->height - 1;
+	max.x = dec->width - 1;
+	template = (CPONT *)alloc_mem(AREA * sizeof(CPOINT));
+#endif
+
 	tm_array = (int *)alloc_mem( window_size * 4 * sizeof(int));
 	for(i=0; i<dec->height; i++){
 		if(i != dec_y){
@@ -1333,6 +1340,9 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 						pm = mask->pm[0];
 						dec->rc->y = y;
 						dec->rc->x = x;
+						#if CHECK_PMODEL
+							if(y==check_y && x==check_x)	printmodel(pm, dec->maxval+1);
+						#endif
 						p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
 							- base;
 					}else{
@@ -1370,6 +1380,9 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 					pm = mask->pm[0];
 					dec->rc->y = y;
 					dec->rc->x = x;
+					#if CHECK_PMODEL
+						if(y==check_y && x==check_x)	printmodel(pm, dec->maxval+1);
+					#endif
 					p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
 						- base;
 				}else{

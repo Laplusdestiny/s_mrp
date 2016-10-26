@@ -783,6 +783,12 @@ void*** TemplateM (ENCODER *enc, char *outfile) {
 	printf("MANHATTAN_SORT\tON\n");
 #endif
 
+#if ROTATE_TEMPLATE
+	CPOINT *template=0, max, enc_org, exam;
+	max.y = enc->height -1;
+	max.x = enc->width - 1;
+	template = (CPOINT *)alloc_mem(AREA * sizeof(CPOINT));
+#endif
 /////////////////////////
 ///////メモリ確保////////
 /////////////////////////
@@ -809,6 +815,10 @@ for(y = 0 ; y < enc->height ; y++){
 			// encval[y][x] = enc->org[y][x] << enc->coef_precision;
 			continue;
 		}
+		#if ROTATE_TEMPLATE
+			enc_org.y = y;
+			enc_org.x = x;
+		#endif
 
 		init_2d_array(encval, enc->height, enc->width, 0);
 		for(i=0; i<enc->height; i++){
@@ -883,6 +893,23 @@ for(y = 0 ; y < enc->height ; y++){
 				if(by==y && bx >= x) break_flag=1;
 				if ( break_flag )	break;
 
+				#if ROTATE_TEMPLATE
+					exam.y = by;
+					exam.x = bx;
+					for(count = 0; count < DEGREE_NUM; count++){
+						calc_template(template, max, enc_org, exam, (double)360 * count / DEGREE_NUM);
+
+						sum_o = 0;
+						for(k=0;k < AREA; k++){//市街地距離AREA個分
+							area_o[k] = 0;
+							#ifdef CHECK_EXAM
+								if(by == check_y && bx == check_x)	printf("[%d,%d](%d)%d,%d(%d)\n",by, bx, count, template[k].y, template[k].x, enc->org[template[k].y][template[k].x]);
+							#endif
+							area_o[k] = enc->org[template[k].y][template[k].x];
+							sum_o += area_o[k];
+						}
+				#else
+
 				roff_p = enc->roff[by][bx];
 				org_p = &encval[by][bx];
 
@@ -895,6 +922,7 @@ for(y = 0 ; y < enc->height ; y++){
 						if(y==check_y && x==check_x)	printf("sum_o: %d | area_o[%d]: %d\n",sum_o, i, area_o[i]);
 					#endif
 				}
+				#endif
 
 				ave_o = (double)sum_o / AREA;
 
@@ -963,8 +991,12 @@ for(y = 0 ; y < enc->height ; y++){
 						printf("\n");
 					}
 				#endif
-
+				#if ROTATE_TEMPLATE
+					tm[j].id = count;
+					}
+				#endif
 				j++;
+
 			}//bx fin
 			if( break_flag )break;
 		}//by fin
@@ -1093,6 +1125,9 @@ for(y = 0 ; y < enc->height ; y++){
 TemplateM_Log_Output(enc, outfile, tempm_array, exam_array);
 free(tm_array);
 free(encval);
+#if ROTATE_TEMPLATE
+free(template);
+#endif
 #else
 printf("Restoring Template Matching\r");
 TemplateM_Log_Input(enc, outfile, tempm_array, exam_array);
@@ -3082,7 +3117,7 @@ void make_th(ENCODER *enc){
 		// enc->th[cl][gr - 1] = th1;
 		enc->w_gr[gr - 1] = th1;
 	}
-	enc->w_gr[0] = 0;
+	// enc->w_gr[0] = 0;
 	enc->w_gr[enc->num_group-1] = MAX_UPARA+1;
 	return;
 }
@@ -4151,6 +4186,9 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 				cumbase = pm->cumfreq[base];
 				enc->rc->y = y;
 				enc->rc->x = x;
+				#if CHECK_PMODEL
+					if(y==check_y && x==check_x) printmodel(pm,enc->maxval+1);
+				#endif
 				rc_encode(fp, enc->rc,
 					pm->cumfreq[base + e] - cumbase,
 					pm->freq[base + e],
@@ -4443,7 +4481,7 @@ cost_t opcl(ENCODER *enc, int k, int *blk, int restore)
 }
 
 RESTORE_SIDE* init_renew_adc(ENCODER *enc){
-	RESTORE_SIDE * side;
+	RESTORE_SIDE *side;
 	side = (RESTORE_SIDE *)alloc_mem(sizeof(RESTORE_SIDE));
 	side->th_s = (int **)alloc_2d_array(enc->num_class, enc->num_group, sizeof(int));
 	// init_2d_array(side->th_s, enc->num_class, enc->num_group, 0);
@@ -4461,14 +4499,12 @@ RESTORE_SIDE* init_renew_adc(ENCODER *enc){
 void save_info(ENCODER *enc, RESTORE_SIDE *r_side, int restore){
 	int y, x, i, j;
 	if(restore==1){
-		enc->num_class = r_side->num_class_s;
+		enc->num_class = r_side->num_class;
 		for(y=0; y<enc->height; y++){
 			for(x=0; x<enc->width; x++){
 				enc->class[y][x] = r_side->class[y][x];
-				// r_side->class[y][x] = enc->class[y][x];
 				for(i=0; i<enc->num_class; i++){
 					enc->prd_class[y][x][i] = r_side->prd_cl_s[y][x][i];
-					// r_side->prd_cl_s[y][x][i] = enc->prd_class[y][x][i];
 				}
 			}
 		}
@@ -4476,23 +4512,22 @@ void save_info(ENCODER *enc, RESTORE_SIDE *r_side, int restore){
 		for(i=0; i<enc->num_class; i++){
 			for(j=0; j<enc->num_group; j++){
 				enc->th[i][j] = r_side->th_s[i][j];
-				// r_side->th_s[i][j] = enc->th[i][j];
 			}
 			for(j=0; j<enc->max_prd_order; j++){
 				enc->predictor[i][j] = r_side->prd_s[i][j];
-				// r_side->prd_s[i][j] = enc->predictor[i][j];
 			}
 			for(j=0; j<MAX_UPARA; j++){
 				enc->uquant[i][j] = r_side->uq_s[i][j];
-				// r_side->uq_s[i][j] = enc->uquant[i][j];
 			}
 		}
 #if AUTO_PRD_ORDER
 		set_prd_pels(enc);
 #endif
 		optimize_class(enc);
+		save_prediction_value(enc);
+		predict_region(enc, 0, 0, enc->height, enc->width);
 	} else {
-		r_side->num_class_s = enc->num_class;
+		r_side->num_class = enc->num_class;
 		for(y=0; y<enc->height; y++){
 			for(x=0; x<enc->width; x++){
 				r_side->class[y][x] = enc->class[y][x];
@@ -4546,7 +4581,7 @@ cost_t auto_del_class(ENCODER *enc, cost_t pre_cost)
 			printf("%d ", del_cl);
 		#endif
 		cost = opcl(enc, del_cl, &blk, 0);
-#if MULT_PEAK_MODE == 0
+#if !MULT_PEAK_MODE
 		for (y = del_cl; y < enc->num_class; y++) {
 			for (x = 0; x < blk; x++) {
 				enc->err_cost[x][y] = enc->err_cost[x][y + 1];
@@ -4681,6 +4716,7 @@ int main(int argc, char **argv)
 		printf("outfile:    Output file\n");
 		exit(0);
 	}
+	omp_set_num_threads(num_threads);
 
 	img = read_pgm(infile);
 
@@ -4714,8 +4750,8 @@ int main(int argc, char **argv)
 	printf("------------------------------------------------------------------\n");
 #if AUTO_PRD_ORDER
 	// printf("M = %d, K = %d, P = %d, V = %d, A = %d, l = %d, m = %d, o = %d, f = %d\n",
-	printf("NUM_CLASS\t= %d\nMAX_PRD_ORDER\t= %d\ncoef_precision\t= %d\nnum_pmodel\t= %d\npm_accuracy\t= %d\nmax_iteration\t= %d\nf_mmse\t\t= %d\nf_optpred\t= %d\nquadtree_depth\t= %d\nTemplateM\t= %d\n",
-		num_class, MAX_PRD_ORDER, coef_precision, num_pmodel, pm_accuracy, max_iteration, f_mmse, f_optpred, quadtree_depth, TEMPLATE_MATCHING_ON);
+	printf("NUM_CLASS\t= %d\nMAX_PRD_ORDER\t= %d\ncoef_precision\t= %d\nnum_pmodel\t= %d\npm_accuracy\t= %d\nmax_iteration\t= %d\nf_mmse\t\t= %d\nf_optpred\t= %d\nquadtree_depth\t= %d\nParallel Threads\t= %d\nTemplateM\t= %d\n",
+		num_class, MAX_PRD_ORDER, coef_precision, num_pmodel, pm_accuracy, max_iteration, f_mmse, f_optpred, quadtree_depth, num_threads, TEMPLATE_MATCHING_ON);
 	#if TEMPLATE_MATCHING_ON
 		printf("TM_CLASS_NUM\t= %d\n", TEMPLATE_CLASS_NUM);
 	#endif
@@ -4966,7 +5002,7 @@ int main(int argc, char **argv)
 				}
 				if(flg == 1){
 					save_info(enc, min_cost_side, 1);
-					if(l > 0)	l--;
+					l=0;
 				} else if(flg == 2){
 					save_info(enc, before_side, 1);
 				} else {
@@ -5042,21 +5078,6 @@ int main(int argc, char **argv)
 		elapse += cpu_time();
 	}	//loop fin
 
-#if RENEW_ADC
-	free(min_cost_side->th_s);
-	free(min_cost_side->prd_s);
-	free(min_cost_side->uq_s);
-	free(min_cost_side->prd_cl_s);
-	free(min_cost_side->class);
-	free(min_cost_side);
-	free(before_side->th_s);
-	free(before_side->prd_s);
-	free(before_side->uq_s);
-	free(before_side->prd_cl_s);
-	free(before_side->class);
-	free(before_side);
-#endif
-
 	if (f_optpred) {
 		enc->num_class = num_class_save;
 		for (y = 0; y < enc->height; y++) {
@@ -5100,13 +5121,28 @@ int main(int argc, char **argv)
 			enc->w_gr[gr] = w_gr_save[gr];
 		}
 #endif
+#if RENEW_ADC
+	free(min_cost_side->th_s);
+	free(min_cost_side->prd_s);
+	free(min_cost_side->uq_s);
+	free(min_cost_side->prd_cl_s);
+	free(min_cost_side->class);
+	free(min_cost_side);
+	free(before_side->th_s);
+	free(before_side->prd_s);
+	free(before_side->uq_s);
+	free(before_side->prd_cl_s);
+	free(before_side->class);
+	free(before_side);
+#endif
+
 #if AUTO_PRD_ORDER
 		set_prd_pels(enc);
 #endif
 		save_prediction_value(enc);
 		enc->function_number = 100;
-		predict_region(enc, 0, 0, enc->height, enc->width);
-		calc_cost(enc, 0, 0, enc->height, enc->width);
+		// predict_region(enc, 0, 0, enc->height, enc->width);
+		// calc_cost(enc, 0, 0, enc->height, enc->width);
 #if OPTIMIZE_MASK
 #if 0
         cost = optimize_mask(enc);

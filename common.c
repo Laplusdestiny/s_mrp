@@ -500,3 +500,56 @@ double cpu_time(void)
 	return ((double)dif / CLK_TCK);
 #endif
 }
+
+CPOINT calc_rotate(CPOINT a, double rad){
+	CPOINT b;
+	double x, y;
+	x = cos(rad) * (double)a.x - sin(rad) * (double)a.y;
+	y = sin(rad) * (double)a.x + cos(rad) * (double)a.y;
+	b.x = round_int(x);
+	b.y = round_int(y);
+	// printf(" -> (%d,%d)\n", b.y, b.x);
+	return(b);
+}
+
+CPOINT* calc_template(CPOINT *template, CPOINT max, CPOINT enc, CPOINT exam, int degree){
+	int i;
+	double rad = (double)degree * M_PI / 180.0;
+	CPOINT temp;
+	for(i=0; i<AREA; i++){
+		 temp = calc_rotate(dyx[i], rad);
+		 template[i].x = exam.x + temp.x;
+		 template[i].y = exam.y + temp.y;
+
+//1st x
+		 if(template[i].x > max.x){
+		 	template[i].x = max.x;
+		 }
+		 if(template[i].x < 0){
+		 	template[i].x = 0;
+		 }
+//y
+		 if(template[i].x >= enc.x && template[i].y >= enc.y){
+		 	template[i].y = enc.y -1;
+		 } else if(template[i].x < enc.x && template[i].y > enc.y){
+		 	template[i].y = enc.y;
+		 } else if(template[i].y >= max.y){
+		 	if(template[i].x < enc.x){
+		 		template[i].y = enc.y;
+		 	}else if(template[i].x >=enc.x){
+		 		template[i].y = enc.y-1;
+		 	}
+		 }
+		 if(template[i].y < 0){
+		 	template[i].y = 0;
+		 	if(template[i].x >=enc.x){
+		 		template[i].x = enc.x -1;
+		 	}
+		 }
+
+		 if(template[i].y == enc.y && template[i].x >= enc.x){
+		 	template[i].x = enc.x -1;
+		 }
+	}
+	// return(template);
+}

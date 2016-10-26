@@ -23,7 +23,7 @@ do
 	elif [ "$image" = 13 ]; then IMG=$DIR/shapes.pgm;		NAME="shapes"
 	fi
 
-	LOG="Log/$NAME-`date +%y%m%d_%H%M`.txt"
+	LOG="Log/$NAME-`date +%y%m%d_%H%M`.log"
 	MRP="Encoded_File/$NAME.mrp"
 	PGM="Decoded_File/$NAME.pgm"
 
