@@ -1312,9 +1312,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 	img = alloc_image(dec->width, dec->height, dec->maxval);
 
 #if TEMPLATE_MATCHING_ON
-	// exam_array = (int **)alloc_2d_array(dec->height, dec->width, sizeof(int));	//最もマッチングコストが小さい画素の輝度値を保存
 	exam_array = (int ***)alloc_3d_array(dec->height, dec->width, TEMPLATE_CLASS_NUM, sizeof(int));
-	// dec->w_gr = W_GR;
 #endif
 
 	bitmask = (1 << dec->pm_accuracy) - 1;
@@ -1340,9 +1338,6 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 						pm = mask->pm[0];
 						dec->rc->y = y;
 						dec->rc->x = x;
-						#if CHECK_PMODEL
-							if(y==check_y && x==check_x)	printmodel(pm, dec->maxval+1);
-						#endif
 						p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
 							- base;
 					}else{
@@ -1380,9 +1375,6 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 					pm = mask->pm[0];
 					dec->rc->y = y;
 					dec->rc->x = x;
-					#if CHECK_PMODEL
-						if(y==check_y && x==check_x)	printmodel(pm, dec->maxval+1);
-					#endif
 					p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
 						- base;
 				}else{

@@ -4125,7 +4125,7 @@ int encode_mask(FILE *fp, ENCODER *enc, int flag)
 	return (bits);
 }
 
-cost_t calc_side_info(ENCODER *enc, cost_t cost){
+cost_t calc_side_cost(ENCODER *enc, cost_t cost){
 	cost_t sc;
 
 	#if CHECK_DEBUG
@@ -4179,9 +4179,6 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 				cumbase = pm->cumfreq[base];
 				enc->rc->y = y;
 				enc->rc->x = x;
-				#if CHECK_PMODEL
-					if(y==check_y && x==check_x) printmodel(pm,enc->maxval+1);
-				#endif
 				rc_encode(fp, enc->rc,
 					pm->cumfreq[base + e] - cumbase,
 					pm->freq[base + e],
@@ -4592,7 +4589,7 @@ cost_t auto_del_class(ENCODER *enc, cost_t pre_cost)
 	}
 	predict_region(enc, 0, 0, enc->height, enc->width);
 	cost = calc_cost(enc, 0, 0, enc->height, enc->width);
-	cost = calc_side_info(enc, cost);
+	cost = calc_side_cost(enc, cost);
 	return(cost);
 }
 #endif
@@ -4709,7 +4706,7 @@ int main(int argc, char **argv)
 		printf("outfile:    Output file\n");
 		exit(0);
 	}
-	omp_set_num_threads(num_threads);
+	// omp_set_num_threads(num_threads);
 
 	img = read_pgm(infile);
 
@@ -4939,14 +4936,11 @@ int main(int argc, char **argv)
 			#if PAST_ADC
 				sw = enc->num_class;
 				cost = auto_del_class(enc, cost);	//使用していないクラスの削除
-				cl = 1;
-				while (sw != enc->num_class && cl < 5) {	//削除に成功する間
+				while (sw != enc->num_class) {	//削除に成功する間
 					sw = enc->num_class;
 					cost = auto_del_class(enc, cost);
-					cl++;
 				}
 			#elif RENEW_ADC
-				// sw = enc->num_class;
 				save_info(enc, min_cost_side, 0);
 				yy = xx =0;
 				cost_save = min_cost;
@@ -4959,7 +4953,6 @@ int main(int argc, char **argv)
 					#endif
 					sw = enc->num_class;
 					cost = auto_del_class(enc, cost);
-					// if(cost < 0) continue;
 					if(cost < cost_save){
 						#if CHECK_DEBUG
 							printf(" *");
@@ -4969,7 +4962,7 @@ int main(int argc, char **argv)
 						save_info(enc, min_cost_side, 0);
 						flg = 1;
 						cl++;
-					} else if(cost < before_cost && flg == 0){
+					} else if(cost < before_cost && flg != 1){
 						#if CHECK_DEBUG
 							printf(" +");
 						#endif
@@ -5002,8 +4995,7 @@ int main(int argc, char **argv)
 					save_info(enc, min_cost_side, 1);
 					l++;
 				}
-				// cost = calc_cost2(enc, 0, 0, enc->height, enc->width);
-				cost = calc_side_info(enc, calc_cost2(enc, 0, 0, enc->height, enc->width));
+				cost = calc_side_cost(enc, calc_cost2(enc, 0, 0, enc->height, enc->width));
 			#endif
 				printf("->%d[%d]", (int)cost, enc->num_class);
 			}

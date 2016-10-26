@@ -179,7 +179,7 @@
 #define check_x			53
 #define F_NUM			8
 
-#define NUM_THREADS		8
+#define NUM_THREADS		4
 
 /***** STRUCTURE ***************************/
 
