@@ -97,6 +97,13 @@
 #define TOT_ZEROFR		(1 << 10)
 #define MAX_SYMBOL		1024	// must be >> MAX_UPARA
 
+#define	CONTEXT_COST_MOUNT	1
+#if CONTEXT_COST_MOUNT
+	#define	COTNEXT_ERROR	0
+#else
+	#define	CONTEXT_ERROR	1
+#endif
+
 /***** RangeCoder **************************/
 #define HAVE_64BIT_INTEGER	1
 #if HAVE_64BIT_INTEGER
@@ -138,8 +145,8 @@
 // Template Matching Funtion Mode
 #define ZNCC				0	// コスト関数
 #define MANHATTAN_SORT		0	// 市街地距離で近い順に事例を更に並び替える
-#define ROTATE_TEMPLATE		1	// テンプレートの回転
-#define TEMPLATEM_LOG_OUTPUT	1	// テンプレートマッチングの結果を書き出す
+#define ROTATE_TEMPLATE		0	// テンプレートの回転
+#define TEMPLATEM_LOG_OUTPUT	0	// テンプレートマッチングの結果を書き出す
 
 #if ZNCC
 #define	ZSAD			0
@@ -176,7 +183,7 @@
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
 #define check_y			0
-#define check_x			53
+#define check_x			61
 #define F_NUM			8
 
 #define NUM_THREADS		4
@@ -310,6 +317,7 @@ typedef struct {
 	cost_t *th_cost;
 	cost_t *class_cost;
 	cost_t qtflag_cost[QUADTREE_DEPTH << 3];
+	cost_t **cost;
 #if AUTO_DEL_CL
 	cost_t **err_cost;
 #endif
@@ -368,6 +376,7 @@ typedef struct {
 	int *w_gr;
 	char temp_cl;
 	int **org;
+	cost_t **cost;
 } DECODER;
 
 /***** FUNC - common.c ****************************/

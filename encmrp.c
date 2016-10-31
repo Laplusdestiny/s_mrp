@@ -353,6 +353,8 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 	enc->roff = init_ref_offset(enc->height, enc->width, enc->max_prd_order, dyx);
 	enc->org = (int **)alloc_2d_array(enc->height+1, enc->width, sizeof(int));
 	enc->err = (int **)alloc_2d_array(enc->height+1, enc->width, sizeof(int));
+	enc->cost = (cost_t **)alloc_2d_array(enc->height+1, enc->width, sizeof(cost_t));
+	enc->cost[enc->height][0] = 0;
 	if (enc->quadtree_depth > 0) {
 		y = (enc->height + MAX_BSIZE - 1) / MAX_BSIZE;
 		x = (enc->width + MAX_BSIZE - 1) / MAX_BSIZE;
@@ -740,20 +742,32 @@ void save_prediction_value(ENCODER *enc)
 
 int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出
 {
-	int u, k, *err_p, *roff_p, *wt_p;
-	err_p = &enc->err[y][x];
+	int u, k, *roff_p, *wt_p;
+	#if CONTEXT_ERROR
+		int *err_p;
+		err_p = &enc->err[y][x];
+	#elif CONTEXT_COST_MOUNT
+		double cost, *cost_p;
+		cost_p = &enc->cost[y][x];
+	#endif
 	roff_p = enc->roff[y][x];
 	wt_p = enc->ctx_weight;
 
 	u = 0;
 	for (k =0; k < NUM_UPELS; k++) {
 		// u += err_p[*roff_p++] * (*wt_p++);
-		if(wt_p[k] > 64)	continue;
-		u += err_p[roff_p[k]] * wt_p[k];
-		#if CHECK_DEBUG
-			if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("u: %d | err: %d(%3d) | wt_p: %d\n", u, err_p[roff_p[k]], roff_p[k], wt_p[k]);
+		#if CONTEXT_ERROR
+			u += err_p[roff_p[k]] * wt_p[k];
+		#elif CONTEXT_COST_MOUNT
+			cost += cost_p[*roff_p++] * (*wt_p++);
 		#endif
+		/*#if CHECK_DEBUG
+			if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("u: %d | err: %d(%3d) | wt_p: %d\n", u, err_p[roff_p[k]], roff_p[k], wt_p[k]);
+		#endif*/
 	}
+	#if CONTEXT_COST_MOUNT
+		u = (int)cost;
+	#endif
 	u >>= 6;
 	if (u > MAX_UPARA) u = MAX_UPARA;
 	#if CHECK_DEBUG
@@ -761,6 +775,7 @@ int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出
 	#endif
 	return (u);
 }
+
 
 #if TEMPLATE_MATCHING_ON
 void*** TemplateM (ENCODER *enc, char *outfile) {
@@ -1378,7 +1393,7 @@ int set_mask_parameter_optimize(ENCODER *enc,int y, int x, int u, int r_cl)
 
 cost_t calc_cost2(ENCODER *enc, int tly, int tlx, int bry, int brx)
 {
-	cost_t cost;
+	cost_t cost, *cost_p;
 	int x, y, u, cl, gr, e, base;
 	int *upara_p, *encval_p;
 	char *class_p, *group_p;
@@ -1397,6 +1412,7 @@ cost_t calc_cost2(ENCODER *enc, int tly, int tlx, int bry, int brx)
 		group_p = &enc->group[y][tlx];
 		upara_p = &enc->upara[y][tlx];
 		encval_p = &enc->encval[y][tlx];
+		cost_p = &enc->cost[y][tlx];
 		for (x = tlx; x < brx; x++) {
 			*upara_p++ = u = calc_uenc(enc, y, x);
 			set_mask_parameter(enc,y,x,u);
@@ -1406,10 +1422,10 @@ cost_t calc_cost2(ENCODER *enc, int tly, int tlx, int bry, int brx)
 			if (mask->num_peak == 1){
 				base = mask->base[0];
 				pm = mask->pm[0];
-				cost += pm->cost[base + e] + pm->subcost[base];
+				cost += *cost_p++ = pm->cost[base + e] + pm->subcost[base];
 			}else{
 				set_pmodel_mult_cost(mask,enc->maxval+1,e);
-				cost += a * (log(mask->cumfreq)-log(mask->freq)) ;
+				cost += *cost_p++ = a * (log(mask->cumfreq)-log(mask->freq)) ;
 			}
 			// if(enc->function_number== F_NUM) printf("(%3d,%3d) cost: %d | cl: %d\n", y, x, (int)cost, cl );
 		}
@@ -1420,7 +1436,7 @@ cost_t calc_cost2(ENCODER *enc, int tly, int tlx, int bry, int brx)
 
 cost_t calc_cost(ENCODER *enc, int tly, int tlx, int bry, int brx)		//コストを算出
 {
-	cost_t cost;
+	cost_t cost, *cost_p;
 	int x, y, u, cl, gr, prd, e, base, frac;
 	int *upara_p, *prd_p, *encval_p;
 	char *class_p, *group_p;
@@ -1443,6 +1459,7 @@ cost_t calc_cost(ENCODER *enc, int tly, int tlx, int bry, int brx)		//コスト�
 		upara_p = &enc->upara[y][tlx];
 		encval_p = &enc->encval[y][tlx];
 		prd_p = &enc->prd[y][tlx];
+		cost_p = &enc->cost[y][tlx];
 		for (x = tlx; x < brx; x++) {
 			cl = *class_p++;
 			*upara_p++ = u = calc_uenc(enc, y, x);
@@ -1453,7 +1470,7 @@ cost_t calc_cost(ENCODER *enc, int tly, int tlx, int bry, int brx)		//コスト�
 			base = enc->bconv[prd];
 			frac = enc->fconv[prd];
 			pm = enc->pmlist[gr] + frac;
-			cost += pm->cost[base + e] + pm->subcost[base];
+			cost += *cost_p++ = pm->cost[base + e] + pm->subcost[base];
 		}
 	}
 	if(cost < 0) cost = INT_MAX;
@@ -4513,7 +4530,7 @@ void save_info(ENCODER *enc, RESTORE_SIDE *r_side, int restore){
 #if AUTO_PRD_ORDER
 		set_prd_pels(enc);
 #endif
-		optimize_class(enc);
+		// optimize_class(enc);
 		save_prediction_value(enc);
 		predict_region(enc, 0, 0, enc->height, enc->width);
 	} else {
@@ -4597,7 +4614,7 @@ cost_t auto_del_class(ENCODER *enc, cost_t pre_cost)
 int main(int argc, char **argv)
 {
 	cost_t cost, min_cost, side_cost, sc;
-	int i, j, k, l, x, y, xx, yy, cl, gr, bits, **prd_save, **th_save, sw;
+	int i, j, k, l=0, x, y, xx, yy, cl, gr, bits, **prd_save, **th_save, sw;
 	int header_info, class_info, pred_info, th_info, mask_info, err_info, w_gr_info=0;
 	int num_class_save;
 	char **class_save, **mask_save;
@@ -4706,7 +4723,7 @@ int main(int argc, char **argv)
 		printf("outfile:    Output file\n");
 		exit(0);
 	}
-	// omp_set_num_threads(num_threads);
+	omp_set_num_threads(num_threads);
 
 	img = read_pgm(infile);
 
@@ -4931,7 +4948,7 @@ int main(int argc, char **argv)
 #endif
 		cost += side_cost;
 #if AUTO_DEL_CL
-		if (sw != 0) {	//コスト削減に一度でも失敗した場合に入る
+		if (sw != 0 && l< 3) {	//コスト削減に一度でも失敗した場合に入る
 			if( enc->num_class > 1) {
 			#if PAST_ADC
 				sw = enc->num_class;
@@ -4947,7 +4964,7 @@ int main(int argc, char **argv)
 				before_cost = cost;
 				flg = 0;
 				cl = 0;
-				while(yy - xx < (EXTRA_ITERATION / 3) && cl < MAX_DEL_CLASS && l< 3) {
+				while(yy - xx < (EXTRA_ITERATION / 3) && yy < MAX_DEL_CLASS) {
 					#if CHECK_DEBUG
 						printf("\n");
 					#endif
@@ -4961,7 +4978,6 @@ int main(int argc, char **argv)
 						xx = yy;
 						save_info(enc, min_cost_side, 0);
 						flg = 1;
-						cl++;
 					} else if(cost < before_cost && flg != 1){
 						#if CHECK_DEBUG
 							printf(" +");
@@ -4995,7 +5011,7 @@ int main(int argc, char **argv)
 					save_info(enc, min_cost_side, 1);
 					l++;
 				}
-				cost = calc_side_cost(enc, calc_cost2(enc, 0, 0, enc->height, enc->width));
+				cost = calc_side_cost(enc, calc_cost(enc, 0, 0, enc->height, enc->width));
 			#endif
 				printf("->%d[%d]", (int)cost, enc->num_class);
 			}
@@ -5043,6 +5059,9 @@ int main(int argc, char **argv)
 						th_save[cl][k] = enc->th[cl][k];
 					}
 				}
+#if AUTO_DEL_CL
+				l--;
+#endif
 #if TEMPLATE_MATCHING_ON
 				temp_peak_num_save = enc->temp_peak_num;
 				// w_gr_save = enc->w_gr;

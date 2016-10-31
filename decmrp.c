@@ -164,6 +164,8 @@ DECODER *init_decoder(FILE *fp)
 		sizeof(int));
 	dec->org = (int **)alloc_2d_array(dec->height+1, dec->width, sizeof(int));
 	dec->err = (int **)alloc_2d_array(dec->height+1, dec->width, sizeof(int));
+	dec->cost = (cost_t **)alloc_2d_array(dec->height+1, dec->width, sizeof(cost_t));
+	dec->cost[dec->height][0] = 0;
 	dec->org[dec->height][0] = (dec->maxval + 1) >> 1;
 	dec->err[dec->height][0] = (dec->maxval + 1) >> 2;
 	dec->roff = init_ref_offset(dec->height, dec->width, dec->max_prd_order);
@@ -598,18 +600,30 @@ int calc_udec(DECODER *dec, int y, int x)
 
 int calc_udec2(DECODER *dec, int y, int x)
 {
-	int k, u=0, *err_p, *wt_p, *roff_p;
-	err_p = &dec->err[y][x];
+	int k, u=0, *wt_p, *roff_p;
+	#if CONTEXT_ERROR
+		int *err_p;
+		err_p = &dec->err[y][x];
+	#elif CONTEXT_COST_MOUNT
+		double cost, *cost_p;
+		cost_p = &dec->cost[y][x];
+	#endif
 	wt_p = dec->ctx_weight;
 	roff_p = dec->roff[y][x];
 
 	for(k=0; k<NUM_UPELS; k++){
-		u += err_p[*roff_p++] * (*wt_p++);
-		#if CHECK_DEBUG
-			if(y==check_y && x==check_x)	printf("u: %d | err: %d(%3d) | wt_p: %d\n", u, err_p[roff_p[k]], roff_p[k], wt_p[k]);
+		#if CONTEXT_ERROR
+			u += err_p[*roff_p++] * (*wt_p++);
+		#elif CONTEXT_COST_MOUNT
+			cost += cost_p[*roff_p++] * (*wt_p++);
 		#endif
+		/*#if CHECK_DEBUG
+			if(y==check_y && x==check_x)	printf("u: %d | err: %d(%3d) | wt_p: %d\n", u, err_p[roff_p[k]], roff_p[k], wt_p[k]);
+		#endif*/
 	}
-
+	#if CONTEXT_COST_MOUNT
+		u = (int)cost;
+	#endif
 	u >>= 6;
 	if (u > MAX_UPARA) u = MAX_UPARA;
 	#if CHECK_DEBUG
@@ -1307,6 +1321,8 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 {
 	int x, y, cl, gr, prd, u, p, bitmask, shift, base, e;
 	int *th_p;
+	double a = 1.0 / log(2.0);
+	cost_t *cost_p;
 	IMAGE *img;
 	PMODEL *pm;
 	img = alloc_image(dec->width, dec->height, dec->maxval);
@@ -1319,6 +1335,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 	shift = dec->coef_precision - dec->pm_accuracy;
 	printf("Start Decode Image\n");
 	for (y = 0; y < dec->height; y++) {
+		cost_p = &dec->cost[y][0];
 		for (x = 0; x < dec->width; x++) {
 			dec->rc->y = y;
 			dec->rc->x = x;
@@ -1340,6 +1357,9 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 						dec->rc->x = x;
 						p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
 							- base;
+						#if CONTEXT_COST_MOUNT
+							*cost_p++ = pm->cost[base+e] + pm->subcost[base];
+						#endif
 					}else{
 						pm = &dec->mult_pm;
 						set_pmodel_mult(pm,mask,dec->maxval+1);
@@ -1349,6 +1369,9 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 						dec->rc->y = y;
 						dec->rc->x = x;
 						p = rc_decode(fp, dec->rc, pm, 0, dec->maxval+1);
+						#if CONTEXT_COST_MOUNT
+							*cost_p++ = pm->cost[base+e] + pm->subcost[base];
+						#endif
 					}
 				} else {
 					th_p = dec->th[cl];
@@ -1366,6 +1389,9 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 					dec->rc->x = x;
 					p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
 						- base;
+					#if CONTEXT_COST_MOUNT
+						*cost_p++ = pm->cost[base+e] + pm->subcost[base];
+					#endif
 				}
 			}else{	//mult_peak
 
@@ -1377,6 +1403,9 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 					dec->rc->x = x;
 					p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
 						- base;
+					#if CONTEXT_COST_MOUNT
+						*cost_p++ = pm->cost[base+e] + pm->subcost[base];
+					#endif
 				}else{
 					pm = &dec->mult_pm;
 					set_pmodel_mult(pm,mask,dec->maxval+1);
@@ -1386,6 +1415,9 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 					dec->rc->y = y;
 					dec->rc->x = x;
 					p = rc_decode(fp, dec->rc, pm, 0, dec->maxval+1);
+					#if CONTEXT_COST_MOUNT
+						*cost_p++ = a * (log(pm->cumfreq[p]) - log(pm->freq[p]));
+					#endif
 				}
 			}
 
@@ -1397,9 +1429,9 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 			dec->err[y][x] = e;*/
 			dec->err[y][x] = dec->econv[p][prd];	//特徴量算出に用いる
 			// printf("%d,%d,prd,%d(%d),org,%d,econv:%d\n", y, x, prd, dec->class[y][x], p, dec->err[y][x]);
-			// #if TEMPLATE_MATCHING_ON
-				// decval[y][x] = p << dec->coef_precision;
-			// #endif
+			#if CONTEXT_COST_MOUNT
+			dec->cost[y][x] = a * (log(mask->cumfreq) - log(mask->freq));
+			#endif
 			#if CHECK_DEBUG
 				// printf("d[%d][%d]: %d(%d) | err: %d\n", y, x, p, prd, e);
 				printf("%d\n", p);

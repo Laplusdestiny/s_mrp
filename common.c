@@ -502,6 +502,7 @@ double cpu_time(void)
 #endif
 }
 
+#if TEMPLATE_MATCHING_ON
 CPOINT calc_rotate(CPOINT a, double rad){
 	CPOINT b;
 	double x, y;
@@ -554,3 +555,4 @@ CPOINT* calc_template(CPOINT *template, CPOINT max, CPOINT enc, CPOINT exam, int
 	}
 	// return(template);
 }
+#endif

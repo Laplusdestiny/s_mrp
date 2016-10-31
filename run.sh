@@ -5,7 +5,7 @@ do
 
 	DIR="/rda2/DATABASE/TMW"
 
-	FLAG="-o $@"
+	FLAG="-o -n 8 $@"
 
 	## IMAGE ##
 	if   [ "$image" = 1 ]; then IMG=$DIR/airplane.pgm;		NAME="airplane"
