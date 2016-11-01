@@ -34,7 +34,7 @@
 
 /****** OPTIMIZE ***************************/
 #define OPT_SIDEINFO		1 // 1 : side-info into consideration (standard), 0 : neglect side-info
-#define MAX_ITERATION 	100	//100
+#define MAX_ITERATION 	10	//100
 #define EXTRA_ITERATION	10
 #define AUTO_DEL_CL		1
 #define AUTO_PRD_ORDER	1
@@ -96,6 +96,13 @@
 #define NUM_ZMODEL		49
 #define TOT_ZEROFR		(1 << 10)
 #define MAX_SYMBOL		1024	// must be >> MAX_UPARA
+#define CONTEXT_COST_MOUNT	0
+
+#if CONTEXT_COST_MOUNT
+	#define	CONTEXT_ERROR	0
+#else
+	#define	CONTEXT_ERROR	1
+#endif
 
 /***** RangeCoder **************************/
 #define HAVE_64BIT_INTEGER	1
@@ -135,15 +142,12 @@
 #define TEMPLATE_MATCHING_ON 	1
 #if TEMPLATE_MATCHING_ON
 
+// Template Matching Funtion Mode
 #define ZNCC			0
-
-#if ZNCC
-#define	ZSAD			0
-#else
-#define ZSAD			1
-#endif
-
 #define MANHATTAN_SORT	0	//市街地距離で近い順に事例を更に並び替える
+#define TEMPLATEM_LOG_OUTPUT	1	//テンプレートマッチングの結果を書き出す
+
+// Template Matching Parameters
 #define AREA			6
 #define Y_SIZE			20
 #define X_SIZE			20	//調査結果より80*20がいいかも？
@@ -153,11 +157,17 @@
 #define W_GR 			7
 #define WEIGHT_CN		2	//ラプラス関数
 #define TEMPLATE_CLASS_NUM	30
-#define TEMPLATEM_LOG_OUTPUT	1	//テンプレートマッチングの結果を書き出す
 
+// Conditional Jump
+#if ZNCC
+#define	ZSAD			0
 #else
-#define TEMPLATE_CLASS_NUM	0
+#define ZSAD			1
+#endif
 
+
+#else	// On fin
+#define TEMPLATE_CLASS_NUM	0
 #endif
 
 #define TEMPLATE_FLAG	2 << COEF_PRECISION
@@ -165,7 +175,7 @@
 /*********DEBUG******************************/
 #define CHECK_TM 		0
 #define CHECK_TM_DETAIL	0
-#define CHECK_DEBUG 	0
+#define CHECK_DEBUG 		1
 #define CHECK_PMODEL	0
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
@@ -298,6 +308,7 @@ typedef struct {
 	int *zero_m;
 	int *zero_fr;
 	cost_t ***coef_cost;
+	cost_t **cost;
 #else
 	cost_t **coef_cost;
 #endif
@@ -349,6 +360,7 @@ typedef struct {
 	RANGECODER *rc;
 	double *sigma;
 	int *mtfbuf;
+	cost_t **cost;
 #if AUTO_PRD_ORDER
 	int prd_mhd;
 	int *zero_fr;

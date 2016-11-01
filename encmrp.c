@@ -353,6 +353,13 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 	enc->roff = init_ref_offset(enc->height, enc->width, enc->max_prd_order, dyx);
 	enc->org = (int **)alloc_2d_array(enc->height+1, enc->width, sizeof(int));
 	enc->err = (int **)alloc_2d_array(enc->height+1, enc->width, sizeof(int));
+	enc->cost = (cost_t **)alloc_2d_array(enc->height+1, enc->width, sizeof(cost_t));
+	for(y=0; y<enc->height; y++){
+		for(x=0; x<enc->width; x++){
+			enc->cost[y][x] = 0;
+		}
+	}
+	enc->cost[enc->height][0] = 0;
 	if (enc->quadtree_depth > 0) {
 		y = (enc->height + MAX_BSIZE - 1) / MAX_BSIZE;
 		x = (enc->width + MAX_BSIZE - 1) / MAX_BSIZE;
@@ -740,20 +747,34 @@ void save_prediction_value(ENCODER *enc)
 
 int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出
 {
-	int u, k, *err_p, *roff_p, *wt_p;
-	err_p = &enc->err[y][x];
+	int u=0, k, *roff_p, *wt_p;
+	#if CONTEXT_COST_MOUNT
+		cost_t cost=0, *cost_p;
+		cost_p = &enc->cost[y][x];
+	#elif CONTEXT_ERROR
+		int *err_p;
+		err_p = &enc->err[y][x];
+	#endif
 	roff_p = enc->roff[y][x];
 	wt_p = enc->ctx_weight;
 
-	u = 0;
 	for (k =0; k < NUM_UPELS; k++) {
-		u += err_p[*roff_p++] * (*wt_p++);
-		// u += err_p[roff_p[k]] * wt_p[k];
-		#if CHECK_DEBUG
-			if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("u: %d | err: %d(%3d) | wt_p: %d\n", u, err_p[roff_p[k]], roff_p[k], wt_p[k]);
+		#if CONTEXT_COST_MOUNT
+			cost += cost_p[roff_p[k]] * wt_p[k];
+		#elif CONTEXT_ERROR
+			// u += err_p[*roff_p++] * (*wt_p++);
+			u += err_p[roff_p[k]] * wt_p[k];
+			#if CHECK_DEBUG
+				if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("u: %d | err: %d(%3d) | wt_p: %d\n", u, err_p[roff_p[k]], roff_p[k], wt_p[k]);
+			#endif
 		#endif
 	}
-	u >>= 6;
+	#if CONTEXT_COST_MOUNT
+		u = (int)(cost / NUM_UPELS);
+	#elif CONTEXT_ERROR
+		u >>= 6;
+		// u >>= enc->coef_precision;
+	#endif
 	if (u > MAX_UPARA) u = MAX_UPARA;
 	#if CHECK_DEBUG
 		if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("u: %d\n", u);
@@ -1370,11 +1391,13 @@ cost_t calc_cost2(ENCODER *enc, int tly, int tlx, int bry, int brx)
 			if (mask->num_peak == 1){
 				base = mask->base[0];
 				pm = mask->pm[0];
-				cost += pm->cost[base + e] + pm->subcost[base];
+				enc->cost[y][x] = pm->cost[base + e] + pm->subcost[base];
 			}else{
 				set_pmodel_mult_cost(mask,enc->maxval+1,e);
-				cost += a * (log(mask->cumfreq)-log(mask->freq)) ;
+				enc->cost[y][x] = a * (log(mask->cumfreq)-log(mask->freq)) ;
 			}
+			cost += enc->cost[y][x];
+			if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("cost(%3d,%3d): %f\n", y, x, enc->cost[y][x]);
 			// if(enc->function_number== F_NUM) printf("(%3d,%3d) cost: %d | cl: %d\n", y, x, (int)cost, cl );
 		}
 	}
@@ -1417,7 +1440,9 @@ cost_t calc_cost(ENCODER *enc, int tly, int tlx, int bry, int brx)		//コスト�
 			base = enc->bconv[prd];
 			frac = enc->fconv[prd];
 			pm = enc->pmlist[gr] + frac;
-			cost += pm->cost[base + e] + pm->subcost[base];
+			enc->cost[y][x] = pm->cost[base + e] + pm->subcost[base];
+			if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("cost(%3d,%3d): %f\n", y, x, enc->cost[y][x]);
+			cost += enc->cost[y][x];
 		}
 	}
 	if(cost < 0) cost = INT_MAX;
@@ -3082,8 +3107,8 @@ void make_th(ENCODER *enc){
 		// enc->th[cl][gr - 1] = th1;
 		enc->w_gr[gr - 1] = th1;
 	}
-	enc->w_gr[0] = 0;
-	enc->w_gr[enc->num_group-1] = MAX_UPARA+1;
+	// enc->w_gr[0] = 0;
+	// enc->w_gr[enc->num_group-1] = MAX_UPARA+1;
 	return;
 }
 
@@ -4491,6 +4516,8 @@ void save_info(ENCODER *enc, RESTORE_SIDE *r_side, int restore){
 		set_prd_pels(enc);
 #endif
 		optimize_class(enc);
+		save_prediction_value(enc);
+		predict_region(enc, 0, 0, enc->height, enc->width);
 	} else {
 		r_side->num_class_s = enc->num_class;
 		for(y=0; y<enc->height; y++){
@@ -4592,7 +4619,7 @@ int main(int argc, char **argv)
 	int num_pmodel = NUM_PMODEL;
 	int pm_accuracy = PM_ACCURACY;
 	int max_iteration = MAX_ITERATION;
-	int num_threads = NUM_THREADS;
+	char num_threads = NUM_THREADS;
 	char *infile, *outfile;
 	FILE *fp;
 
@@ -4681,6 +4708,7 @@ int main(int argc, char **argv)
 		printf("outfile:    Output file\n");
 		exit(0);
 	}
+	omp_set_num_threads(num_threads);
 
 	img = read_pgm(infile);
 
@@ -4714,8 +4742,9 @@ int main(int argc, char **argv)
 	printf("------------------------------------------------------------------\n");
 #if AUTO_PRD_ORDER
 	// printf("M = %d, K = %d, P = %d, V = %d, A = %d, l = %d, m = %d, o = %d, f = %d\n",
-	printf("NUM_CLASS\t= %d\nMAX_PRD_ORDER\t= %d\ncoef_precision\t= %d\nnum_pmodel\t= %d\npm_accuracy\t= %d\nmax_iteration\t= %d\nf_mmse\t\t= %d\nf_optpred\t= %d\nquadtree_depth\t= %d\nTemplateM\t= %d\n",
-		num_class, MAX_PRD_ORDER, coef_precision, num_pmodel, pm_accuracy, max_iteration, f_mmse, f_optpred, quadtree_depth, TEMPLATE_MATCHING_ON);
+	printf("NUM_CLASS\t= %d\nMAX_PRD_ORDER\t= %d\ncoef_precision\t= %d\nnum_pmodel\t= %d\npm_accuracy\t= %d\nmax_iteration\t= %d\nf_mmse\t\t= %d\nf_optpred\t= %d\nquadtree_depth\t= %d\nParallel Threads= %d\nTemplateM\t= %d\n",
+		num_class, MAX_PRD_ORDER, coef_precision, num_pmodel, pm_accuracy, max_iteration, f_mmse, f_optpred, quadtree_depth, num_threads, TEMPLATE_MATCHING_ON);
+
 	#if TEMPLATE_MATCHING_ON
 		printf("TM_CLASS_NUM\t= %d\n", TEMPLATE_CLASS_NUM);
 	#endif
@@ -4766,7 +4795,6 @@ int main(int argc, char **argv)
 	exam_array = (int ***)alloc_3d_array(enc->height, enc->width, TEMPLATE_CLASS_NUM, sizeof(int));
 	init_3d_array(exam_array, enc->height, enc->width, TEMPLATE_CLASS_NUM, 0);
 	TemplateM(enc, outfile);
-	// enc->w_gr = W_GR;	//マッチングコストに対する重みの分散値の初期化
 	w_gr_save = (int *)alloc_mem(enc->num_group * sizeof(int));
 	for(gr=0; gr<enc->num_group-1; gr++){
 		enc->w_gr[gr] = 0;
@@ -4906,7 +4934,7 @@ int main(int argc, char **argv)
 		cost += side_cost;
 #if AUTO_DEL_CL
 		if (sw != 0) {	//コスト削減に一度でも失敗した場合に入る
-			if( enc->num_class > 1) {
+			if( enc->num_class > 1 && l < 3) {
 			#if PAST_ADC
 				sw = enc->num_class;
 				cost = auto_del_class(enc, cost);	//使用していないクラスの削除
@@ -4923,14 +4951,12 @@ int main(int argc, char **argv)
 				cost_save = min_cost;
 				before_cost = cost;
 				flg = 0;
-				cl = 0;
-				while(yy - xx < (EXTRA_ITERATION / 3) && cl < MAX_DEL_CLASS && l< 3) {
+				while(yy - xx < (EXTRA_ITERATION / 3) && yy < MAX_DEL_CLASS) {
 					#if CHECK_DEBUG
 						printf("\n");
 					#endif
 					sw = enc->num_class;
 					cost = auto_del_class(enc, cost);
-					// if(cost < 0) continue;
 					if(cost < cost_save){
 						#if CHECK_DEBUG
 							printf(" *");
@@ -4939,8 +4965,7 @@ int main(int argc, char **argv)
 						xx = yy;
 						save_info(enc, min_cost_side, 0);
 						flg = 1;
-						cl++;
-					} else if(cost < before_cost && flg == 0){
+					} else if(cost < before_cost && flg != 1){
 						#if CHECK_DEBUG
 							printf(" +");
 						#endif
@@ -4966,7 +4991,7 @@ int main(int argc, char **argv)
 				}
 				if(flg == 1){
 					save_info(enc, min_cost_side, 1);
-					if(l > 0)	l--;
+					l=0;
 				} else if(flg == 2){
 					save_info(enc, before_side, 1);
 				} else {
@@ -4974,7 +4999,7 @@ int main(int argc, char **argv)
 					l++;
 				}
 				// cost = calc_cost2(enc, 0, 0, enc->height, enc->width);
-				cost = calc_side_info(enc, calc_cost2(enc, 0, 0, enc->height, enc->width));
+				cost = calc_side_info(enc, calc_cost(enc, 0, 0, enc->height, enc->width));
 			#endif
 				printf("->%d[%d]", (int)cost, enc->num_class);
 			}
@@ -5022,6 +5047,9 @@ int main(int argc, char **argv)
 						th_save[cl][k] = enc->th[cl][k];
 					}
 				}
+#if AUTO_DEL_CL
+				l--;
+#endif
 #if TEMPLATE_MATCHING_ON
 				temp_peak_num_save = enc->temp_peak_num;
 				// w_gr_save = enc->w_gr;
@@ -5100,6 +5128,7 @@ int main(int argc, char **argv)
 			enc->w_gr[gr] = w_gr_save[gr];
 		}
 #endif
+
 #if AUTO_PRD_ORDER
 		set_prd_pels(enc);
 #endif
@@ -5107,6 +5136,7 @@ int main(int argc, char **argv)
 		enc->function_number = 100;
 		predict_region(enc, 0, 0, enc->height, enc->width);
 		calc_cost(enc, 0, 0, enc->height, enc->width);
+		printf("5\n");
 #if OPTIMIZE_MASK
 #if 0
         cost = optimize_mask(enc);
@@ -5145,7 +5175,7 @@ int main(int argc, char **argv)
 #endif
 #if TEMPLATE_MATCHING_ON
 	bits += w_gr_info = encode_w_gr_threshold(fp ,enc, 1);
-	printf("w_gr\t:%10d bits\n", w_gr_info);
+	printf("w_gr\t\t:%10d bits\n", w_gr_info);
 #endif
 	bits += err_info = encode_image(fp, enc);
 	printf("pred. errors\t:%10d bits\n", err_info);

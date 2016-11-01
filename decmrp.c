@@ -166,6 +166,13 @@ DECODER *init_decoder(FILE *fp)
 	dec->err = (int **)alloc_2d_array(dec->height+1, dec->width, sizeof(int));
 	dec->org[dec->height][0] = (dec->maxval + 1) >> 1;
 	dec->err[dec->height][0] = (dec->maxval + 1) >> 2;
+	dec->cost = (cost_t **)alloc_2d_array(dec->height+1, dec->width, sizeof(cost_t));
+	for(i=0; i<dec->height; i++){
+		for(j=0; j<dec->width; j++){
+			dec->cost[i][j] = 0;
+		}
+	}
+	dec->cost[dec->height][0] = 0;
 	dec->roff = init_ref_offset(dec->height, dec->width, dec->max_prd_order);
 	dec->ctx_weight = init_ctx_weight();
 	if (dec->quadtree_depth > 0) {
@@ -598,19 +605,34 @@ int calc_udec(DECODER *dec, int y, int x)
 
 int calc_udec2(DECODER *dec, int y, int x)
 {
-	int k, u=0, *err_p, *wt_p, *roff_p;
-	err_p = &dec->err[y][x];
+	int k, u=0, *wt_p, *roff_p;
+	#if CONTEXT_COST_MOUNT
+		cost_t cost, *cost_p;
+		cost_p = &dec->cost[y][x];
+	#elif CONTEXT_ERROR
+		int *err_p;
+		err_p = &dec->err[y][x];
+	#endif
 	wt_p = dec->ctx_weight;
 	roff_p = dec->roff[y][x];
 
 	for(k=0; k<NUM_UPELS; k++){
-		u += err_p[*roff_p++] * (*wt_p++);
-		#if CHECK_DEBUG
-			if(y==check_y && x==check_x)	printf("u: %d | err: %d(%3d) | wt_p: %d\n", u, err_p[roff_p[k]], roff_p[k], wt_p[k]);
+		#if CONTEXT_COST_MOUNT
+			cost += cost_p[roff_p[k]] * wt_p[k];
+		#elif CONTEXT_ERROR
+			u += err_p[*roff_p++] * (*wt_p++);
+			#if CHECK_DEBUG
+				if(y==check_y && x==check_x)	printf("u: %d | err: %d(%3d) | wt_p: %d\n", u, err_p[roff_p[k]], roff_p[k], wt_p[k]);
+			#endif
 		#endif
 	}
 
-	u >>= 6;
+	#if CONTEXT_COST_MOUNT
+		u = (int)(cost / NUM_UPELS);
+	#elif CONTEXT_ERROR
+		// u >>= 6;
+		u >>= dec->coef_precision;
+	#endif
 	if (u > MAX_UPARA) u = MAX_UPARA;
 	#if CHECK_DEBUG
 		if(y==check_y && x==check_x)	printf("u: %d\n", u);
@@ -1300,14 +1322,13 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 {
 	int x, y, cl, gr, prd, u, p, bitmask, shift, base, e;
 	int *th_p;
+	double a = 1.0 / log(2.0);
 	IMAGE *img;
 	PMODEL *pm;
 	img = alloc_image(dec->width, dec->height, dec->maxval);
 
 #if TEMPLATE_MATCHING_ON
-	// exam_array = (int **)alloc_2d_array(dec->height, dec->width, sizeof(int));	//最もマッチングコストが小さい画素の輝度値を保存
 	exam_array = (int ***)alloc_3d_array(dec->height, dec->width, TEMPLATE_CLASS_NUM, sizeof(int));
-	// dec->w_gr = W_GR;
 #endif
 
 	bitmask = (1 << dec->pm_accuracy) - 1;
@@ -1335,6 +1356,9 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 						dec->rc->x = x;
 						p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
 							- base;
+						#if CONTEXT_COST_MOUNT
+							dec->cost[y][x] = pm->cost[base+e] + pm->subcost[base];
+						#endif
 					}else{
 						pm = &dec->mult_pm;
 						set_pmodel_mult(pm,mask,dec->maxval+1);
@@ -1344,6 +1368,9 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 						dec->rc->y = y;
 						dec->rc->x = x;
 						p = rc_decode(fp, dec->rc, pm, 0, dec->maxval+1);
+						#if CONTEXT_COST_MOUNT
+							dec->cost[y][x] = pm->cost[base+e] + pm->subcost[base];
+						#endif
 					}
 				} else {
 					th_p = dec->th[cl];
@@ -1361,6 +1388,9 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 					dec->rc->x = x;
 					p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
 						- base;
+					#if CONTEXT_COST_MOUNT
+						dec->cost[y][x] = pm->cost[base+e] + pm->subcost[base];
+					#endif
 				}
 			}else{	//mult_peak
 
@@ -1381,6 +1411,9 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 					dec->rc->y = y;
 					dec->rc->x = x;
 					p = rc_decode(fp, dec->rc, pm, 0, dec->maxval+1);
+					#if CONTEXT_COST_MOUNT
+						dec->cost[y][x] = a * (log(pm->cumfreq[p]) - log(pm->freq[p]));
+					#endif
 				}
 			}
 
