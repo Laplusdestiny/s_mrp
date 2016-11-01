@@ -354,7 +354,13 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 	enc->org = (int **)alloc_2d_array(enc->height+1, enc->width, sizeof(int));
 	enc->err = (int **)alloc_2d_array(enc->height+1, enc->width, sizeof(int));
 	enc->cost = (cost_t **)alloc_2d_array(enc->height+1, enc->width, sizeof(cost_t));
+	for(y=0; y<enc->height; y++){
+		for(x=0; x<enc->width; x++){
+			enc->cost[y][x] = 0.0;
+		}
+	}
 	enc->cost[enc->height][0] = 0;
+
 	if (enc->quadtree_depth > 0) {
 		y = (enc->height + MAX_BSIZE - 1) / MAX_BSIZE;
 		x = (enc->width + MAX_BSIZE - 1) / MAX_BSIZE;
@@ -742,33 +748,39 @@ void save_prediction_value(ENCODER *enc)
 
 int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出
 {
-	int u, k, *roff_p, *wt_p;
+	int u=0, k, *roff_p, *wt_p;
 	#if CONTEXT_ERROR
 		int *err_p;
 		err_p = &enc->err[y][x];
 	#elif CONTEXT_COST_MOUNT
-		double cost, *cost_p;
+		cost_t cost=0, *cost_p;
 		cost_p = &enc->cost[y][x];
 	#endif
 	roff_p = enc->roff[y][x];
 	wt_p = enc->ctx_weight;
 
-	u = 0;
 	for (k =0; k < NUM_UPELS; k++) {
 		// u += err_p[*roff_p++] * (*wt_p++);
 		#if CONTEXT_ERROR
 			u += err_p[roff_p[k]] * wt_p[k];
+			#if CHECK_DEBUG
+				// if(y==check_y && x==check_x/* && enc->function_number == F_NUM*/)	printf("u: %d | err: %d(%3d) | wt_p: %d\n", u, err_p[roff_p[k]], roff_p[k], wt_p[k]);
+			#endif
 		#elif CONTEXT_COST_MOUNT
-			cost += cost_p[*roff_p++] * (*wt_p++);
+			// cost += cost_p[*roff_p++] * (*wt_p++);
+			cost += cost_p[roff_p[k]] * wt_p[k];
+			#if CHECK_DEBUG
+				// if(y==check_y && x==check_x/* && enc->function_number == F_NUM*/)	printf("cost: %f | cost_p: %f(%3d) | wt_p: %d\n", cost, cost_p[roff_p[k]], roff_p[k], wt_p[k]);
+			#endif
 		#endif
-		/*#if CHECK_DEBUG
-			if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("u: %d | err: %d(%3d) | wt_p: %d\n", u, err_p[roff_p[k]], roff_p[k], wt_p[k]);
-		#endif*/
+
 	}
 	#if CONTEXT_COST_MOUNT
-		u = (int)cost;
+		u = (int)(cost / NUM_UPELS);
+		if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("u: %d\n", u);
+	#elif CONTEXT_ERROR
+		u >>= enc->coef_precision;
 	#endif
-	u >>= 6;
 	if (u > MAX_UPARA) u = MAX_UPARA;
 	#if CHECK_DEBUG
 		if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("u: %d\n", u);
@@ -1242,17 +1254,14 @@ int encode_w_gr_threshold(FILE *fp, ENCODER *enc, int flag)
 	for (m = min_m = 0; m < 16; m++) {
 		set_spmodel(pm, MAX_UPARA + 2, m);
 		cost = 0.0;
-		// for (cl = 0; cl < enc->num_class; cl++) {
-			k = 0;
-			for (gr = 1; gr < enc->num_group; gr++) {
-				// i = enc->th[cl][gr - 1] - k;
-				i = enc->w_gr[gr-1] - k;
-				p = (double)pm->freq[i] / (pm->cumfreq[pm->size - k]);
-				cost += -log(p);
-				k += i;
-				if (k > MAX_UPARA) break;
-			}
-		// }
+		k = 0;
+		for (gr = 1; gr < enc->num_group; gr++) {
+			i = enc->w_gr[gr-1] - k;
+			p = (double)pm->freq[i] / (pm->cumfreq[pm->size - k]);
+			cost += -log(p);
+			k += i;
+			if (k > MAX_UPARA) break;
+		}
 		cost /= log(2.0);
 		if (cost < min_cost) {
 			min_cost = cost;
@@ -1270,23 +1279,15 @@ int encode_w_gr_threshold(FILE *fp, ENCODER *enc, int flag)
 		bits = (int)min_cost;
 	} else {
 		rc_encode(fp, enc->rc, min_m, 1, 16);
-		// for (cl = 0; cl < enc->num_class; cl++) {
-			k = 0;
-			for (gr = 1; gr < enc->num_group; gr++) {
-				// i = enc->th[cl][gr - 1] - k;
-				i = enc->w_gr[gr-1] - k;
-				rc_encode(fp, enc->rc, pm->cumfreq[i],  pm->freq[i],
-					pm->cumfreq[pm->size - k]);
-				k += i;
-				if (k > MAX_UPARA) break;
-			}
+		k = 0;
+		for (gr = 1; gr < enc->num_group; gr++) {
+			i = enc->w_gr[gr-1] - k;
+			rc_encode(fp, enc->rc, pm->cumfreq[i],  pm->freq[i],
+				pm->cumfreq[pm->size - k]);
+			k += i;
+			if (k > MAX_UPARA) break;
+		}
 
-		/*if (enc->num_pmodel > 1) {
-			for (gr = 0; gr < enc->num_group; gr++) {
-				pm = enc->pmlist[gr];
-				rc_encode(fp, enc->rc, pm->id, 1, enc->num_pmodel);
-			}
-		}*/
 		bits = (int)enc->rc->code;
 		enc->rc->code = 0;
 	}
@@ -1393,7 +1394,7 @@ int set_mask_parameter_optimize(ENCODER *enc,int y, int x, int u, int r_cl)
 
 cost_t calc_cost2(ENCODER *enc, int tly, int tlx, int bry, int brx)
 {
-	cost_t cost, *cost_p;
+	cost_t cost/*, *cost_p*/;
 	int x, y, u, cl, gr, e, base;
 	int *upara_p, *encval_p;
 	char *class_p, *group_p;
@@ -1412,7 +1413,7 @@ cost_t calc_cost2(ENCODER *enc, int tly, int tlx, int bry, int brx)
 		group_p = &enc->group[y][tlx];
 		upara_p = &enc->upara[y][tlx];
 		encval_p = &enc->encval[y][tlx];
-		cost_p = &enc->cost[y][tlx];
+		// cost_p = &enc->cost[y][tlx];
 		for (x = tlx; x < brx; x++) {
 			*upara_p++ = u = calc_uenc(enc, y, x);
 			set_mask_parameter(enc,y,x,u);
@@ -1422,11 +1423,12 @@ cost_t calc_cost2(ENCODER *enc, int tly, int tlx, int bry, int brx)
 			if (mask->num_peak == 1){
 				base = mask->base[0];
 				pm = mask->pm[0];
-				cost += *cost_p++ = pm->cost[base + e] + pm->subcost[base];
+				enc->cost[y][x] = pm->cost[base + e] + pm->subcost[base];
 			}else{
 				set_pmodel_mult_cost(mask,enc->maxval+1,e);
-				cost += *cost_p++ = a * (log(mask->cumfreq)-log(mask->freq)) ;
+				enc->cost[y][x] = a * (log(mask->cumfreq)-log(mask->freq)) ;
 			}
+			cost += enc->cost[y][x];
 			// if(enc->function_number== F_NUM) printf("(%3d,%3d) cost: %d | cl: %d\n", y, x, (int)cost, cl );
 		}
 	}
@@ -1436,7 +1438,7 @@ cost_t calc_cost2(ENCODER *enc, int tly, int tlx, int bry, int brx)
 
 cost_t calc_cost(ENCODER *enc, int tly, int tlx, int bry, int brx)		//コストを算出
 {
-	cost_t cost, *cost_p;
+	cost_t cost/*, *cost_p*/;
 	int x, y, u, cl, gr, prd, e, base, frac;
 	int *upara_p, *prd_p, *encval_p;
 	char *class_p, *group_p;
@@ -1459,7 +1461,7 @@ cost_t calc_cost(ENCODER *enc, int tly, int tlx, int bry, int brx)		//コスト�
 		upara_p = &enc->upara[y][tlx];
 		encval_p = &enc->encval[y][tlx];
 		prd_p = &enc->prd[y][tlx];
-		cost_p = &enc->cost[y][tlx];
+		// cost_p = &enc->cost[y][tlx];
 		for (x = tlx; x < brx; x++) {
 			cl = *class_p++;
 			*upara_p++ = u = calc_uenc(enc, y, x);
@@ -1470,7 +1472,9 @@ cost_t calc_cost(ENCODER *enc, int tly, int tlx, int bry, int brx)		//コスト�
 			base = enc->bconv[prd];
 			frac = enc->fconv[prd];
 			pm = enc->pmlist[gr] + frac;
-			cost += *cost_p++ = pm->cost[base + e] + pm->subcost[base];
+			enc->cost[y][x] = pm->cost[base + e] + pm->subcost[base];
+			cost += enc->cost[y][x];
+			// if(y==check_y && x==check_x)	printf("cost: %f\n", enc->cost[y][x]);
 		}
 	}
 	if(cost < 0) cost = INT_MAX;

@@ -605,7 +605,7 @@ int calc_udec2(DECODER *dec, int y, int x)
 		int *err_p;
 		err_p = &dec->err[y][x];
 	#elif CONTEXT_COST_MOUNT
-		double cost, *cost_p;
+		cost_t cost, *cost_p;
 		cost_p = &dec->cost[y][x];
 	#endif
 	wt_p = dec->ctx_weight;
@@ -622,9 +622,10 @@ int calc_udec2(DECODER *dec, int y, int x)
 		#endif*/
 	}
 	#if CONTEXT_COST_MOUNT
-		u = (int)cost;
+		u = (int)(cost / NUM_UPELS);
+	#elif CONTEXT_ERROR
+		u >>= dec->coef_precision;
 	#endif
-	u >>= 6;
 	if (u > MAX_UPARA) u = MAX_UPARA;
 	#if CHECK_DEBUG
 		if(y==check_y && x==check_x)	printf("u: %d\n", u);
@@ -1322,7 +1323,6 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 	int x, y, cl, gr, prd, u, p, bitmask, shift, base, e;
 	int *th_p;
 	double a = 1.0 / log(2.0);
-	cost_t *cost_p;
 	IMAGE *img;
 	PMODEL *pm;
 	img = alloc_image(dec->width, dec->height, dec->maxval);
@@ -1335,7 +1335,6 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 	shift = dec->coef_precision - dec->pm_accuracy;
 	printf("Start Decode Image\n");
 	for (y = 0; y < dec->height; y++) {
-		cost_p = &dec->cost[y][0];
 		for (x = 0; x < dec->width; x++) {
 			dec->rc->y = y;
 			dec->rc->x = x;
@@ -1358,7 +1357,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 						p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
 							- base;
 						#if CONTEXT_COST_MOUNT
-							*cost_p++ = pm->cost[base+e] + pm->subcost[base];
+							dec->cost[y][x] = pm->cost[base+e] + pm->subcost[base];
 						#endif
 					}else{
 						pm = &dec->mult_pm;
@@ -1370,7 +1369,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 						dec->rc->x = x;
 						p = rc_decode(fp, dec->rc, pm, 0, dec->maxval+1);
 						#if CONTEXT_COST_MOUNT
-							*cost_p++ = pm->cost[base+e] + pm->subcost[base];
+							dec->cost[y][x] = pm->cost[base+e] + pm->subcost[base];
 						#endif
 					}
 				} else {
@@ -1390,7 +1389,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 					p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
 						- base;
 					#if CONTEXT_COST_MOUNT
-						*cost_p++ = pm->cost[base+e] + pm->subcost[base];
+						dec->cost[y][x] = pm->cost[base+e] + pm->subcost[base];
 					#endif
 				}
 			}else{	//mult_peak
@@ -1404,7 +1403,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 					p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
 						- base;
 					#if CONTEXT_COST_MOUNT
-						*cost_p++ = pm->cost[base+e] + pm->subcost[base];
+						dec->cost[y][x] = pm->cost[base+e] + pm->subcost[base];
 					#endif
 				}else{
 					pm = &dec->mult_pm;
@@ -1416,7 +1415,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 					dec->rc->x = x;
 					p = rc_decode(fp, dec->rc, pm, 0, dec->maxval+1);
 					#if CONTEXT_COST_MOUNT
-						*cost_p++ = a * (log(pm->cumfreq[p]) - log(pm->freq[p]));
+						dec->cost[y][x] = a * (log(pm->cumfreq[p]) - log(pm->freq[p]));
 					#endif
 				}
 			}

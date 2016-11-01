@@ -4,7 +4,7 @@ CC = icc
 # CC = gcc
 ifeq ($(CC), icc)
   CFLAG = -O3 -ipo -axsse4.1 -msse3 -g -unroll -parallel -restrict
-  # CFLAG = -O0 -g3
+  # CFLAG = -O0 -g -parallel
 else
   # CFLAG = -funroll-loops -Wall -g -fopenmp
   # CFLAG = -O0 -funroll-loops -Wall -g3

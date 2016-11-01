@@ -97,7 +97,7 @@
 #define TOT_ZEROFR		(1 << 10)
 #define MAX_SYMBOL		1024	// must be >> MAX_UPARA
 
-#define	CONTEXT_COST_MOUNT	1
+#define	CONTEXT_COST_MOUNT	0
 #if CONTEXT_COST_MOUNT
 	#define	COTNEXT_ERROR	0
 #else
@@ -139,7 +139,7 @@
 #define HAVE_CLOCK
 
 /*****TEMPLATE MATCHING ********************/
-#define TEMPLATE_MATCHING_ON 	1
+#define TEMPLATE_MATCHING_ON 	0
 #if TEMPLATE_MATCHING_ON
 
 // Template Matching Funtion Mode
@@ -179,7 +179,7 @@
 #define CHECK_TM 		0
 #define CHECK_TM_DETAIL	0
 #define CHECK_DEBUG 		1
-#define CHECK_PMODEL	1
+#define CHECK_PMODEL	0
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
 #define check_y			0
