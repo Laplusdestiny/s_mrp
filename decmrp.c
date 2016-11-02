@@ -620,7 +620,8 @@ int calc_udec2(DECODER *dec, int y, int x)
 		#if CONTEXT_COST_MOUNT
 			cost += cost_p[roff_p[k]] * wt_p[k];
 		#elif CONTEXT_ERROR
-			u += err_p[*roff_p++] * (*wt_p++);
+			// u += err_p[*roff_p++] * (*wt_p++);
+			u += err_p[roff_p[k]] * wt_p[k];
 			#if CHECK_DEBUG
 				if(y==check_y && x==check_x)	printf("u: %d | err: %d(%3d) | wt_p: %d\n", u, err_p[roff_p[k]], roff_p[k], wt_p[k]);
 			#endif
@@ -628,7 +629,8 @@ int calc_udec2(DECODER *dec, int y, int x)
 	}
 
 	#if CONTEXT_COST_MOUNT
-		u = (int)(cost / NUM_UPELS);
+		u = round_int(cost / NUM_UPELS);
+		// u = (int)(cost / NUM_UPELS);
 	#elif CONTEXT_ERROR
 		// u >>= 6;
 		u >>= dec->coef_precision;
@@ -1356,9 +1358,6 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 						dec->rc->x = x;
 						p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
 							- base;
-						#if CONTEXT_COST_MOUNT
-							dec->cost[y][x] = pm->cost[base+e] + pm->subcost[base];
-						#endif
 					}else{
 						pm = &dec->mult_pm;
 						set_pmodel_mult(pm,mask,dec->maxval+1);
@@ -1368,9 +1367,6 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 						dec->rc->y = y;
 						dec->rc->x = x;
 						p = rc_decode(fp, dec->rc, pm, 0, dec->maxval+1);
-						#if CONTEXT_COST_MOUNT
-							dec->cost[y][x] = pm->cost[base+e] + pm->subcost[base];
-						#endif
 					}
 				} else {
 					th_p = dec->th[cl];
@@ -1388,9 +1384,6 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 					dec->rc->x = x;
 					p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
 						- base;
-					#if CONTEXT_COST_MOUNT
-						dec->cost[y][x] = pm->cost[base+e] + pm->subcost[base];
-					#endif
 				}
 			}else{	//mult_peak
 
@@ -1411,11 +1404,13 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 					dec->rc->y = y;
 					dec->rc->x = x;
 					p = rc_decode(fp, dec->rc, pm, 0, dec->maxval+1);
-					#if CONTEXT_COST_MOUNT
-						dec->cost[y][x] = a * (log(pm->cumfreq[p]) - log(pm->freq[p]));
-					#endif
+
 				}
 			}
+
+			#if CONTEXT_COST_MOUNT
+				dec->cost[y][x] = a * (log(pm->cumfreq[dec->maxval + 1] - pm->cumfreq[0]) - log(pm->freq[p] - pm->cumfreq[0]));
+			#endif
 
 			img->val[y][x] = dec->org[y][x] = p;
 			prd = CLIP(0, dec->maxprd, prd);

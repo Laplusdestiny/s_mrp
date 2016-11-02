@@ -647,9 +647,10 @@ void set_cost_rate(ENCODER *enc)	//分散ごとの確率モデルにおける符
 	}
 }
 
-void set_pmodel_mult_cost(MASK *mask,int size, int e)
+double set_pmodel_mult_cost(MASK *mask,int size, int e)
 {
 	int p,base;
+	double cost=0, a = 1.0/ log(2.0) ;
 	PMODEL *pm;
 
 	mask->freq = MIN_FREQ;
@@ -660,7 +661,8 @@ void set_pmodel_mult_cost(MASK *mask,int size, int e)
 		mask->freq += (mask->weight[p] * (pm->freq[base + e] - MIN_FREQ)) >> W_SHIFT;
 		mask->cumfreq += (mask->weight[p] * (pm->cumfreq[base + size] - pm->cumfreq[base])) >> W_SHIFT;
 	}
-	return;
+	cost = a * (log(mask->cumfreq) - log(mask->freq));
+	return(cost);
 }
 
 
@@ -710,7 +712,7 @@ void predict_region(ENCODER *enc, int tly, int tlx, int bry, int brx)	//予測�
 			prd = CLIP(0, enc->maxprd, prd);
 			prd >>= (enc->coef_precision - 1);
 			*err_p++ = enc->econv[org][prd];
-			if(enc->function_number == F_NUM)	printf("%d|%d|err:|%d|org:|%d|prd:|%d\n", y, x, enc->err[y][x], org, prd);
+			// if(enc->function_number == F_NUM)	printf("%d|%d|err:|%d|org:|%d|prd:|%d\n", y, x, enc->err[y][x], org, prd);
 		}
 	}
 }
@@ -770,10 +772,11 @@ int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出
 		#endif
 	}
 	#if CONTEXT_COST_MOUNT
-		u = (int)(cost / NUM_UPELS);
+		u = round_int(cost / NUM_UPELS);
+		// u = (int)(cost / NUM_UPELS);
 	#elif CONTEXT_ERROR
-		u >>= 6;
-		// u >>= enc->coef_precision;
+		// u >>= 6;
+		u >>= enc->coef_precision;
 	#endif
 	if (u > MAX_UPARA) u = MAX_UPARA;
 	#if CHECK_DEBUG
@@ -1371,7 +1374,6 @@ cost_t calc_cost2(ENCODER *enc, int tly, int tlx, int bry, int brx)
 	PMODEL *pm;
 
 	a = 1.0 / log(2.0);
-
 	if (bry > enc->height) bry = enc->height;
 	if (tlx < 0) tlx = 0;
 	if (tly < 0) tly = 0;
@@ -1391,13 +1393,20 @@ cost_t calc_cost2(ENCODER *enc, int tly, int tlx, int bry, int brx)
 			if (mask->num_peak == 1){
 				base = mask->base[0];
 				pm = mask->pm[0];
-				enc->cost[y][x] = pm->cost[base + e] + pm->subcost[base];
+				#if CONTEXT_COST_MOUNT
+					cost += enc->cost[y][x] = pm->cost[base + e] + pm->subcost[base];
+				#elif CONTEXT_ERROR
+					cost += pm->cost[base+e] + pm->subcost[base];
+				#endif
 			}else{
-				set_pmodel_mult_cost(mask,enc->maxval+1,e);
-				enc->cost[y][x] = a * (log(mask->cumfreq)-log(mask->freq)) ;
+				#if CONTEXT_COST_MOUNT
+					cost += enc->cost[y][x] = set_pmodel_mult_cost(mask,enc->maxval+1,e);
+				#elif CONTEXT_ERROR
+					cost += set_pmodel_mult_cost(mask, enc->maxval + 1, e);
+				#endif
 			}
-			cost += enc->cost[y][x];
-			if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("cost(%3d,%3d): %f\n", y, x, enc->cost[y][x]);
+			// cost += enc->cost[y][x];
+			// if(/*y==check_y && x==check_x && */enc->function_number == F_NUM)printf("cost(%3d,%3d): %f\n", y, x, enc->cost[y][x]);
 			// if(enc->function_number== F_NUM) printf("(%3d,%3d) cost: %d | cl: %d\n", y, x, (int)cost, cl );
 		}
 	}
@@ -1441,7 +1450,7 @@ cost_t calc_cost(ENCODER *enc, int tly, int tlx, int bry, int brx)		//コスト�
 			frac = enc->fconv[prd];
 			pm = enc->pmlist[gr] + frac;
 			enc->cost[y][x] = pm->cost[base + e] + pm->subcost[base];
-			if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("cost(%3d,%3d): %f\n", y, x, enc->cost[y][x]);
+			// if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("cost(%3d,%3d): %f\n", y, x, enc->cost[y][x]);
 			cost += enc->cost[y][x];
 		}
 	}
@@ -2300,8 +2309,8 @@ void optimize_coef(ENCODER *enc, int cl, int pos, int *num_eff)
 						mask->base[peak] = bconv_p[prd_c];
 						m_gr = enc->uquant[cl][u];
 						mask->pm[peak] = enc->pmlist[m_gr] + fconv_p[prd_c];
-						set_pmodel_mult_cost(mask,enc->maxval+1,*org_p);
-						*cbuf_p++ += a * (log(mask->cumfreq)-log(mask->freq));
+						*cbuf_p++ += set_pmodel_mult_cost(mask,enc->maxval+1,*org_p);
+						// *cbuf_p++ += a * (log(mask->cumfreq)-log(mask->freq));
 					}
 				}
 			}
@@ -2322,8 +2331,8 @@ void optimize_coef(ENCODER *enc, int cl, int pos, int *num_eff)
 							mask->base[peak] = bconv_p[prd_c];
 							m_gr = enc->uquant[cl][u];
 							mask->pm[peak] = enc->pmlist[m_gr] + fconv_p[prd_c];
-							set_pmodel_mult_cost(mask,enc->maxval+1,*org_p);
-							*cbuf_p++ += a * (log(mask->cumfreq)-log(mask->freq));
+							*cbuf_p++ += set_pmodel_mult_cost(mask,enc->maxval+1,*org_p);
+							// *cbuf_p++ += a * (log(mask->cumfreq)-log(mask->freq));
 						}
 					}
 				}
@@ -2342,8 +2351,8 @@ void optimize_coef(ENCODER *enc, int cl, int pos, int *num_eff)
 					mask->base[peak] = bconv_p[prd_c];
 					m_gr = enc->uquant[cl][u];
 					mask->pm[peak] = enc->pmlist[m_gr] + fconv_p[prd_c];
-					set_pmodel_mult_cost(mask,enc->maxval+1,*org_p);
-					*cbuf_p2++ += a * (log(mask->cumfreq)-log(mask->freq));
+					*cbuf_p2++ += set_pmodel_mult_cost(mask,enc->maxval+1,*org_p);
+					// *cbuf_p2++ += a * (log(mask->cumfreq)-log(mask->freq));
 				}
 			}
 		}
@@ -2740,8 +2749,8 @@ void optimize_coef(ENCODER *enc, int cl, int pos1, int pos2)
 						mask->base[peak] = bconv_p[prd];
 						m_gr = enc->uquant[cl][u];
 						mask->pm[peak] = enc->pmlist[m_gr] + fconv_p[prd];
-						set_pmodel_mult_cost(mask,enc->maxval+1,*org_p);
-						(*cbuf_p++) += a * (log(mask->cumfreq)-log(mask->freq));
+						(*cbuf_p++) += set_pmodel_mult_cost(mask,enc->maxval+1,*org_p);
+						// (*cbuf_p++) += a * (log(mask->cumfreq)-log(mask->freq));
 					}
 					prd_f -= df2;
 				}
@@ -3055,8 +3064,8 @@ void make_th(ENCODER *enc){
 					pm = mask->pm[0];
 					cbuf[gr][u] += pm->cost[base + e] + pm->subcost[base];
 				}else{
-					set_pmodel_mult_cost(mask,enc->maxval+1,e);
-					cbuf[gr][u] += a * (log(mask->cumfreq)-log(mask->freq));
+					cbuf[gr][u] += set_pmodel_mult_cost(mask,enc->maxval+1,e);
+					// cbuf[gr][u] += a * (log(mask->cumfreq)-log(mask->freq));
 				}
 			}
 		}
@@ -3191,8 +3200,8 @@ cost_t optimize_group_mult(ENCODER *enc)
 						pm = mask->pm[0];
 						cbuf[gr][u] += pm->cost[base + e] + pm->subcost[base];
 					}else{
-						set_pmodel_mult_cost(mask,enc->maxval+1,e);
-						cbuf[gr][u] += a * (log(mask->cumfreq)-log(mask->freq));
+						cbuf[gr][u] += set_pmodel_mult_cost(mask,enc->maxval+1,e);
+						// cbuf[gr][u] += a * (log(mask->cumfreq)-log(mask->freq));
 					}
 				}
 			}
@@ -3279,8 +3288,8 @@ cost_t optimize_group_mult(ENCODER *enc)
 				pm = mask->pm[0];
 				cost += pm->cost[base + e] + pm->subcost[base];
 			}else{
-				set_pmodel_mult_cost(mask,enc->maxval+1,e);
-				cost += a * (log(mask->cumfreq)-log(mask->freq));
+				cost += set_pmodel_mult_cost(mask,enc->maxval+1,e);
+				// cost += a * (log(mask->cumfreq)-log(mask->freq));
 			}
 		}
 	}
@@ -3327,8 +3336,8 @@ printf ("[op_group]-> %d" ,(int)cost);	//しきい値毎に分散を最適化し
 							pm = mask->pm[0];
 							cbuf[gr][k] += pm->cost[base + e] + pm->subcost[base];
 						}else{
-							set_pmodel_mult_cost(mask,enc->maxval+1,e);
-							cbuf[gr][k] += a * (log(mask->cumfreq)-log(mask->freq));
+							cbuf[gr][k] += set_pmodel_mult_cost(mask,enc->maxval+1,e);
+							// cbuf[gr][k] += a * (log(mask->cumfreq)-log(mask->freq));
 						}
 					}
 				}
@@ -3389,8 +3398,8 @@ printf ("[op_group]-> %d" ,(int)cost);	//しきい値毎に分散を最適化し
 					pm = mask->pm[0];
 					cost += pm->cost[base + e] + pm->subcost[base];
 				}else{
-					set_pmodel_mult_cost(mask,enc->maxval+1,e);
-					cost += a * (log(mask->cumfreq)-log(mask->freq));
+					cost += set_pmodel_mult_cost(mask,enc->maxval+1,e);
+					// cost += a * (log(mask->cumfreq)-log(mask->freq));
 				}
 			}
 		}
@@ -4160,6 +4169,7 @@ cost_t calc_side_info(ENCODER *enc, cost_t cost){
 int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 {
 	int x, y, e, u, base, bits, cumbase;
+	double a = 1.0 / log(2.0);
 	PMODEL *pm;
 	enc->function_number = 8;
 	bits = 0;
@@ -4193,7 +4203,12 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 					pm->freq[e],
 					pm->cumfreq[enc->maxval + 1]);
 			}
+
+			enc->cost[y][x] = a * (log(pm->cumfreq[enc->maxval + 1] - pm->cumfreq[0]) - log(pm->freq[e] - pm->cumfreq[0]));
 			// printf("%d,%d,prd,%d(%d),org,%d,conv:%d\n", y, x, enc->prd_class[y][x][enc->class[y][x]] >> (enc->coef_precision-1), enc->class[y][x], enc->org[y][x], enc->err[y][x]);
+			#if CHECK_DEBUG
+				// printf("(%3d,%3d) fin\n", y, x);
+			#endif
 		}
 	}
 	rc_finishenc(fp, enc->rc);
@@ -5084,7 +5099,8 @@ int main(int argc, char **argv)
 	free(before_side->class);
 	free(before_side);
 #endif
-
+	enc->function_number = 100;	//data back mode
+	printf("now loading...\r");
 	if (f_optpred) {
 		enc->num_class = num_class_save;
 		for (y = 0; y < enc->height; y++) {
@@ -5128,16 +5144,15 @@ int main(int argc, char **argv)
 			enc->w_gr[gr] = w_gr_save[gr];
 		}
 #endif
-
+		optimize_class(enc);
 #if AUTO_PRD_ORDER
 		set_prd_pels(enc);
 #endif
 		save_prediction_value(enc);
-		enc->function_number = 100;
+
 		predict_region(enc, 0, 0, enc->height, enc->width);
 		calc_cost(enc, 0, 0, enc->height, enc->width);
-		printf("5\n");
-#if OPTIMIZE_MASK
+// #if OPTIMIZE_MASK
 #if 0
         cost = optimize_mask(enc);
         printf(" optimize_mask: cost = %d (%d)\n", (int)cost, (int)side_cost);
@@ -5150,8 +5165,7 @@ int main(int argc, char **argv)
         printf(" optimize_mask: cost = %d (%d)\n", (int)cost, (int)side_cost);
 
 #endif
-
-#endif
+// #endif
 	}
 	remove_emptyclass(enc);
 
