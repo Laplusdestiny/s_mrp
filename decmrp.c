@@ -174,7 +174,11 @@ DECODER *init_decoder(FILE *fp)
 	}
 	dec->cost[dec->height][0] = 0;
 	dec->roff = init_ref_offset(dec->height, dec->width, dec->max_prd_order);
-	dec->ctx_weight = init_ctx_weight();
+	#if CONTEXT_ERROR
+		dec->ctx_weight = init_ctx_weight();
+	#elif CONTEXT_COST_MOUNT
+		dec->ctx_weight_double = init_ctx_weight_double();
+	#endif
 	if (dec->quadtree_depth > 0) {
 		int x, y, xx, yy;
 		yy = (dec->height + MAX_BSIZE - 1) / MAX_BSIZE;
@@ -541,7 +545,7 @@ int calc_udec(DECODER *dec, int y, int x)
 
 	u = 0;
 	err = dec->err;
-	wt_p = dec->ctx_weight;
+	// wt_p = dec->ctx_weight;
 	if (y > UPEL_DIST && x > UPEL_DIST && x <= dec->width - UPEL_DIST) {	//全ての画素が画像内
 		for (k = 0; k < NUM_UPELS; k++) {
 			ry = y + dyx[k].y;
@@ -605,15 +609,17 @@ int calc_udec(DECODER *dec, int y, int x)
 
 int calc_udec2(DECODER *dec, int y, int x)
 {
-	int k, u=0, *wt_p, *roff_p;
+	int k, u=0, *roff_p;
 	#if CONTEXT_COST_MOUNT
+		double *wt_p;
 		cost_t cost, *cost_p;
+		wt_p = dec->ctx_weight_double;
 		cost_p = &dec->cost[y][x];
 	#elif CONTEXT_ERROR
-		int *err_p;
+		int *err_p, *wt_p;
+		wt_p = dec->ctx_weight;
 		err_p = &dec->err[y][x];
 	#endif
-	wt_p = dec->ctx_weight;
 	roff_p = dec->roff[y][x];
 
 	for(k=0; k<NUM_UPELS; k++){
@@ -629,7 +635,7 @@ int calc_udec2(DECODER *dec, int y, int x)
 	}
 
 	#if CONTEXT_COST_MOUNT
-		u = round_int(cost / NUM_UPELS);
+		u = round_int(cost);
 		// u = (int)(cost / NUM_UPELS);
 	#elif CONTEXT_ERROR
 		// u >>= 6;

@@ -123,9 +123,10 @@
 #define RANGE_BOT  ((range_t)1 << (RANGE_SIZE - 16))
 
 /***** TYPE DEFINE *************************/
-#define uint            unsigned int
-#define img_t           unsigned char
-#define cost_t          double
+#define uint	unsigned int
+#define img_t	unsigned char
+#define cost_t	double
+#define	size_t	unsigned long int
 
 /***** PI **********************************/
 #ifndef M_PI
@@ -145,7 +146,7 @@
 // Template Matching Funtion Mode
 #define ZNCC			0
 #define MANHATTAN_SORT	0	//市街地距離で近い順に事例を更に並び替える
-#define TEMPLATEM_LOG_OUTPUT	1	//テンプレートマッチングの結果を書き出す
+#define TEMPLATEM_LOG_OUTPUT	0	//テンプレートマッチングの結果を書き出す
 
 // Template Matching Parameters
 #define AREA			6
@@ -175,7 +176,7 @@
 /*********DEBUG******************************/
 #define CHECK_TM 		0
 #define CHECK_TM_DETAIL	0
-#define CHECK_DEBUG 		0
+#define CHECK_DEBUG 		1
 #define CHECK_PMODEL	0
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
@@ -278,7 +279,11 @@ typedef struct {
 	int **encval;
 	int **err;
 	int **org;
-	int *ctx_weight;
+	#if CONTEXT_ERROR
+		int *ctx_weight;
+	#elif CONTEXT_COST_MOUNT
+		double *ctx_weight_double;
+	#endif
 	int ***roff;
 	int ***prd_class;
 	int ***weight;	//マスクを用いた確率モデルの高さの重み
@@ -350,7 +355,11 @@ typedef struct {
 	int **err;
 	int ***roff;
 	int **econv;
-	int *ctx_weight;
+	#if CONTEXT_ERROR
+		int *ctx_weight;
+	#elif CONTEXT_COST_MOUNT
+		double *ctx_weight_double;
+	#endif
 	char **qtmap[QUADTREE_DEPTH];
 	char **class;
 	int *pm_idx;
@@ -387,6 +396,7 @@ void printmodel(PMODEL *, int);
 void set_pmodel_mult(PMODEL *, MASK *, int);
 void set_spmodel(PMODEL *, int, int);
 int *init_ctx_weight(void);
+double *init_ctx_weight_double(void);
 void mtf_classlabel(char **, int *, int, int, int, int, int);
 double cpu_time(void);
 void init_array(int *, int , int);

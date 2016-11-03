@@ -297,6 +297,7 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 		sizeof(int));
 	enc->num_nzcoef = (int *)alloc_mem(enc->num_class * sizeof(int));
 	enc->optimize_loop = 0;
+
 #if AUTO_PRD_ORDER
 	for (i = 0; i < enc->num_class; i++) {
 		enc->num_nzcoef[i] = BASE_PRD_ORDER;
@@ -312,6 +313,7 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 			enc->nzconv[i][j] = j;
 		}
 	}
+
 #if AUTO_PRD_ORDER
 	enc->num_search = (int *)alloc_mem(enc->num_class * sizeof(int));
 	for (i = 0; i < enc->num_class; i++) {
@@ -323,6 +325,7 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 	}
 	enc->prd_mhd = enc->ord2mhd[enc->max_prd_order - 1] + 1;
 #endif
+
 	enc->th = (int **)alloc_2d_array(enc->num_class, enc->num_group, sizeof(int));
 	for (i = 0; i < enc->num_class; i++) {
 		for (j = 0; j < enc->max_prd_order; j++) {
@@ -369,7 +372,12 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 			x <<= 1;
 		}
 	}
-	enc->ctx_weight = init_ctx_weight();
+
+	#if CONTEXT_ERROR
+		enc->ctx_weight = init_ctx_weight();
+	#elif CONTEXT_COST_MOUNT
+		enc->ctx_weight_double = init_ctx_weight_double();
+	#endif
 	enc->class = (char **)alloc_2d_array(enc->height, enc->width, sizeof(char));
 	enc->group = (char **)alloc_2d_array(enc->height, enc->width, sizeof(char));
 
@@ -382,6 +390,7 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 			enc->mask[y][x] = INIT_MASK;
 		}
 	}
+
 	enc->org[enc->height][0] = (enc->maxval + 1) >> 1;
 	enc->err[enc->height][0] = (enc->maxval + 1) >> 2;
 	enc->uquant = (char **)alloc_2d_array(enc->num_class, MAX_UPARA + 1,
@@ -409,6 +418,7 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 	for (i = 0; i < enc->prd_order; i++) {
 		enc->coef_m[i] = 0;
 	}
+
 #if AUTO_PRD_ORDER
 	enc->zero_m = (int *)alloc_mem(enc->prd_mhd * sizeof(int));
 	for (j = 0; j < enc->prd_mhd; j++) {
@@ -426,6 +436,7 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 			ptr += (enc->max_coef + 1);
 		}
 	}
+
 	for (k = 0; k < NUM_ZMODEL; k++) {
 		for (i = 0; i < 16; i++) {
 #if OPT_SIDEINFO
@@ -485,7 +496,6 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 	enc->err_cost = (cost_t **)alloc_2d_array(i, enc->num_class, sizeof(cost_t));
 #endif
 	enc->cl_hist = (int *)alloc_mem(enc->num_class * sizeof(int));
-
 #if TEMPLATE_MATCHING_ON
 	enc->temp_num = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
 	enc->array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
@@ -749,16 +759,18 @@ void save_prediction_value(ENCODER *enc)
 
 int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出
 {
-	int u=0, k, *roff_p, *wt_p;
+	int u=0, k, *roff_p;
 	#if CONTEXT_COST_MOUNT
+		double *wt_p;
 		cost_t cost=0, *cost_p;
+		wt_p = enc->ctx_weight_double;
 		cost_p = &enc->cost[y][x];
 	#elif CONTEXT_ERROR
-		int *err_p;
+		int *err_p, *wt_p;
+		wt_p = enc->ctx_weight;
 		err_p = &enc->err[y][x];
 	#endif
 	roff_p = enc->roff[y][x];
-	wt_p = enc->ctx_weight;
 
 	for (k =0; k < NUM_UPELS; k++) {
 		#if CONTEXT_COST_MOUNT
@@ -772,7 +784,7 @@ int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出
 		#endif
 	}
 	#if CONTEXT_COST_MOUNT
-		u = round_int(cost / NUM_UPELS);
+		u = round_int(cost);
 		// u = (int)(cost / NUM_UPELS);
 	#elif CONTEXT_ERROR
 		// u >>= 6;
@@ -1671,6 +1683,7 @@ cost_t optimize_group(ENCODER *enc)
 			th1 = trellis[gr][th1];
 			enc->th[cl][gr - 1] = th1;
 		}
+		enc->th[cl][enc->num_group - 1] = MAX_UPARA + 1;
 	}
 	/* set context quantizer */
 	for (cl = 0; cl < enc->num_class; cl++) {
@@ -3117,7 +3130,7 @@ void make_th(ENCODER *enc){
 		enc->w_gr[gr - 1] = th1;
 	}
 	// enc->w_gr[0] = 0;
-	// enc->w_gr[enc->num_group-1] = MAX_UPARA+1;
+	enc->w_gr[enc->num_group-1] = MAX_UPARA+1;
 	return;
 }
 
@@ -3174,6 +3187,7 @@ cost_t optimize_group_mult(ENCODER *enc)
 	thc_p = enc->th_cost;
 	a = 1.0 / log(2.0);
 
+// optimize thresholds of context each class
 	for (k = 0; k < MAX_UPARA + 2; k++) trellis[0][k] = 0;
 	/* Dynamic programming */
 	for (cl = 0; cl < enc->num_class; cl++) {
@@ -4156,11 +4170,7 @@ cost_t calc_side_info(ENCODER *enc, cost_t cost){
 #endif
 	cost += sc = encode_class(NULL, enc, 1);
 	#if CHECK_DEBUG
-		printf("%d,", (int)sc);
-	#endif
-
-	#if CHECK_DEBUG
-		printf("| %d)", (int)cost);
+		printf("%d,| %d)", (int)sc, (int)cost);
 	#endif
 	return(cost);
 }
@@ -4505,10 +4515,8 @@ void save_info(ENCODER *enc, RESTORE_SIDE *r_side, int restore){
 		for(y=0; y<enc->height; y++){
 			for(x=0; x<enc->width; x++){
 				enc->class[y][x] = r_side->class[y][x];
-				// r_side->class[y][x] = enc->class[y][x];
 				for(i=0; i<enc->num_class; i++){
 					enc->prd_class[y][x][i] = r_side->prd_cl_s[y][x][i];
-					// r_side->prd_cl_s[y][x][i] = enc->prd_class[y][x][i];
 				}
 			}
 		}
@@ -4516,23 +4524,19 @@ void save_info(ENCODER *enc, RESTORE_SIDE *r_side, int restore){
 		for(i=0; i<enc->num_class; i++){
 			for(j=0; j<enc->num_group; j++){
 				enc->th[i][j] = r_side->th_s[i][j];
-				// r_side->th_s[i][j] = enc->th[i][j];
 			}
 			for(j=0; j<enc->max_prd_order; j++){
 				enc->predictor[i][j] = r_side->prd_s[i][j];
-				// r_side->prd_s[i][j] = enc->predictor[i][j];
 			}
 			for(j=0; j<MAX_UPARA; j++){
 				enc->uquant[i][j] = r_side->uq_s[i][j];
-				// r_side->uq_s[i][j] = enc->uquant[i][j];
 			}
 		}
 #if AUTO_PRD_ORDER
 		set_prd_pels(enc);
 #endif
-		optimize_class(enc);
-		save_prediction_value(enc);
 		predict_region(enc, 0, 0, enc->height, enc->width);
+		// optimize_class(enc);
 	} else {
 		r_side->num_class_s = enc->num_class;
 		for(y=0; y<enc->height; y++){
@@ -4605,8 +4609,7 @@ cost_t auto_del_class(ENCODER *enc, cost_t pre_cost)
 		}
 	}
 	predict_region(enc, 0, 0, enc->height, enc->width);
-	cost = calc_cost(enc, 0, 0, enc->height, enc->width);
-	cost = calc_side_info(enc, cost);
+	cost = calc_side_info(enc, calc_cost(enc, 0, 0, enc->height, enc->width));
 	return(cost);
 }
 #endif
@@ -5013,7 +5016,9 @@ int main(int argc, char **argv)
 					save_info(enc, min_cost_side, 1);
 					l++;
 				}
-				// cost = calc_cost2(enc, 0, 0, enc->height, enc->width);
+				#if CHECK_DEBUG
+					printf("(%d)", l);
+				#endif
 				cost = calc_side_info(enc, calc_cost(enc, 0, 0, enc->height, enc->width));
 			#endif
 				printf("->%d[%d]", (int)cost, enc->num_class);

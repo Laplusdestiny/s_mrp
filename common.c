@@ -157,9 +157,8 @@ void ***alloc_3d_array(int height, int width, int depth, int size)
 	void ***mat;
 	char **ptr, *ptrp;
 	int k,d;
-
-	mat = alloc_mem(sizeof(void **) * height + sizeof(void *) * height * width
-					+ height * width * depth * size);
+	// printf("sizeof(void **): %d\nsizeof(void *): %d\n\nheight: %d\nwidth: %d\ndepth: %d\nsize: %d\n\nmat: %d", sizeof(void **), sizeof(void *), height, width, depth ,size, sizeof(void **) * height + sizeof(void *) * height * width + height * width * depth * size);
+	mat = alloc_mem(sizeof(void **) * height + sizeof(void *) * height * width + height * width * depth * size);
 	ptr = (char **)(mat + height);
 	ptrp = (char *)(ptr + height * width);
 
@@ -174,6 +173,24 @@ void ***alloc_3d_array(int height, int width, int depth, int size)
 
 	return (mat);
 }
+
+void ***alloc_3d_array2(int height, int width, int depth, int size)
+{
+	void ***mat;
+	char *ptr;
+	int k, l;
+
+	mat = (void ***)alloc_2d_array(height, width, sizeof(void *));
+	ptr = (char *)alloc_mem(height * width * depth * size);
+	for (k = 0; k < height; k++) {
+		for (l = 0; l < width; l++) {
+			mat[k][l] = ptr;
+			ptr += depth * size;
+		}
+	}
+	return(mat);
+}
+
 
 IMAGE *alloc_image(int width, int height, int maxval)
 {
@@ -413,6 +430,27 @@ void set_spmodel(PMODEL *pm, int size, int m)
 		pm->cumfreq[i + 1] = pm->cumfreq[i] + pm->freq[i];
 	}
 	return;
+}
+
+double *init_ctx_weight_double(void)
+{
+	int k;
+	double *ctx_weight;
+	double dy, dx;
+
+	ctx_weight = (double *)alloc_mem(NUM_UPELS * sizeof(double));
+	for (k = 0; k < NUM_UPELS; k++) {
+		dy = dyx[k].y;
+		dx = dyx[k].x;
+#if !CTX_WEIGHT
+		ctx_weight[k] = 64.0;
+#elif MHD_WEIGHT
+		ctx_weight[k] = 64.0 / (fabs(dy) + fabs(dx));
+#else
+		ctx_weight[k] = 64.0 / sqrt(dy * dy + dx * dx);
+#endif
+	}
+	return (ctx_weight);
 }
 
 int *init_ctx_weight(void)
