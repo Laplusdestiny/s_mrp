@@ -382,6 +382,19 @@ void printmodel(PMODEL *pm, int size)
 	return;
 }
 
+cost_t calc_cost_from_pmodel(int *freq, int size, int e){
+	int i, cumfreq=0, cumbase = 0;;
+	cost_t cost;
+	double a = 1.0/ log(2.0);
+
+	for(i=0; i<size; i++){
+		cumfreq += freq[i];
+	}
+
+	cost = a * (log(cumfreq) - log(freq[e]));
+	return(cost);
+}
+
 void set_pmodel_mult(PMODEL *m_pm, MASK *mask,int size)	//ピークの数に合わせた多峰性確率モデルの作成
 {
 	int p,i,base;
@@ -432,10 +445,10 @@ void set_spmodel(PMODEL *pm, int size, int m)
 	return;
 }
 
-double *init_ctx_weight_double(void)
+double *init_ctx_weight_double(int precision)
 {
 	int k;
-	double *ctx_weight;
+	double *ctx_weight, offset = (double)(1 << precision);
 	double dy, dx;
 
 	ctx_weight = (double *)alloc_mem(NUM_UPELS * sizeof(double));
@@ -443,19 +456,19 @@ double *init_ctx_weight_double(void)
 		dy = dyx[k].y;
 		dx = dyx[k].x;
 #if !CTX_WEIGHT
-		ctx_weight[k] = 64.0;
+		ctx_weight[k] = offset;
 #elif MHD_WEIGHT
-		ctx_weight[k] = 64.0 / (fabs(dy) + fabs(dx));
+		ctx_weight[k] = offset / (fabs(dy) + fabs(dx));
 #else
-		ctx_weight[k] = 64.0 / sqrt(dy * dy + dx * dx);
+		ctx_weight[k] = offset / sqrt(dy * dy + dx * dx);
 #endif
 	}
 	return (ctx_weight);
 }
 
-int *init_ctx_weight(void)
+int *init_ctx_weight(int precision)
 {
-	int *ctx_weight, k;
+	int *ctx_weight, k, offset = 1 << precision;
 	double dy, dx;
 
 	ctx_weight = (int *)alloc_mem(NUM_UPELS * sizeof(int));
@@ -463,11 +476,11 @@ int *init_ctx_weight(void)
 		dy = dyx[k].y;
 		dx = dyx[k].x;
 #if !CTX_WEIGHT
-		ctx_weight[k] = 64;
+		ctx_weight[k] = offset;
 #elif MHD_WEIGHT
-		ctx_weight[k] = (int)(64.0 / (fabs(dy) + fabs(dx)) + 0.5);
+		ctx_weight[k] = (int)((double)offset / (fabs(dy) + fabs(dx)) + 0.5);
 #else
-		ctx_weight[k] = (int)(64.0 / sqrt(dy * dy + dx * dx) + 0.5);
+		ctx_weight[k] = (int)((double)offset / sqrt(dy * dy + dx * dx) + 0.5);
 #endif
 	}
 	return (ctx_weight);
@@ -485,10 +498,9 @@ void mtf_classlabel(char **class, int *mtfbuf, int y, int x,
 			ref[0] = ref[1] = ref[2] = class[y][x-1];
 		}
 	} else {
-		ref[0] = class[y-1][x];
-		ref[1] = (x == 0)? class[y-1][x] : class[y][x-1];
-		ref[2] = (x + bsize >= width)?
-		class[y-1][x] : class[y-1][x+bsize];
+		ref[0] = class[y-1][x];	// up
+		ref[1] = (x == 0)? class[y-1][x] : class[y][x-1];	// left
+		ref[2] = (x + bsize >= width)? class[y-1][x] : class[y-1][x+bsize];	// right up
 		if (ref[1] == ref[2]) {
 			ref[2] = ref[0];
 			ref[0] = ref[1];

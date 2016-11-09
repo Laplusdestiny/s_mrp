@@ -181,7 +181,7 @@
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
 #define check_y			0
-#define check_x			4
+#define check_x			1
 #define F_NUM			8
 
 #define NUM_THREADS		8
@@ -228,6 +228,11 @@ typedef struct {
 typedef struct {
 	int y, x;
 } CPOINT;
+
+typedef struct {
+	int cl;
+	cost_t cost;
+} DEL_CLASS_COST;
 
 typedef struct{
 	int id;
@@ -279,11 +284,8 @@ typedef struct {
 	int **encval;
 	int **err;
 	int **org;
-	#if CONTEXT_ERROR
-		int *ctx_weight;
-	#elif CONTEXT_COST_MOUNT
-		double *ctx_weight_double;
-	#endif
+	int *ctx_weight;
+	double *ctx_weight_double;
 	int ***roff;
 	int ***prd_class;
 	int ***weight;	//マスクを用いた確率モデルの高さの重み
@@ -355,17 +357,14 @@ typedef struct {
 	int **err;
 	int ***roff;
 	int **econv;
-	#if CONTEXT_ERROR
-		int *ctx_weight;
-	#elif CONTEXT_COST_MOUNT
-		double *ctx_weight_double;
-	#endif
+	int *ctx_weight;
+	double *ctx_weight_double;
 	char **qtmap[QUADTREE_DEPTH];
 	char **class;
 	int *pm_idx;
 	PMODEL ***pmodels;
 	PMODEL spm;
-				PMODEL mult_pm;
+	PMODEL mult_pm;
 	RANGECODER *rc;
 	double *sigma;
 	int *mtfbuf;
@@ -393,10 +392,11 @@ void ***alloc_3d_array(int, int, int, int);
 IMAGE *alloc_image(int, int, int);
 PMODEL ***init_pmodels(int, int, int, int *, double *, int);
 void printmodel(PMODEL *, int);
+cost_t calc_cost_from_pmodel(int*,int, int);
 void set_pmodel_mult(PMODEL *, MASK *, int);
 void set_spmodel(PMODEL *, int, int);
-int *init_ctx_weight(void);
-double *init_ctx_weight_double(void);
+int *init_ctx_weight(int);
+double *init_ctx_weight_double(int);
 void mtf_classlabel(char **, int *, int, int, int, int, int);
 double cpu_time(void);
 void init_array(int *, int , int);
