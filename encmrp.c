@@ -375,7 +375,9 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 	}
 
 	enc->ctx_weight = init_ctx_weight(enc->coef_precision);
-	enc->ctx_weight_double = init_ctx_weight_double(enc->coef_precision);
+	#if CONTEXT_COST_MOUNT
+		enc->ctx_weight_double = init_ctx_weight_double(enc->coef_precision);
+	#endif
 	enc->class = (char **)alloc_2d_array(enc->height, enc->width, sizeof(char));
 	enc->group = (char **)alloc_2d_array(enc->height, enc->width, sizeof(char));
 
@@ -720,7 +722,7 @@ void predict_region(ENCODER *enc, int tly, int tlx, int bry, int brx)	//予測�
 			prd = CLIP(0, enc->maxprd, prd);
 			prd >>= (enc->coef_precision - 1);
 			*err_p++ = enc->econv[org][prd];
-			// if(enc->function_number == F_NUM)	printf("%d|%d|err:|%d|org:|%d|prd:|%d\n", y, x, enc->err[y][x], org, prd);
+			if(enc->function_number == F_NUM)	printf("%d|%d|err:|%d|org:|%d|prd:|%d\n", y, x, enc->err[y][x], org, prd);
 		}
 	}
 }
@@ -793,8 +795,8 @@ int calc_uenc2(ENCODER *enc, int y, int x){	//特徴量算出(符号量和)
 		#endif
 	}
 
-	// u = round_int(cost);
-	u = round_int(cost / NUM_UPELS);
+	u = round_int(cost) >> (enc->coef_precision -1);
+	// u = round_int(cost / NUM_UPELS);
 	// u = (int)(cost / NUM_UPELS);
 
 	if (u > MAX_UPARA) u = MAX_UPARA;
@@ -1444,6 +1446,7 @@ cost_t calc_cost(ENCODER *enc, int tly, int tlx, int bry, int brx)		//コスト�
 	int *upara_p, *prd_p, *encval_p;
 	char *class_p, *group_p;
 	PMODEL *pm;
+	enc->function_number = 10;
 
 # if OPTIMIZE_MASK_LOOP
 	if(enc->optimize_loop == 2){
@@ -4215,6 +4218,7 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 			}
 			// printf("cost(%3d,%3d): %f\n", y, x, enc->cost[y][x]);
 			// printf("%d,%d,prd,%d(%d),org,%d,conv:%d\n", y, x, enc->prd_class[y][x][enc->class[y][x]] >> (enc->coef_precision-1), enc->class[y][x], enc->org[y][x], enc->err[y][x]);
+			// printf("cost[%3d][%3d]: %f\n", y, x, enc->cost[y][x]);
 		}
 	}
 	rc_finishenc(fp, enc->rc);
@@ -5029,7 +5033,7 @@ int main(int argc, char **argv)
 		if (cost < min_cost) {
 			printf(" *\n");
 			min_cost = cost;
-			sw = 0;
+			del = sw = 0;
 			j = i;
 			if (f_optpred) {
 				num_class_save = enc->num_class;

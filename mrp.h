@@ -146,7 +146,7 @@
 // Template Matching Funtion Mode
 #define ZNCC			0
 #define MANHATTAN_SORT	0	//市街地距離で近い順に事例を更に並び替える
-#define TEMPLATEM_LOG_OUTPUT	0	//テンプレートマッチングの結果を書き出す
+#define TEMPLATEM_LOG_OUTPUT	1	//テンプレートマッチングの結果を書き出す
 
 // Template Matching Parameters
 #define AREA			6
@@ -176,15 +176,15 @@
 /*********DEBUG******************************/
 #define CHECK_TM 		0
 #define CHECK_TM_DETAIL	0
-#define CHECK_DEBUG 		1
+#define CHECK_DEBUG 		0
 #define CHECK_PMODEL	0
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
 #define check_y			0
-#define check_x			1
-#define F_NUM			8
+#define check_x			33
+#define F_NUM			10
 
-#define NUM_THREADS		8
+#define NUM_THREADS		4
 
 /***** STRUCTURE ***************************/
 
@@ -285,7 +285,9 @@ typedef struct {
 	int **err;
 	int **org;
 	int *ctx_weight;
-	double *ctx_weight_double;
+	#if CONTEXT_COST_MOUNT
+		double *ctx_weight_double;
+	#endif
 	int ***roff;
 	int ***prd_class;
 	int ***weight;	//マスクを用いた確率モデルの高さの重み
@@ -358,7 +360,9 @@ typedef struct {
 	int ***roff;
 	int **econv;
 	int *ctx_weight;
-	double *ctx_weight_double;
+	#if CONTEXT_COST_MOUNT
+		double *ctx_weight_double;
+	#endif
 	char **qtmap[QUADTREE_DEPTH];
 	char **class;
 	int *pm_idx;
