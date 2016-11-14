@@ -1065,9 +1065,9 @@ void TemplateM_Log_Output(ENCODER *enc, char *outfile, int ***tempm_array, int *
 			for(k=0; k<MAX_DATA_SAVE_DOUBLE; k++){
 				fprintf(fp, "%d,", tempm_array[y][x][k]);
 			}
-			for(k=0; k<MAX_DATA_SAVE; k++){
+			/*for(k=0; k<MAX_DATA_SAVE; k++){
 				fprintf(fp, "%d,", enc->array[y][x][k]);
-			}
+			}*/
 			for(k=0; k<TEMPLATE_CLASS_NUM; k++){
 				fprintf(fp, "%d,", exam_array[y][x][k]);
 			}
@@ -1176,9 +1176,9 @@ void TemplateM_Log_Input(ENCODER *enc, char *outfile, int ***tempm_array, int **
 				fscanf(fp, "%d,", &tempm_array[y][x][k]);
 			}
 
-			for(k=0; k<MAX_DATA_SAVE; k++){
+			/*for(k=0; k<MAX_DATA_SAVE; k++){
 				fscanf(fp, "%d,", &enc->array[y][x][k]);
-			}
+			}*/
 
 			for(k=0; k<TEMPLATE_CLASS_NUM; k++){
 				fscanf(fp, "%d,", &exam_array[y][x][k]);

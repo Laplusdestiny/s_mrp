@@ -152,7 +152,6 @@ DECODER *init_decoder(FILE *fp)
 	printf("TEMP_PEAK_NUM: %d\n", dec->temp_peak_num);
 #else
 	dec->temp_cl = -1;
-	printf("TEMP_CL : %d\n", dec->temp_cl);
 #endif
 
 	dec->maxprd = dec->maxval << dec->coef_precision;
@@ -233,7 +232,6 @@ DECODER *init_decoder(FILE *fp)
 #endif
 #if TEMPLATE_MATCHING_ON
 	tempm_array = (int *)alloc_mem(MAX_DATA_SAVE_DOUBLE * sizeof(int));
-	dec->array = (int *)alloc_mem(MAX_DATA_SAVE_DOUBLE * sizeof(int));
 	dec->temp_num = (int **)alloc_2d_array(dec->height, dec->width, sizeof(int));
 	decval = (int **)alloc_2d_array(dec->height+1, dec->width, sizeof(int));
 	init_2d_array(decval, dec->height, dec->width, 0);
@@ -631,6 +629,7 @@ int calc_udec(DECODER *dec, int y, int x)	//特徴量算出(予測誤差和)
 	return (u);
 }
 
+#if CONTEXT_COST_MOUNT
 int calc_udec2(DECODER *dec, int y, int x)	//特徴量算出(符号量和)
 {
 	int k, u=0, *roff_p;
@@ -641,13 +640,13 @@ int calc_udec2(DECODER *dec, int y, int x)	//特徴量算出(符号量和)
 	roff_p = dec->roff[y][x];
 
 	for(k=0; k<NUM_UPELS; k++){
-		cost += cost_p[roff_p[k]] * wt_p[k];
+		cost += cost_p[roff_p[k]] * wt_p[k] * 8.0;
 		#if CHECK_DEBUG
 			if(y==check_y && x== check_x)	printf("u: %f | cost: %f(%3d) | wt_p: %f\n", cost, cost_p[roff_p[k]], roff_p[k], wt_p[k]);
 		#endif
 	}
 
-	u = round_int(cost) >> (dec->coef_precision - 1);
+	u = round_int(cost) >> (dec->coef_precision -1 );
 	// u = round_int(cost / NUM_UPELS);
 	// u = (int)(cost / NUM_UPELS);
 	if (u > MAX_UPARA) u = MAX_UPARA;
@@ -656,6 +655,7 @@ int calc_udec2(DECODER *dec, int y, int x)	//特徴量算出(符号量和)
 	#endif
 	return (u);
 }
+#endif
 
 #if TEMPLATE_MATCHING_ON
 void TemplateM (DECODER *dec, int dec_y, int dec_x){
@@ -915,9 +915,9 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 		tempm_array[k] = tm_array[k];
 	}
 
-	for(k=0; k<MAX_DATA_SAVE; k++){
-		dec->array[k] = tm[k].ave_o;
-	}
+	/*for(k=0; k<MAX_DATA_SAVE; k++){
+		array[k] = tm[k].ave_o;
+	}*/
 
 //マッチングコストが小さいものをTEMPLATE_CLASS_NUMの数だけ用意
 	if(dec->temp_num[dec_y][dec_x] < TEMPLATE_CLASS_NUM){
@@ -928,7 +928,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 	for(i=0; i<temp_peak_num; i++){
 		temp_y = tempm_array[i*4+1];
 		temp_x = tempm_array[i*4+2];
-		ave_o = dec->array[i];
+		ave_o = tm[i].ave_o;
 
 		#if ZNCC
 			dist_o = tm[i].s_devian;
@@ -1183,7 +1183,7 @@ void decode_mask(FILE *fp, DECODER *dec)
 
 void init_mask()
 {
-	int peak_num = MAX_PEAK_NUM*2 + TEMPLATE_CLASS_NUM;
+	int peak_num = MAX_PEAK_NUM + TEMPLATE_CLASS_NUM;
 	mask = (MASK *)alloc_mem(sizeof(MASK));
 	mask->weight = (int *)alloc_mem(peak_num * sizeof(int));
 	mask->class = (char *)alloc_mem(peak_num * sizeof(char));

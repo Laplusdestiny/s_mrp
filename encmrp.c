@@ -497,9 +497,8 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 #endif
 	enc->cl_hist = (int *)alloc_mem(enc->num_class * sizeof(int));
 #if TEMPLATE_MATCHING_ON
+	// enc->array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
 	enc->temp_num = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
-	enc->array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
-	init_3d_array(enc->array, enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, 0);
 	enc->w_gr = (int *)alloc_mem(enc->num_group * sizeof(int));
 #endif
 	return (enc);
@@ -565,7 +564,7 @@ void init_class(ENCODER *enc)
 
 void init_mask()
 {
-	int peak_num = MAX_PEAK_NUM*2 + TEMPLATE_CLASS_NUM;
+	int peak_num = MAX_PEAK_NUM + TEMPLATE_CLASS_NUM;
 	mask = (MASK *)alloc_mem(sizeof(MASK));
 	mask->weight = (int *)alloc_mem(peak_num * sizeof(int));
 	mask->class = (char *)alloc_mem(peak_num * sizeof(char));
@@ -722,7 +721,7 @@ void predict_region(ENCODER *enc, int tly, int tlx, int bry, int brx)	//予測�
 			prd = CLIP(0, enc->maxprd, prd);
 			prd >>= (enc->coef_precision - 1);
 			*err_p++ = enc->econv[org][prd];
-			if(enc->function_number == F_NUM)	printf("%d|%d|err:|%d|org:|%d|prd:|%d\n", y, x, enc->err[y][x], org, prd);
+			// if(enc->function_number == F_NUM)	printf("%d|%d|err:|%d|org:|%d|prd:|%d\n", y, x, enc->err[y][x], org, prd);
 		}
 	}
 }
@@ -768,18 +767,18 @@ int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出(予測誤差和)
 		// u += err_p[*roff_p++] * (*wt_p++);
 		u += err_p[roff_p[k]] * wt_p[k];
 		#if CHECK_DEBUG
-			if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("u: %d | err: %d(%3d) | wt_p: %d\n", u, err_p[roff_p[k]], roff_p[k], wt_p[k]);
+			// if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("u: %d | err: %d(%3d) | wt_p: %d\n", u, err_p[roff_p[k]], roff_p[k], wt_p[k]);
 		#endif
 	}
 	// u >>= 6;
 	u >>= enc->coef_precision;
 	if (u > MAX_UPARA) u = MAX_UPARA;
 	#if CHECK_DEBUG
-		if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("u: %d\n", u);
+		// if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("u: %d\n", u);
 	#endif
 	return (u);
 }
-
+#if CONTEXT_COST_MOUNT
 int calc_uenc2(ENCODER *enc, int y, int x){	//特徴量算出(符号量和)
 	int u=0, k, *roff_p;
 	double *wt_p;
@@ -789,13 +788,13 @@ int calc_uenc2(ENCODER *enc, int y, int x){	//特徴量算出(符号量和)
 	roff_p = enc->roff[y][x];
 
 	for (k =0; k < NUM_UPELS; k++) {
-		cost += cost_p[roff_p[k]] * wt_p[k];
+		cost += cost_p[roff_p[k]] * wt_p[k] * 8.0;
 		#if CHECK_DEBUG
 			if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("u: %f | cost: %f(%3d) | wt_p: %f\n", cost, cost_p[roff_p[k]], roff_p[k], wt_p[k]);
 		#endif
 	}
 
-	u = round_int(cost) >> (enc->coef_precision -1);
+	u = round_int(cost) >> (enc->coef_precision -1 );
 	// u = round_int(cost / NUM_UPELS);
 	// u = (int)(cost / NUM_UPELS);
 
@@ -805,6 +804,7 @@ int calc_uenc2(ENCODER *enc, int y, int x){	//特徴量算出(符号量和)
 	#endif
 	return (u);
 }
+#endif
 
 #if TEMPLATE_MATCHING_ON
 void*** TemplateM (ENCODER *enc, char *outfile) {
@@ -813,9 +813,9 @@ void*** TemplateM (ENCODER *enc, char *outfile) {
 #if TEMPLATEM_LOG_OUTPUT
 	int x , y , bx , by , i , j=0 , k , count , area1[AREA] , area_o[AREA] , *tm_array ,
 		*roff_p , *org_p , x_size = X_SIZE , sum1 , sum_o, temp_x, temp_y, break_flag=0,
-		**encval, temp_peak_num=0;
+		**encval, temp_peak_num=0, window_size = Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE;
 	double ave1=0 , ave_o , nas ;
-	TM_Member tm[Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE ], *tm_save;
+	TM_Member tm[window_size], *tm_save;
 #if ZNCC
 	double dist1=0, dist_o=0, *area1_d=0, *area_o_d=0;
 	area1_d = (double * )alloc_mem(AREA * sizeof(double));
@@ -831,15 +831,8 @@ void*** TemplateM (ENCODER *enc, char *outfile) {
 /////////////////////////
 ///////メモリ確保////////
 /////////////////////////
-
 	tm_array = (int *)alloc_mem((Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE) * 4 * sizeof(int)) ;
 	encval = (int **)alloc_2d_array(enc->height+1, enc->width, sizeof(int));
-
-	/*for(y=0; y<enc->height; y++){
-		for(x=0; x<enc->width; x++){
-			encval[y][x] = enc->org[y][x] << enc->coef_precision;
-		}
-	}*/
 	init_2d_array(encval, enc->height, enc->width, 0);
 	encval[enc->height][0] = (int)(enc->maxval + 1) << enc->coef_precision;
 
@@ -851,7 +844,6 @@ for(y = 0 ; y < enc->height ; y++){
 	for (x = 0; x < enc->width; x++){
 		if(y==0 && x==0) {
 			enc->temp_num[y][x] = 0;
-			// encval[y][x] = enc->org[y][x] << enc->coef_precision;
 			continue;
 		}
 
@@ -1024,16 +1016,6 @@ for(y = 0 ; y < enc->height ; y++){
 			tm_save[i] = tm[i];
 		}
 		qsort(tm_save, j , sizeof(TM_Member), cmp);
-		/*TM_Member temp;
-		for (g = 0; g < j - 1; g++) {
-			for (h = j - 1; h > g; h--) {
-				if(tm[h - 1].sum > tm[h].sum) {	//前の要素の方が大きかったら
-					temp = tm[h];		//交換する
-					tm[h] = tm[h - 1];
-					tm[h - 1] = temp;
-				}
-			}
-		}*/
 
 	#if MANHATTAN_SORT
 		mcost_num = (int *)alloc_mem( (max_nas + 1) *sizeof(int));
@@ -1095,9 +1077,9 @@ for(y = 0 ; y < enc->height ; y++){
 		for(k = 0 ; k < MAX_DATA_SAVE_DOUBLE ; k++){
 			tempm_array[y][x][k] = tm_array[k];
 		}
-		for(k = 0 ; k < MAX_DATA_SAVE ; k++){
+		/*for(k = 0 ; k < MAX_DATA_SAVE ; k++){
 			enc->array[y][x][k] = tm[k].ave_o;
-		}
+		}*/
 
 //マッチングコストが小さいものをTEMPLATE_CLASS_NUMの数だけ用意
 		if(enc->temp_num[y][x] < TEMPLATE_CLASS_NUM){
@@ -1108,7 +1090,7 @@ for(y = 0 ; y < enc->height ; y++){
 		for(i=0; i<temp_peak_num; i++){
 			temp_y = tempm_array[y][x][i*4 + 1];
 			temp_x = tempm_array[y][x][i*4 + 2];
-			ave_o = enc->array[y][x][i];
+			ave_o = tm[i].ave_o;
 			#if ZNCC
 				dist_o = tm[i].s_devian;
 			#endif
@@ -4157,6 +4139,12 @@ cost_t calc_side_info(ENCODER *enc, cost_t cost){
 	#if CHECK_DEBUG
 		printf("%d,", (int)sc);
 	#endif
+#if OPTIMIZE_MASK
+	cost += sc = encode_mask(NULL, enc, 1);
+	#if CHECK_DEBUG
+		printf("%d,", (int)sc);
+	#endif
+#endif
 
 #if TEMPLATE_MATCHING_ON
 	cost += sc = encode_w_gr_threshold(NULL, enc, 1);
@@ -4969,7 +4957,7 @@ int main(int argc, char **argv)
 				cost_save = min_cost;
 				before_cost = cost;
 				flg = 0;
-				while(yy - xx < (EXTRA_ITERATION / 3) && yy < MAX_DEL_CLASS) {
+				while(yy - xx < EXTRA_AUTO_DEL && yy < MAX_DEL_CLASS) {
 					#if CHECK_DEBUG
 						printf("\n");
 					#endif
@@ -4990,14 +4978,6 @@ int main(int argc, char **argv)
 						before_cost = cost;
 						save_info(enc, before_side, 0);
 						flg = 2;
-					} else {
-						if(flg ==4){
-							break;
-						} else if(flg == 3){
-							flg++;
-						} else if(flg == 0){
-							flg = 3;
-						}
 					}
 					yy++;
 					#if CHECK_DEBUG
@@ -5019,8 +4999,8 @@ int main(int argc, char **argv)
 				#if CHECK_DEBUG
 					printf("(%d)", del);
 				#endif
-				cost = calc_side_info(enc, calc_cost(enc, 0, 0, enc->height, enc->width));
 			#endif
+				cost = calc_cost(enc, 0, 0, enc->height, enc->width);
 				printf("->%d[%d]", (int)cost, enc->num_class);
 			}
 		}
@@ -5029,7 +5009,7 @@ int main(int argc, char **argv)
 #if OPTIMIZE_MASK_LOOP
 		set_weight_flag(enc);
 #endif
-		printf("--> %d", (int)cost);
+		printf("--> %d", (int)calc_side_info(enc, calc_cost(enc, 0, 0, enc->height, enc->width)));
 		if (cost < min_cost) {
 			printf(" *\n");
 			min_cost = cost;

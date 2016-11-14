@@ -43,6 +43,7 @@
 	#if RENEW_ADC
 		#define	PAST_ADC	0
 		#define MAX_DEL_CLASS	5
+		#define EXTRA_AUTO_DEL	3
 	#else
 		#define PAST_ADC	1
 	#endif
@@ -146,7 +147,7 @@
 // Template Matching Funtion Mode
 #define ZNCC			0
 #define MANHATTAN_SORT	0	//市街地距離で近い順に事例を更に並び替える
-#define TEMPLATEM_LOG_OUTPUT	1	//テンプレートマッチングの結果を書き出す
+#define TEMPLATEM_LOG_OUTPUT	0	//テンプレートマッチングの結果を書き出す
 
 // Template Matching Parameters
 #define AREA			6
@@ -329,7 +330,7 @@ typedef struct {
 #endif
 #if TEMPLATE_MATCHING_ON
 	int **temp_num;
-	int ***array;
+	// int ***array;
 	char temp_peak_num;
 	int *w_gr;
 #endif
@@ -380,7 +381,7 @@ typedef struct {
 #endif
 #if TEMPLATE_MATCHING_ON
 	int **temp_num;
-	int *array;
+	// int *array;
 	char temp_peak_num;
 #endif
 	int *w_gr;
