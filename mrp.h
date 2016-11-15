@@ -97,7 +97,7 @@
 #define NUM_ZMODEL		49
 #define TOT_ZEROFR		(1 << 10)
 #define MAX_SYMBOL		1024	// must be >> MAX_UPARA
-#define CONTEXT_COST_MOUNT	1
+#define CONTEXT_COST_MOUNT	0
 
 #if CONTEXT_COST_MOUNT
 	#define	CONTEXT_ERROR	0
@@ -147,7 +147,7 @@
 // Template Matching Funtion Mode
 #define ZNCC			0
 #define MANHATTAN_SORT	0	//市街地距離で近い順に事例を更に並び替える
-#define TEMPLATEM_LOG_OUTPUT	0	//テンプレートマッチングの結果を書き出す
+#define TEMPLATEM_LOG_OUTPUT	1	//テンプレートマッチングの結果を書き出す
 
 // Template Matching Parameters
 #define AREA			6
@@ -177,13 +177,13 @@
 /*********DEBUG******************************/
 #define CHECK_TM 		0
 #define CHECK_TM_DETAIL	0
-#define CHECK_DEBUG 		0
+#define CHECK_DEBUG 		1
 #define CHECK_PMODEL	0
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
 #define check_y			0
 #define check_x			33
-#define F_NUM			10
+#define F_NUM			8
 
 #define NUM_THREADS		4
 

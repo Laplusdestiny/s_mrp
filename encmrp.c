@@ -788,15 +788,15 @@ int calc_uenc2(ENCODER *enc, int y, int x){	//特徴量算出(符号量和)
 	roff_p = enc->roff[y][x];
 
 	for (k =0; k < NUM_UPELS; k++) {
-		cost += cost_p[roff_p[k]] * wt_p[k] * 8.0;
+		cost += cost_p[roff_p[k]] * wt_p[k];
 		#if CHECK_DEBUG
 			if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("u: %f | cost: %f(%3d) | wt_p: %f\n", cost, cost_p[roff_p[k]], roff_p[k], wt_p[k]);
 		#endif
 	}
 
-	u = round_int(cost) >> (enc->coef_precision -1 );
+	// u = round_int(cost) >> (enc->coef_precision -1 );
 	// u = round_int(cost / NUM_UPELS);
-	// u = (int)(cost / NUM_UPELS);
+	u = round_int(cost / 6.0);
 
 	if (u > MAX_UPARA) u = MAX_UPARA;
 	#if CHECK_DEBUG
@@ -4498,7 +4498,7 @@ RESTORE_SIDE* init_renew_adc(ENCODER *enc){
 
 void save_info(ENCODER *enc, RESTORE_SIDE *r_side, int restore){
 	int y, x, i, j;
-	if(restore==1){
+	if(restore){
 		enc->num_class = r_side->num_class_s;
 		for(y=0; y<enc->height; y++){
 			for(x=0; x<enc->width; x++){
@@ -4523,7 +4523,7 @@ void save_info(ENCODER *enc, RESTORE_SIDE *r_side, int restore){
 #if AUTO_PRD_ORDER
 		set_prd_pels(enc);
 #endif
-		// predict_region(enc, 0, 0, enc->height, enc->width);
+		predict_region(enc, 0, 0, enc->height, enc->width);
 		// optimize_class(enc);
 	} else {
 		r_side->num_class_s = enc->num_class;
@@ -5000,7 +5000,7 @@ int main(int argc, char **argv)
 					printf("(%d)", del);
 				#endif
 			#endif
-				cost = calc_cost(enc, 0, 0, enc->height, enc->width);
+				cost = calc_side_info(enc, calc_cost(enc, 0, 0, enc->height, enc->width));
 				printf("->%d[%d]", (int)cost, enc->num_class);
 			}
 		}
@@ -5009,7 +5009,7 @@ int main(int argc, char **argv)
 #if OPTIMIZE_MASK_LOOP
 		set_weight_flag(enc);
 #endif
-		printf("--> %d", (int)calc_side_info(enc, calc_cost(enc, 0, 0, enc->height, enc->width)));
+		printf("--> %d", (int)cost);
 		if (cost < min_cost) {
 			printf(" *\n");
 			min_cost = cost;
@@ -5049,7 +5049,6 @@ int main(int argc, char **argv)
 				}
 #if TEMPLATE_MATCHING_ON
 				temp_peak_num_save = enc->temp_peak_num;
-				// w_gr_save = enc->w_gr;
 				for(gr=0; gr<enc->num_group; gr++){
 					w_gr_save[gr] = enc->w_gr[gr];
 				}
@@ -5082,7 +5081,6 @@ int main(int argc, char **argv)
 	free(before_side);
 #endif
 	enc->function_number = 100;	//data back mode
-	printf("now loading...\r");
 	if (f_optpred) {
 		enc->num_class = num_class_save;
 		for (y = 0; y < enc->height; y++) {
@@ -5134,20 +5132,6 @@ int main(int argc, char **argv)
 
 		predict_region(enc, 0, 0, enc->height, enc->width);
 		calc_cost(enc, 0, 0, enc->height, enc->width);
-// #if OPTIMIZE_MASK
-#if 0
-        cost = optimize_mask(enc);
-        printf(" optimize_mask: cost = %d (%d)\n", (int)cost, (int)side_cost);
-
-		cost = optimize_group_mult(enc);
-	  sc = encode_threshold(NULL, enc, 1);
-		printf("optimize_group_mult: cost = %d[%d] \n", (int)cost, (int)sc);
-
-        cost = optimize_mask(enc);
-        printf(" optimize_mask: cost = %d (%d)\n", (int)cost, (int)side_cost);
-
-#endif
-// #endif
 	}
 	remove_emptyclass(enc);
 

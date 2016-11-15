@@ -890,7 +890,7 @@ void init_log_sheet(ENCODER *enc, char *outfile)
 		fp = fileopen(LOG_LIST, "wb");
 		fprintf(fp, "Date,Input,Height,Width,Init_Class,Use_Class,Prd_Order,Header[bits],Class[bits],Predictor[bits],Threshold[bits],Pred. Errors[bits],w_gr Threshold[bits],Total info.[bits],Coding Rate[bits/pel],Time[s], ,");
 
-		fprintf(fp, "Auto_Del_CL,Auto_Set_Coef,BASE_BSIZE,QUADTREE_DEPTH,MIN_BSIZE,MAX_BSIZE,COEF_PRECISION,PM_ACCURACY,NUM_GROUP,UPEL_DIST,MAX_ITERATION,CTX_WEIGHT,TEMPLATE_MATCHING,COST FUNCTION,MANHATTAN_SORT,Search Window,TEMPLATE_PEAK_NUM,");
+		fprintf(fp, "Auto_Del_CL,Auto_Set_Coef,BASE_BSIZE,QUADTREE_DEPTH,MIN_BSIZE,MAX_BSIZE,COEF_PRECISION,PM_ACCURACY,NUM_GROUP,UPEL_DIST,MAX_ITERATION,COST_FUNCTION,CTX_WEIGHT,TEMPLATE_MATCHING,COST FUNCTION,MANHATTAN_SORT,Search Window,TEMPLATE_PEAK_NUM,");
 		// fprintf(fp, "\n");
 		fclose(fp);
 	}
@@ -932,6 +932,12 @@ void finish_log_sheet(ENCODER *enc, int header_info, int class_info, int pred_in
 	fprintf(fp, "%d,", BASE_BSIZE);
 	fprintf(fp, "%d,%d,%d,", enc->quadtree_depth, MIN_BSIZE, MAX_BSIZE);
 	fprintf(fp, "%d,%d,%d,%d,%d,", enc->coef_precision, enc->pm_accuracy,enc->num_group, UPEL_DIST, MAX_ITERATION);
+
+	if(CONTEXT_COST_MOUNT){
+		fprintf(fp, "COST_MOUNT,");
+	} else if(CONTEXT_ERROR){
+		fprintf(fp, "ERROR,");
+	}
 
 	if(CTX_WEIGHT) {
 		if(MHD_WEIGHT) {
