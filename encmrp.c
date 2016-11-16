@@ -564,7 +564,7 @@ void init_class(ENCODER *enc)
 
 void init_mask()
 {
-	int peak_num = MAX_PEAK_NUM + TEMPLATE_CLASS_NUM;
+	int peak_num = MAX_PEAK_NUM;
 	mask = (MASK *)alloc_mem(sizeof(MASK));
 	mask->weight = (int *)alloc_mem(peak_num * sizeof(int));
 	mask->class = (char *)alloc_mem(peak_num * sizeof(char));
@@ -3159,11 +3159,9 @@ cost_t optimize_group_mult(ENCODER *enc)
 	enc->function_number = 5;
 	PMODEL *pm, **pm_p;
 
-	trellis = (int **)alloc_2d_array(enc->num_group, MAX_UPARA + 2,
-		sizeof(int));
+	trellis = (int **)alloc_2d_array(enc->num_group, MAX_UPARA + 2, sizeof(int));
 	dpcost = (cost_t *)alloc_mem((MAX_UPARA + 2) * sizeof(cost_t));
-	cbuf = (cost_t **)alloc_2d_array(enc->num_group, MAX_UPARA + 2,
-		sizeof(cost_t));
+	cbuf = (cost_t **)alloc_2d_array(enc->num_group, MAX_UPARA + 2, sizeof(cost_t));
 	thc_p = enc->th_cost;
 	a = 1.0 / log(2.0);
 

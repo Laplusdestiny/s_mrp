@@ -56,7 +56,7 @@
 #define NUM_MASK			5
 #define W_SHIFT			8	// 7
 #define INIT_MASK			0   // 0 1 2 3 4
-#define MAX_PEAK_NUM		25
+#define MAX_PEAK_NUM		25+TEMPLATE_CLASS_NUM
 
 /***** BLOCK_SIZE **************************/
 #define BASE_BSIZE		8
@@ -97,7 +97,7 @@
 #define NUM_ZMODEL		49
 #define TOT_ZEROFR		(1 << 10)
 #define MAX_SYMBOL		1024	// must be >> MAX_UPARA
-#define CONTEXT_COST_MOUNT	0
+#define CONTEXT_COST_MOUNT	1
 
 #if CONTEXT_COST_MOUNT
 	#define	CONTEXT_ERROR	0
@@ -147,7 +147,7 @@
 // Template Matching Funtion Mode
 #define ZNCC			0
 #define MANHATTAN_SORT	0	//市街地距離で近い順に事例を更に並び替える
-#define TEMPLATEM_LOG_OUTPUT	1	//テンプレートマッチングの結果を書き出す
+#define TEMPLATEM_LOG_OUTPUT	0	//テンプレートマッチングの結果を書き出す
 
 // Template Matching Parameters
 #define AREA			6
@@ -169,7 +169,7 @@
 
 
 #else	// On fin
-#define TEMPLATE_CLASS_NUM	0
+	#define TEMPLATE_CLASS_NUM	0
 #endif
 
 #define TEMPLATE_FLAG	2 << COEF_PRECISION

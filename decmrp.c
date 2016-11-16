@@ -1183,7 +1183,7 @@ void decode_mask(FILE *fp, DECODER *dec)
 
 void init_mask()
 {
-	int peak_num = MAX_PEAK_NUM + TEMPLATE_CLASS_NUM;
+	int peak_num = MAX_PEAK_NUM;
 	mask = (MASK *)alloc_mem(sizeof(MASK));
 	mask->weight = (int *)alloc_mem(peak_num * sizeof(int));
 	mask->class = (char *)alloc_mem(peak_num * sizeof(char));
@@ -1377,7 +1377,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 						p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
 							- base;
 						#if CHECK_DEBUG
-							/*if(y==check_y && x==check_x)*/	printf("1\n");
+							if(y==check_y && x==check_x)	printf("1\n");
 						#endif
 						#if CONTEXT_COST_MOUNT
 							// dec->cost[y][x] = a * (log(pm->cumfreq[base + dec->maxval + 1] - pm->cumfreq[base]) - log(pm->freq[p] - pm->cumfreq[base]));
@@ -1387,13 +1387,13 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 						pm = &dec->mult_pm;
 						set_pmodel_mult(pm,mask,dec->maxval+1);
 						#if CHECK_PMODEL
-							/*if(y==check_y && x==check_x)*/	printmodel(pm, dec->maxval+1);
+							if(y==check_y && x==check_x)	printmodel(pm, dec->maxval+1);
 						#endif
 						dec->rc->y = y;
 						dec->rc->x = x;
 						p = rc_decode(fp, dec->rc, pm, 0, dec->maxval+1);
 						#if CHECK_DEBUG
-							/*if(y==check_y && x==check_x)*/	printf("2\n");
+							if(y==check_y && x==check_x)	printf("2\n");
 						#endif
 						#if CONTEXT_COST_MOUNT
 							// dec->cost[y][x] = a * (log(pm->cumfreq[dec->maxval + 1]) - log(pm->freq[p]));
@@ -1410,13 +1410,13 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 					pm = dec->pmodels[gr][0] + (base & bitmask);
 					base >>= dec->pm_accuracy;
 					#if CHECK_PMODEL
-						/*if(y==check_y && x==check_x)*/	printmodel(pm, dec->maxval	+1);
+						if(y==check_y && x==check_x)	printmodel(pm, dec->maxval	+1);
 					#endif
 					dec->rc->y = y;
 					dec->rc->x = x;
 					p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)- base;
 					#if CHECK_DEBUG
-						/*if(y==check_y && x==check_x)*/	printf("3\n");
+						if(y==check_y && x==check_x)	printf("3\n");
 					#endif
 					#if CONTEXT_COST_MOUNT
 						// dec->cost[y][x] = a * (log(pm->cumfreq[base + dec->maxval + 1] - pm->cumfreq[base]) - log(pm->freq[p] - pm->cumfreq[base]));
