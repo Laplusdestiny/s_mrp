@@ -238,7 +238,7 @@ void init_3d_array(int ***array, int height, int width, int depth ,int value){
 }
 
 int cmp(const void *p, const void *q){
-	return ((TM_Member*)p)->sum - ((TM_Member*)q)->sum;
+	return (int)(((TM_Member*)p)->sum - ((TM_Member*)q)->sum) * 1000;
 }
 
 int round_int(double x){	//四捨五入

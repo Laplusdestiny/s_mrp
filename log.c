@@ -1045,7 +1045,7 @@ int set_directory(void)
 #endif
 
 #if TEMPLATE_MATCHING_ON
-void TemplateM_Log_Output(ENCODER *enc, char *outfile, int ***tempm_array, int ***exam_array){
+void TemplateM_Log_Output(ENCODER *enc, char *outfile, int ***exam_array){
 	int y, x, k;
 	FILE *fp;
 	char *name, file[256];
@@ -1068,12 +1068,12 @@ void TemplateM_Log_Output(ENCODER *enc, char *outfile, int ***tempm_array, int *
 	fprintf(fp, "\n");
 	for(y=0; y<enc->height; y++){
 		for(x=0; x<enc->width; x++){
-			for(k=0; k<MAX_DATA_SAVE_DOUBLE; k++){
+			/*for(k=0; k<MAX_DATA_SAVE_DOUBLE; k++){
 				fprintf(fp, "%d,", tempm_array[y][x][k]);
-			}
-			/*for(k=0; k<MAX_DATA_SAVE; k++){
-				fprintf(fp, "%d,", enc->array[y][x][k]);
 			}*/
+			for(k=0; k<MAX_DATA_SAVE; k++){
+				fprintf(fp, "%f,", enc->array[y][x][k]);
+			}
 			for(k=0; k<TEMPLATE_CLASS_NUM; k++){
 				fprintf(fp, "%d,", exam_array[y][x][k]);
 			}
@@ -1083,8 +1083,8 @@ void TemplateM_Log_Output(ENCODER *enc, char *outfile, int ***tempm_array, int *
 	fclose(fp);
 
 //マッチングコストのマップを出力(暗いところほどマッチングコストが小さい)
-	int j=0;
-	double **cost_sum=0, max_sum=0, step;
+	int j=0, *cost_hist;
+	double **cost_sum=0, max_sum=0, step, hist_threshold=0, cost;
 	cost_sum = (double **)alloc_2d_array(enc->height, enc->width, sizeof(double));
 	name = 0;
 	name = strrchr(outfile, BS);
@@ -1099,17 +1099,32 @@ void TemplateM_Log_Output(ENCODER *enc, char *outfile, int ***tempm_array, int *
 			j=enc->temp_num[y][x];
 			if(j > MAX_DATA_SAVE)	j=MAX_DATA_SAVE;
 			for(k=0; k<j; k++){
-				cost_sum[y][x] += (double)(tempm_array[y][x][k*4+3] >> COEF_PRECISION);
+				cost_sum[y][x] += enc->array[y][x][k] / COEF_DIVISION;
 			}
 			cost_sum[y][x] /= j;
 			if(cost_sum[y][x] > max_sum)	max_sum = cost_sum[y][x];
 		}
 	}
-	step = (double)255.0 / max_sum;
+	cost_hist = (int *)alloc_mem((int)max_sum * sizeof(int));
+	for(j=0; j<(int)max_sum; j++)	cost_hist[j] = 0;
+
+	for(y=0; y<enc->height; y++){
+		for(x=0; x<enc->width; x++){
+			cost_hist[(int)cost_sum[y][x]]++;
+		}
+	}
+	for(j=1; j<(int)max_sum; j++)	cost_hist[j] += cost_hist[j-1];
+	hist_threshold = (double)cost_hist[(int)max_sum-1] * 0.8;
+	for(j=0; j<(int)max_sum; j++){
+		if(cost_hist[j] > hist_threshold)	break;
+	}
+	step = (double)255.0 / (double)(j-1);
 	for(y=0; y<enc->height; y++){
 		for(x=0; x<enc->width; x++){
 			if(cost_sum[y][x] < 0)cost_sum[y][x] = max_sum;
-			putc((int)(cost_sum[y][x] * step), fp);
+			cost = cost_sum[y][x] * step;
+			if(cost > 255)	cost = 255.0;
+			putc((int)cost, fp);
 		}
 	}
 	fclose(fp);
@@ -1117,7 +1132,7 @@ void TemplateM_Log_Output(ENCODER *enc, char *outfile, int ***tempm_array, int *
 	return;
 }
 
-void TemplateM_Log_Input(ENCODER *enc, char *outfile, int ***tempm_array, int ***exam_array){
+void TemplateM_Log_Input(ENCODER *enc, char *outfile, int ***exam_array){
 	int y, x, k, y_size_check, x_size_check, area_check, max_data_save_check,
 		max_data_save_double_check, nas_accuracy_check, manhattan_sort_check, zncc_check,
 		template_class_num_check, flg=0;
@@ -1178,13 +1193,13 @@ void TemplateM_Log_Input(ENCODER *enc, char *outfile, int ***tempm_array, int **
 
 	for(y=0; y<enc->height; y++){
 		for(x=0; x<enc->width; x++){
-			for(k=0; k<MAX_DATA_SAVE_DOUBLE; k++){
+			/*for(k=0; k<MAX_DATA_SAVE_DOUBLE; k++){
 				fscanf(fp, "%d,", &tempm_array[y][x][k]);
-			}
-
-			/*for(k=0; k<MAX_DATA_SAVE; k++){
-				fscanf(fp, "%d,", &enc->array[y][x][k]);
 			}*/
+
+			for(k=0; k<MAX_DATA_SAVE; k++){
+				fscanf(fp, "%f,", &enc->array[y][x][k]);
+			}
 
 			for(k=0; k<TEMPLATE_CLASS_NUM; k++){
 				fscanf(fp, "%d,", &exam_array[y][x][k]);

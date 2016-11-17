@@ -34,7 +34,7 @@
 
 /****** OPTIMIZE ***************************/
 #define OPT_SIDEINFO		1 // 1 : side-info into consideration (standard), 0 : neglect side-info
-#define MAX_ITERATION 	100	//100
+#define MAX_ITERATION 	20	//100
 #define EXTRA_ITERATION	10
 #define AUTO_DEL_CL		1
 #define AUTO_PRD_ORDER	1
@@ -69,10 +69,11 @@
 #define MAX_CLASS		63
 
 /***** PREDICTOR ***************************/
-#define COEF_PRECISION  6
-#define PRD_ORDER       -1
-#define BASE_PRD_ORDER  20
-#define MAX_PRD_ORDER   110
+#define COEF_PRECISION	6
+#define	COEF_DIVISION		pow(2, COEF_PRECISION)	// double型等のビットシフト時の対策
+#define PRD_ORDER		-1
+#define BASE_PRD_ORDER	20
+#define MAX_PRD_ORDER	110
 
 /***** GROUP *******************************/
 #define NUM_GROUP       16
@@ -147,7 +148,7 @@
 // Template Matching Funtion Mode
 #define ZNCC			0
 #define MANHATTAN_SORT	0	//市街地距離で近い順に事例を更に並び替える
-#define TEMPLATEM_LOG_OUTPUT	0	//テンプレートマッチングの結果を書き出す
+#define TEMPLATEM_LOG_OUTPUT	1	//テンプレートマッチングの結果を書き出す
 
 // Template Matching Parameters
 #define AREA			6
@@ -239,8 +240,8 @@ typedef struct{
 	int id;
 	int by;
 	int bx;
-	int sum;
-	int ave_o;
+	double sum;
+	double ave_o;
 
 #if MANHATTAN_SORT
 	int mhd;
@@ -330,7 +331,7 @@ typedef struct {
 #endif
 #if TEMPLATE_MATCHING_ON
 	int **temp_num;
-	// int ***array;
+	double ***array;
 	char temp_peak_num;
 	int *w_gr;
 #endif
@@ -381,7 +382,7 @@ typedef struct {
 #endif
 #if TEMPLATE_MATCHING_ON
 	int **temp_num;
-	// int *array;
+	double *array;
 	char temp_peak_num;
 #endif
 	int *w_gr;
@@ -434,8 +435,8 @@ void print_block_size(int **, char ***, int, int, int, char *);
 void calc_var_upara( ENCODER *, char *);
 void init_log_sheet(ENCODER *, char *);
 void finish_log_sheet(ENCODER *, int, int, int, int, int, int, int, double, double);
-void TemplateM_Log_Output(ENCODER *, char *, int ***, int ***);
-void TemplateM_Log_Input(ENCODER *, char *, int ***, int ***);
+void TemplateM_Log_Output(ENCODER *, char *, int ***);
+void TemplateM_Log_Input(ENCODER *, char *, int ***);
 
 #if defined(_WIN32)
 	int set_directory(void);

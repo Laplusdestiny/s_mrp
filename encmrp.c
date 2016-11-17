@@ -16,7 +16,7 @@ extern int mask_x[], mask_y[];
 extern int win_sample[], win_dis[];
 
 MASK *mask;
-int ***tempm_array;
+// int ***tempm_array;
 int ***exam_array;
 // DEL_CLASS_COST *del_cost;
 
@@ -497,7 +497,7 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 #endif
 	enc->cl_hist = (int *)alloc_mem(enc->num_class * sizeof(int));
 #if TEMPLATE_MATCHING_ON
-	// enc->array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
+	enc->array = (double ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE, sizeof(double));
 	enc->temp_num = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
 	enc->w_gr = (int *)alloc_mem(enc->num_group * sizeof(int));
 #endif
@@ -796,7 +796,7 @@ int calc_uenc2(ENCODER *enc, int y, int x){	//特徴量算出(符号量和)
 
 	// u = round_int(cost) >> (enc->coef_precision -1 );
 	// u = round_int(cost / NUM_UPELS);
-	u = round_int(cost / 6.0);
+	u = round_int(cost / 6.0);	// 全ての画素が8bitだった場合に512に正規化するときの値
 
 	if (u > MAX_UPARA) u = MAX_UPARA;
 	#if CHECK_DEBUG
@@ -811,7 +811,7 @@ void*** TemplateM (ENCODER *enc, char *outfile) {
 	clock_t start=0, end=0;
 	start = clock();
 #if TEMPLATEM_LOG_OUTPUT
-	int x , y , bx , by , i , j=0 , k , count , area1[AREA] , area_o[AREA] , *tm_array ,
+	int x , y , bx , by , i , j=0 , k , count , area1[AREA] , area_o[AREA] ,/* *tm_array ,*/
 		*roff_p , *org_p , x_size = X_SIZE , sum1 , sum_o, temp_x, temp_y, break_flag=0,
 		**encval, temp_peak_num=0, window_size = Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE;
 	double ave1=0 , ave_o , nas ;
@@ -831,10 +831,10 @@ void*** TemplateM (ENCODER *enc, char *outfile) {
 /////////////////////////
 ///////メモリ確保////////
 /////////////////////////
-	tm_array = (int *)alloc_mem((Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE) * 4 * sizeof(int)) ;
+	// tm_array = (int *)alloc_mem((Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE) * 4 * sizeof(int)) ;
 	encval = (int **)alloc_2d_array(enc->height+1, enc->width, sizeof(int));
 	init_2d_array(encval, enc->height, enc->width, 0);
-	encval[enc->height][0] = (int)(enc->maxval + 1) << enc->coef_precision;
+	encval[enc->height][0] = (int)(enc->maxval + 1) << (enc->coef_precision - 1);
 
 ///////////////////////////
 ////////画像の走査/////////
@@ -857,8 +857,8 @@ for(y = 0 ; y < enc->height ; y++){
 				for(j=0; j<x; j++){
 					encval[i][j] = enc->org[i][j] << enc->coef_precision;
 				}
+				break;
 			}
-			if(i == y)break;
 		}
 
 		// bzero(&tm, sizeof(tm));
@@ -977,8 +977,8 @@ for(y = 0 ; y < enc->height ; y++){
 				tm[j].id = j;
 				tm[j].by = by;
 				tm[j].bx = bx;
-				tm[j].ave_o = (int)ave_o;
-				tm[j].sum = (int)(nas * NAS_ACCURACY);
+				tm[j].ave_o = ave_o;
+				tm[j].sum = nas;
 				if(tm[j].sum < 0)	tm[j].sum = 0;
 
 				#if ZNCC
@@ -1050,7 +1050,7 @@ for(y = 0 ; y < enc->height ; y++){
 		}
 		free(tm_save);
 
-		for(k = 0 ; k < j  ; k++){
+		/*for(k = 0 ; k < j  ; k++){
 			count = 0;
 			tm_array[k * 4 + count] = 0;
 			tm_array[k * 4 + count] = tm[k].id;
@@ -1072,14 +1072,14 @@ for(y = 0 ; y < enc->height ; y++){
 					printf("\n");
 				}
 			#endif
-		}
-
-		for(k = 0 ; k < MAX_DATA_SAVE_DOUBLE ; k++){
-			tempm_array[y][x][k] = tm_array[k];
-		}
-		/*for(k = 0 ; k < MAX_DATA_SAVE ; k++){
-			enc->array[y][x][k] = tm[k].ave_o;
 		}*/
+
+		/*for(k = 0 ; k < MAX_DATA_SAVE_DOUBLE ; k++){
+			tempm_array[y][x][k] = tm_array[k];
+		}*/
+		for(k = 0 ; k < MAX_DATA_SAVE ; k++){
+			enc->array[y][x][k] = tm[k].sum;
+		}
 
 //マッチングコストが小さいものをTEMPLATE_CLASS_NUMの数だけ用意
 		if(enc->temp_num[y][x] < TEMPLATE_CLASS_NUM){
@@ -1088,8 +1088,8 @@ for(y = 0 ; y < enc->height ; y++){
 			temp_peak_num = TEMPLATE_CLASS_NUM;
 		}
 		for(i=0; i<temp_peak_num; i++){
-			temp_y = tempm_array[y][x][i*4 + 1];
-			temp_x = tempm_array[y][x][i*4 + 2];
+			temp_y = tm[i].by;
+			temp_x = tm[i].bx;
 			ave_o = tm[i].ave_o;
 			#if ZNCC
 				dist_o = tm[i].s_devian;
@@ -1117,12 +1117,12 @@ for(y = 0 ; y < enc->height ; y++){
 		// encval[y][x] = enc->org[y][x] << enc->coef_precision;
 	}//x fin
 }//y fin
-TemplateM_Log_Output(enc, outfile, tempm_array, exam_array);
-free(tm_array);
+TemplateM_Log_Output(enc, outfile, exam_array);
+// free(tm_array);
 free(encval);
 #else
 printf("Restoring Template Matching\r");
-TemplateM_Log_Input(enc, outfile, tempm_array, exam_array);
+TemplateM_Log_Input(enc, outfile, exam_array);
 #endif
 end = clock();
 printf("Calculating Template Matching Fin[%f sec]\n", (float)(end-start)/CLOCKS_PER_SEC);
@@ -1130,7 +1130,7 @@ printf("Calculating Template Matching Fin[%f sec]\n", (float)(end-start)/CLOCKS_
 	return(0);
 }
 
-double continuous_GGF(ENCODER *enc, double e,int w_gr){
+double continuous_GGF(ENCODER *enc, double e, int w_gr){
 	int lngamma(double), cn=WEIGHT_CN, num_pmodel=enc->num_pmodel;
 	double sigma,delta_c,shape,eta,p;
 	double accuracy = 1 / (double)NAS_ACCURACY;
@@ -1166,28 +1166,23 @@ int temp_mask_parameter(ENCODER *enc, int y, int x, int u, int peak, int cl, int
 		peak++;
 		return(peak);
 	}
-	// if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("w_gr: %d\n", w_gr);
+
 	for(i=0; i<template_peak; i++){
-		weight[i] = continuous_GGF(enc, (double)(tempm_array[y][x][i*4+3] >> enc->coef_precision) / NAS_ACCURACY, w_gr);
-		// if(y== check_y && x==check_x)	printf("weight[%d]: %.20f\n", i, weight[i]);
+		weight[i] = continuous_GGF(enc, (enc->array[y][x][i] / COEF_DIVISION) , w_gr);
 		sum_weight += weight[i];
-		// if(y == check_y && x== check_x && enc->function_number == F_NUM)	printf("sum: %.20f | weight: %.20f\n", sum_weight, weight[i]);
 	}
 	if(sum_weight == 0){
 		weight_coef = (double)weight_all;
 	} else {
 		weight_coef = (double)weight_all / sum_weight;
 	}
-	// if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("weight_coef: %.20f | sum_weight: %.20f\n", weight_coef, sum_weight);
 
 	for(i=0; i<template_peak; i++){
 		mask->class[peak] = cl;
-		// if(y==check_y && x==check_x)	printf("weight[%d]:%f\n", i, weight[i] * weight_coef);
 		mask->weight[peak] = (int)(weight[i] * weight_coef);
 		if(mask->weight[peak] == 0)	continue;
 		m_gr = enc->uquant[cl][u];
 		m_prd = exam_array[y][x][i];
-		// m_prd = enc->prd_class[y][x][cl];
 		m_prd = CLIP(0, enc->maxprd, m_prd);
 		#if CHECK_DEBUG
 			if( y == check_y && x == check_x && enc->function_number == F_NUM)	printf("[temp_mask_parameter]\tm_prd[%d]: %d[%2d] | weight: %d | u: %d | gr: %d\n", peak, m_prd, cl, mask->weight[peak], u, m_gr);
@@ -1218,17 +1213,14 @@ int encode_w_gr_threshold(FILE *fp, ENCODER *enc, int flag)
 	for (m = min_m = 0; m < 16; m++) {
 		set_spmodel(pm, MAX_UPARA + 2, m);
 		cost = 0.0;
-		// for (cl = 0; cl < enc->num_class; cl++) {
-			k = 0;
-			for (gr = 1; gr < enc->num_group; gr++) {
-				// i = enc->th[cl][gr - 1] - k;
-				i = enc->w_gr[gr-1] - k;
-				p = (double)pm->freq[i] / (pm->cumfreq[pm->size - k]);
-				cost += -log(p);
-				k += i;
-				if (k > MAX_UPARA) break;
-			}
-		// }
+		k = 0;
+		for (gr = 1; gr < enc->num_group; gr++) {
+			i = enc->w_gr[gr-1] - k;
+			p = (double)pm->freq[i] / (pm->cumfreq[pm->size - k]);
+			cost += -log(p);
+			k += i;
+			if (k > MAX_UPARA) break;
+		}
 		cost /= log(2.0);
 		if (cost < min_cost) {
 			min_cost = cost;
@@ -1238,31 +1230,17 @@ int encode_w_gr_threshold(FILE *fp, ENCODER *enc, int flag)
 	set_spmodel(pm, MAX_UPARA + 2, min_m);
 	p = log(pm->cumfreq[MAX_UPARA + 2]);
 	if (fp == NULL) {
-		/*if (flag == 1){
-			for (i = 0; i < MAX_UPARA + 2; i++) {
-				enc->th_cost[i] = (p - log(pm->freq[i])) / log(2.0);
-			}
-		}*/
 		bits = (int)min_cost;
 	} else {
 		rc_encode(fp, enc->rc, min_m, 1, 16);
-		// for (cl = 0; cl < enc->num_class; cl++) {
-			k = 0;
-			for (gr = 1; gr < enc->num_group; gr++) {
-				// i = enc->th[cl][gr - 1] - k;
-				i = enc->w_gr[gr-1] - k;
-				rc_encode(fp, enc->rc, pm->cumfreq[i],  pm->freq[i],
-					pm->cumfreq[pm->size - k]);
-				k += i;
-				if (k > MAX_UPARA) break;
-			}
-
-		/*if (enc->num_pmodel > 1) {
-			for (gr = 0; gr < enc->num_group; gr++) {
-				pm = enc->pmlist[gr];
-				rc_encode(fp, enc->rc, pm->id, 1, enc->num_pmodel);
-			}
-		}*/
+		k = 0;
+		for (gr = 1; gr < enc->num_group; gr++) {
+			i = enc->w_gr[gr-1] - k;
+			rc_encode(fp, enc->rc, pm->cumfreq[i],  pm->freq[i],
+				pm->cumfreq[pm->size - k]);
+			k += i;
+			if (k > MAX_UPARA) break;
+		}
 		bits = (int)enc->rc->code;
 		enc->rc->code = 0;
 	}
@@ -3110,7 +3088,7 @@ void make_th(ENCODER *enc){
 		enc->w_gr[gr - 1] = th1;
 	}
 	// enc->w_gr[0] = 0;
-	enc->w_gr[enc->num_group-1] = MAX_UPARA+1;
+	// enc->w_gr[enc->num_group-1] = MAX_UPARA+1;
 	return;
 }
 
@@ -4802,8 +4780,8 @@ int main(int argc, char **argv)
 	pmlist_save = (PMODEL **)alloc_mem(enc->num_group * sizeof(PMODEL *));
 
 #if TEMPLATE_MATCHING_ON
-	tempm_array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
-	init_3d_array(tempm_array, enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, 0);
+	// tempm_array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
+	// init_3d_array(tempm_array, enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, 0);
 	exam_array = (int ***)alloc_3d_array(enc->height, enc->width, TEMPLATE_CLASS_NUM, sizeof(int));
 	init_3d_array(exam_array, enc->height, enc->width, TEMPLATE_CLASS_NUM, 0);
 	TemplateM(enc, outfile);

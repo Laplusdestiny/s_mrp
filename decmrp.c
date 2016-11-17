@@ -231,11 +231,12 @@ DECODER *init_decoder(FILE *fp)
 	}
 #endif
 #if TEMPLATE_MATCHING_ON
-	tempm_array = (int *)alloc_mem(MAX_DATA_SAVE_DOUBLE * sizeof(int));
+	// tempm_array = (int *)alloc_mem(MAX_DATA_SAVE_DOUBLE * sizeof(int));
+	dec->array = (double *)alloc_mem(MAX_DATA_SAVE * sizeof(double));
 	dec->temp_num = (int **)alloc_2d_array(dec->height, dec->width, sizeof(int));
 	decval = (int **)alloc_2d_array(dec->height+1, dec->width, sizeof(int));
 	init_2d_array(decval, dec->height, dec->width, 0);
-	decval[dec->height][0] = (int)(dec->maxval+1) << dec->coef_precision;
+	decval[dec->height][0] = (int)(dec->maxval+1) << (dec->coef_precision - 1);
 	dec->w_gr = (int *)alloc_mem(dec->num_group * sizeof(int));
 #else
 	dec->w_gr = NULL;
@@ -659,7 +660,7 @@ int calc_udec2(DECODER *dec, int y, int x)	//特徴量算出(符号量和)
 
 #if TEMPLATE_MATCHING_ON
 void TemplateM (DECODER *dec, int dec_y, int dec_x){
-	int bx, by, i, j, k, count, area1[AREA], area_o[AREA], *roff_p, *org_p,  x_size = X_SIZE, sum1, sum_o, temp_x, temp_y, break_flag=0, *tm_array, temp_peak_num=0, window_size = Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE;
+	int bx, by, i, j, k, count, area1[AREA], area_o[AREA], *roff_p, *org_p,  x_size = X_SIZE, sum1, sum_o, temp_x, temp_y, break_flag=0, /**tm_array,*/ temp_peak_num=0, window_size = Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE;
 	double ave1, ave_o, nas;
 	TM_Member tm[window_size];
 	TM_Member *tm_save;
@@ -674,7 +675,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 	int *mcost_num, max_nas =0, before_nas_num=0;
 #endif
 
-	tm_array = (int *)alloc_mem( window_size * 4 * sizeof(int));
+	// tm_array = (int *)alloc_mem( window_size * 4 * sizeof(int));
 	for(i=0; i<dec->height; i++){
 		if(i != dec_y){
 			for(j=0; j<dec->width; j++){
@@ -809,8 +810,8 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 			tm[j].id = j;
 			tm[j].by = by;
 			tm[j].bx = bx;
-			tm[j].ave_o = (int)ave_o;
-			tm[j].sum = (int)(nas * NAS_ACCURACY);
+			tm[j].ave_o = ave_o;
+			tm[j].sum = nas * NAS_ACCURACY;
 			if(tm[j].sum < 0)	tm[j].sum = 0;
 
 			#if ZNCC
@@ -844,16 +845,6 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 	}
 	qsort(tm_save, j, sizeof(TM_Member), cmp);
 
-	/*for(g=0; g<j-1; g++){
-		for(h=j-1; h>g; h--){
-			if(tm[h-1].sum > tm[h].sum){
-				temp = tm[h];
-				tm[h] = tm[h-1];
-				tm[h-1] = temp;
-			}
-		}
-	}*/
-
 	#if MANHATTAN_SORT
 		mcost_num = (int *)alloc_mem((max_nas + 1) * sizeof(int));
 		for(i=0; i<=max_nas; i++){
@@ -886,8 +877,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 	}
 	free(tm_save);
 
-	// for(k=0; k< Y_SIZE * X_SIZE * 2 + X_SIZE; k++){
-	for(k=0; k < j; k++){
+	/*for(k=0; k < j; k++){
 		count=0;
 		tm_array[k * 4 + count] = 0;
 		tm_array[k * 4 + count] = tm[k].id;
@@ -909,15 +899,15 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 				printf("\n");
 			}
 		#endif
-	}
-
-	for(k=0; k<MAX_DATA_SAVE_DOUBLE; k++){
-		tempm_array[k] = tm_array[k];
-	}
-
-	/*for(k=0; k<MAX_DATA_SAVE; k++){
-		array[k] = tm[k].ave_o;
 	}*/
+
+	/*for(k=0; k<MAX_DATA_SAVE_DOUBLE; k++){
+		tempm_array[k] = tm_array[k];
+	}*/
+
+	for(k=0; k<MAX_DATA_SAVE; k++){
+		dec->array[k] = tm[k].sum;
+	}
 
 //マッチングコストが小さいものをTEMPLATE_CLASS_NUMの数だけ用意
 	if(dec->temp_num[dec_y][dec_x] < TEMPLATE_CLASS_NUM){
@@ -953,7 +943,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 
 	}
 
-	free(tm_array);
+	// free(tm_array);
 }
 
 void decode_w_gr_threshold(FILE *fp, DECODER *dec)
