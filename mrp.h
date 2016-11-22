@@ -34,7 +34,7 @@
 
 /****** OPTIMIZE ***************************/
 #define OPT_SIDEINFO		1 // 1 : side-info into consideration (standard), 0 : neglect side-info
-#define MAX_ITERATION 	10	//100
+#define MAX_ITERATION 	100	//100
 #define EXTRA_ITERATION	10
 #define AUTO_DEL_CL		1
 #define AUTO_PRD_ORDER	1
@@ -102,6 +102,7 @@
 
 #if CONTEXT_COST_MOUNT
 	#define	CONTEXT_ERROR	0
+	#define	COST_WEIGHT		10
 #else
 	#define	CONTEXT_ERROR	1
 #endif
@@ -178,12 +179,12 @@
 /*********DEBUG******************************/
 #define CHECK_TM 		0
 #define CHECK_TM_DETAIL	0
-#define CHECK_DEBUG 		0
+#define CHECK_DEBUG 		1
 #define CHECK_PMODEL	0
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
-#define check_y			0
-#define check_x			172
+#define check_y			100
+#define check_x			100
 #define F_NUM			8
 
 #define NUM_THREADS		4
@@ -289,6 +290,7 @@ typedef struct {
 	int *ctx_weight;
 	#if CONTEXT_COST_MOUNT
 		double *ctx_weight_double;
+		double cost_extension;
 	#endif
 	int ***roff;
 	int ***prd_class;
@@ -364,6 +366,7 @@ typedef struct {
 	int *ctx_weight;
 	#if CONTEXT_COST_MOUNT
 		double *ctx_weight_double;
+		double cost_extension;
 	#endif
 	char **qtmap[QUADTREE_DEPTH];
 	char **class;

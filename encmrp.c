@@ -788,15 +788,15 @@ int calc_uenc2(ENCODER *enc, int y, int x){	//特徴量算出(符号量和)
 	roff_p = enc->roff[y][x];
 
 	for (k =0; k < NUM_UPELS; k++) {
-		cost += cost_p[roff_p[k]] * wt_p[k];
+		cost += cost_p[roff_p[k]] * wt_p[k] * COST_WEIGHT;
 		#if CHECK_DEBUG
 			if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("u: %f | cost: %f(%3d) | wt_p: %f\n", cost, cost_p[roff_p[k]], roff_p[k], wt_p[k]);
 		#endif
 	}
 
-	// u = round_int(cost) >> (enc->coef_precision -1 );
+	u = round_int(cost) >> enc->coef_precision;
 	// u = round_int(cost / NUM_UPELS);
-	u = round_int(cost / 6.0);	// 全ての画素が8bitだった場合に512に正規化するときの値
+	// u = round_int(cost / 6.0);	// 全ての画素が8bitだった場合に512に正規化するときの値
 
 	if (u > MAX_UPARA) u = MAX_UPARA;
 	#if CHECK_DEBUG
