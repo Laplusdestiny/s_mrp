@@ -993,7 +993,7 @@ for(y = 0 ; y < enc->height ; y++){
 
 				#if CHECK_TM
 					if(y == check_y && x == check_x){
-						printf("B[%3d](%3d,%3d) sum: %d | ave: %d", tm[j].id, tm[j].by, tm[j].bx, tm[j].sum, tm[j].ave_o);
+						printf("B[%3d](%3d,%3d) sum: %f | ave: %f", tm[j].id, tm[j].by, tm[j].bx, tm[j].sum, tm[j].ave_o);
 						#if ZNCC
 							printf(" | devian: %f", tm[j].s_devian);
 						#endif
@@ -1108,11 +1108,11 @@ for(y = 0 ; y < enc->height ; y++){
 				if(exam_array[y][x][i] < 0 || exam_array[y][x][i] > enc->maxprd)	exam_array[y][x][i] = (int)ave1;
 			}
 			#if CHECK_TM
-				if(y==check_y && x==check_x)	printf("exam_array[%d]: %d[%3d] | (%3d,%3d) ave1: %f | ave_o: %f\n", i, exam_array[y][x][i], encval[temp_y][temp_x], temp_y, temp_x, ave1, ave_o);
+				if(y==check_y && x==check_x)	printf("exam_array[%d]: %d[%3d] | (%3d,%3d) ave1: %f | ave_o: %f | mc: %f\n", i, exam_array[y][x][i], encval[temp_y][temp_x], temp_y, temp_x, ave1, ave_o, tm[i].sum);
 			#endif
 		}
 		#if CHECK_TM
-			if(y==check_y && x==check_x)	printf("(%3d,%3d)org: %d\n", y, x, encval[y][x]);
+			if(y==check_y && x==check_x)	printf("(%3d,%3d)org: %d\n", y, x, enc->org[y][x] << enc->coef_precision);
 		#endif
 		// encval[y][x] = enc->org[y][x] << enc->coef_precision;
 	}//x fin
@@ -1170,12 +1170,14 @@ int temp_mask_parameter(ENCODER *enc, int y, int x, int u, int peak, int cl, int
 	for(i=0; i<template_peak; i++){
 		weight[i] = continuous_GGF(enc, (enc->array[y][x][i] / COEF_DIVISION) , w_gr);
 		sum_weight += weight[i];
+		// if(y==check_y && x==check_x)	printf("sum: %.20f | weight: %.20f\n", sum_weight, weight[i]);
 	}
 	if(sum_weight == 0){
 		weight_coef = (double)weight_all;
 	} else {
 		weight_coef = (double)weight_all / sum_weight;
 	}
+	// if(y==check_y && x==check_x)	printf("weight_coef: %.20f | sum_weight: %.20f\n", weight_coef, sum_weight);
 
 	for(i=0; i<template_peak; i++){
 		mask->class[peak] = cl;
@@ -4165,6 +4167,9 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 					pm->cumfreq[base + enc->maxval + 1] - cumbase);
 				// enc->cost[y][x] = a * (log(pm->cumfreq[base + enc->maxval + 1] - cumbase) - log(pm->freq[e] - cumbase));
 				enc->cost[y][x] = calc_cost_from_pmodel(pm->freq, base + enc->maxval + 1, base + e);
+				#if CHECK_DEBUG
+					/*if(y==check_y && x==check_x)*/	printf("1\n");
+				#endif
 			}else{
 				pm = &enc->mult_pm;
 				set_pmodel_mult(pm,mask,enc->maxval+1);
@@ -4179,8 +4184,11 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 					pm->cumfreq[enc->maxval + 1]);
 				// enc->cost[y][x] = a * (log(pm->cumfreq[enc->maxval + 1]) - log(pm->freq[e]));
 				enc->cost[y][x] = calc_cost_from_pmodel(pm->freq, enc->maxval + 1, e);
+				#if CHECK_DEBUG
+					/*if(y==check_y && x==check_x)*/	printf("2\n");
+				#endif
 			}
-			// printf("cost(%3d,%3d): %f\n", y, x, enc->cost[y][x]);
+			printf("cost(%3d,%3d): %f\n", y, x, enc->cost[y][x]);
 			// printf("%d,%d,prd,%d(%d),org,%d,conv:%d\n", y, x, enc->prd_class[y][x][enc->class[y][x]] >> (enc->coef_precision-1), enc->class[y][x], enc->org[y][x], enc->err[y][x]);
 			// printf("cost[%3d][%3d]: %f\n", y, x, enc->cost[y][x]);
 		}

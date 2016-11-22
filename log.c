@@ -1047,42 +1047,42 @@ int set_directory(void)
 #if TEMPLATE_MATCHING_ON
 void TemplateM_Log_Output(ENCODER *enc, char *outfile, int ***exam_array){
 	int y, x, k;
-	FILE *fp;
+	FILE *fp1, *fp2;
 	char *name, file[256];
 
 	name = strrchr(outfile, BS);
 	name++;
 	sprintf(file, LOG_TEMP_DIR"%s_temp.csv", name);
-	if ((fp = fopen(file, "rb")) != NULL) {
+	if ((fp1 = fopen(file, "rb")) != NULL) {
 		if(remove(file) != 0){
 			printf("Remove Error!!![%s]\n", file);
 		}
 	}
-	fp = fileopen(file, "wb");
+	fp1 = fileopen(file, "wb");
 	// fprintf(fp, "Y_SIZE,X_SIZE,AREA,MAX_DATA_SAVE,MAX_DATA_SAVE_DOUBLE,MAX_MULTIMODAL\n");
-	fprintf(fp, "%d,%d,%d,%d,%d\n",
+	fprintf(fp1, "%d,%d,%d,%d,%d\n",
 		Y_SIZE, X_SIZE, AREA, MAX_DATA_SAVE, MAX_DATA_SAVE_DOUBLE);
 	// fprintf(fp, "NAS_ACCURACY,TEMPLATE_CLASS_NUM\n");
-	fprintf(fp, "%d,%d,%d,%d\n", NAS_ACCURACY, TEMPLATE_CLASS_NUM, MANHATTAN_SORT, ZNCC);
+	fprintf(fp1, "%d,%d,%d,%d\n", NAS_ACCURACY, TEMPLATE_CLASS_NUM, MANHATTAN_SORT, ZNCC);
 
-	fprintf(fp, "\n");
+	fprintf(fp1, "\n");
 	for(y=0; y<enc->height; y++){
 		for(x=0; x<enc->width; x++){
 			/*for(k=0; k<MAX_DATA_SAVE_DOUBLE; k++){
 				fprintf(fp, "%d,", tempm_array[y][x][k]);
 			}*/
 			for(k=0; k<MAX_DATA_SAVE; k++){
-				fprintf(fp, "%f,", enc->array[y][x][k]);
+				fprintf(fp1, "%f,", enc->array[y][x][k]);
 			}
 			for(k=0; k<TEMPLATE_CLASS_NUM; k++){
-				fprintf(fp, "%d,", exam_array[y][x][k]);
+				fprintf(fp1, "%d,", exam_array[y][x][k]);
 			}
-			fprintf(fp,"%d\n", enc->temp_num[y][x]);
+			fprintf(fp1,"%d\n", enc->temp_num[y][x]);
 		}
 	}
-	fclose(fp);
 
 //マッチングコストのマップを出力(暗いところほどマッチングコストが小さい)
+	printf("Cost map output\r");
 	int j=0, *cost_hist;
 	double **cost_sum=0, max_sum=0, step, hist_threshold=0, cost;
 	cost_sum = (double **)alloc_2d_array(enc->height, enc->width, sizeof(double));
@@ -1090,13 +1090,14 @@ void TemplateM_Log_Output(ENCODER *enc, char *outfile, int ***exam_array){
 	name = strrchr(outfile, BS);
 	name++;
 	sprintf(file, LOG_TEMP_DIR"%s_temp_map.pgm", name);
-	fp = fileopen(file, "wb");
-	fprintf(fp, "P5\n%d %d\n255\n", enc->width, enc->height);
+	fp2 = fileopen(file, "wb");
+	fprintf(fp2, "P5\n%d %d\n255\n", enc->width, enc->height);
 
 	for(y=0; y<enc->height; y++){
 		for(x=0; x<enc->width; x++){
 			cost_sum[y][x]=0;
 			j=enc->temp_num[y][x];
+			if(j == 0)	continue;
 			if(j > MAX_DATA_SAVE)	j=MAX_DATA_SAVE;
 			for(k=0; k<j; k++){
 				cost_sum[y][x] += enc->array[y][x][k] / COEF_DIVISION;
@@ -1105,29 +1106,36 @@ void TemplateM_Log_Output(ENCODER *enc, char *outfile, int ***exam_array){
 			if(cost_sum[y][x] > max_sum)	max_sum = cost_sum[y][x];
 		}
 	}
-	cost_hist = (int *)alloc_mem((int)max_sum * sizeof(int));
+	cost_hist = (int *)alloc_mem( ((int)max_sum+1) * sizeof(int));
 	for(j=0; j<(int)max_sum; j++)	cost_hist[j] = 0;
-
 	for(y=0; y<enc->height; y++){
 		for(x=0; x<enc->width; x++){
-			cost_hist[(int)cost_sum[y][x]]++;
+			j = (int)cost_sum[y][x];
+			cost_hist[j]++;
 		}
 	}
+
+	fprintf(fp1,"\n\nMatching Cost Histogram\n");
+	for(j=0; j<(int)max_sum; j++){
+		fprintf(fp1,"%d,%d\n", j, cost_hist[j]);
+	}
+
 	for(j=1; j<(int)max_sum; j++)	cost_hist[j] += cost_hist[j-1];
-	hist_threshold = (double)cost_hist[(int)max_sum-1] * 0.8;
+	hist_threshold = (double)cost_hist[(int)max_sum - 1] * 0.99;
 	for(j=0; j<(int)max_sum; j++){
 		if(cost_hist[j] > hist_threshold)	break;
 	}
 	step = (double)255.0 / (double)(j-1);
 	for(y=0; y<enc->height; y++){
 		for(x=0; x<enc->width; x++){
-			if(cost_sum[y][x] < 0)cost_sum[y][x] = max_sum;
+			if(cost_sum[y][x] < 0)cost_sum[y][x] = (double)j;
 			cost = cost_sum[y][x] * step;
 			if(cost > 255)	cost = 255.0;
-			putc((int)cost, fp);
+			putc((int)cost, fp2);
 		}
 	}
-	fclose(fp);
+	fclose(fp1);
+	fclose(fp2);
 	free(cost_sum);
 	return;
 }
