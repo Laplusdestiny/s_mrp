@@ -70,7 +70,7 @@
 
 /***** PREDICTOR ***************************/
 #define COEF_PRECISION	6
-#define	COEF_DIVISION		pow(2, COEF_PRECISION)	// double型等のビットシフト時の対策
+#define	COEF_DIVISION		(double)(1 << COEF_PRECISION)	// double型等のビットシフト時の対策
 #define PRD_ORDER		-1
 #define BASE_PRD_ORDER	20
 #define MAX_PRD_ORDER	110
@@ -102,7 +102,7 @@
 
 #if CONTEXT_COST_MOUNT
 	#define	CONTEXT_ERROR	0
-	#define	COST_WEIGHT		10
+	#define	COST_WEIGHT		8
 #else
 	#define	CONTEXT_ERROR	1
 #endif
@@ -183,8 +183,8 @@
 #define CHECK_PMODEL	0
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
-#define check_y			100
-#define check_x			100
+#define check_y			44
+#define check_x			139
 #define F_NUM			8
 
 #define NUM_THREADS		4

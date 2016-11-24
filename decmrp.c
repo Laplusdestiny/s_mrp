@@ -676,6 +676,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 #endif
 
 	// tm_array = (int *)alloc_mem( window_size * 4 * sizeof(int));
+	init_2d_array(decval, dec->height, dec->width, 0);
 	for(i=0; i<dec->height; i++){
 		if(i != dec_y){
 			for(j=0; j<dec->width; j++){
@@ -685,8 +686,8 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 			for( j = 0 ; j < dec_x ; j++ ){
 				decval[i][j] = dec->org[i][j] << dec->coef_precision;
 			}
+			break;
 		}
-		if( i == dec_y)break;
 	}
 
 	#if CHECK_TM
@@ -924,7 +925,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 			dist_o = tm[i].s_devian;
 		#endif
 
-		if(dec_y == 0 && dec_x < 3){
+		if(dec_y == 0 && dec_x == 0){
 			exam_array[dec_y][dec_x][i] = (dec->maxprd >> 1);
 		} else {
 			#if ZNCC
@@ -1184,11 +1185,9 @@ void init_mask()
 #if TEMPLATE_MATCHING_ON
 double continuous_GGF(DECODER *dec, double e, int gr)
 {
-	int lngamma(double);
-	int cn,num_pmodel = dec->num_pmodel;
-	double sigma,delta_c,shape,eta,p;
+	int cn=WEIGHT_CN, num_pmodel = dec->num_pmodel;
+	double sigma, delta_c, shape, eta, p, lngamma(double);
 	double accuracy = 1 / (double)NAS_ACCURACY;
-	cn = WEIGHT_CN;
 	sigma = dec->sigma[gr];
 
 	delta_c = 3.2 / (double)num_pmodel;//cnは0.2ずつ動くので. num_pmodel is 16 . delta_c = 0.2
@@ -1201,14 +1200,14 @@ double continuous_GGF(DECODER *dec, double e, int gr)
 	}else{
 		p = exp(-pow(eta * (e), shape));
 	}
-
+	// printf("p: %f | eta: %f | e: %f | shape: %f | delta_c: %f | sigma: %f | num_pmodel: %d | cn :%d\n", p, eta, e, shape, delta_c, sigma, num_pmodel, cn);
 	return(p);
 }
 
 int temp_mask_parameter(DECODER *dec, int y, int x , int u, int peak, int cl, int weight_all, int bmask, int shift, int r_cl, int w_gr)
 {
 	int i, m_gr, m_prd, m_base, *th_p, template_peak = dec->temp_peak_num;
-	double weight[template_peak], sum_weight=0, weight_coef=0;
+	double weight[template_peak], sum_weight=0, weight_coef=0, mc=0;
 
 	if(template_peak > dec->temp_num[y][x])	template_peak = dec->temp_num[y][x];
 	if(template_peak == 0){
@@ -1229,9 +1228,11 @@ int temp_mask_parameter(DECODER *dec, int y, int x , int u, int peak, int cl, in
 	}
 	// if(y==check_y && x==check_x)	printf("w_gr: %d\n", w_gr);
 	for(i=0; i<template_peak; i++){
-		weight[i] = continuous_GGF(dec, (dec->array[i] / COEF_PRECISION), w_gr);
+		// if(y==check_y && x== check_x)	printf("e: %f | array: %f | COEF: %f\n", (dec->array[i] / COEF_DIVISION), dec->array[i], COEF_DIVISION);
+		mc = dec->array[i] / COEF_DIVISION;
+		weight[i] = continuous_GGF(dec, mc, w_gr);
 		sum_weight += weight[i];
-		// if(y == check_y && x== check_x)	printf("sum: %.20f | weight: %.20f\n", sum_weight, weight[i]);
+		// if(y == check_y && x== check_x)	printf("sum: %.20f | weight: %.20f | array[%d]: %f\n", sum_weight, weight[i], i, dec->array[i] / COEF_DIVISION);
 	}
 	if(sum_weight == 0){
 		weight_coef = (double)weight_all;
@@ -1242,7 +1243,8 @@ int temp_mask_parameter(DECODER *dec, int y, int x , int u, int peak, int cl, in
 
 	for(i=0; i<template_peak; i++){
 		mask->class[peak] = cl;
-		mask->weight[peak] = (int)(weight[i] * weight_coef);
+		mask->weight[peak] = round_int(weight[i] * weight_coef);
+		// if(y==check_y && x==check_x)	printf("weight[%2d]: %f --> %d\n", i, weight[i] * weight_coef, mask->weight[peak]);
 		if(mask->weight[peak] == 0)	continue;
 		th_p = dec->th[cl];
 		for(m_gr = 0; m_gr < dec->num_group - 1; m_gr++){
@@ -1367,7 +1369,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 						p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)
 							- base;
 						#if CHECK_DEBUG
-							/*if(y==check_y && x==check_x)*/	printf("1\n");
+							// /*if(y==check_y && x==check_x)*/	printf("1\n");
 						#endif
 						#if CONTEXT_COST_MOUNT
 							// dec->cost[y][x] = a * (log(pm->cumfreq[base + dec->maxval + 1] - pm->cumfreq[base]) - log(pm->freq[p] - pm->cumfreq[base]));
@@ -1383,7 +1385,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 						dec->rc->x = x;
 						p = rc_decode(fp, dec->rc, pm, 0, dec->maxval+1);
 						#if CHECK_DEBUG
-							/*if(y==check_y && x==check_x)*/	printf("2\n");
+							// /*if(y==check_y && x==check_x)*/	printf("2\n");
 						#endif
 						#if CONTEXT_COST_MOUNT
 							// dec->cost[y][x] = a * (log(pm->cumfreq[dec->maxval + 1]) - log(pm->freq[p]));
@@ -1406,7 +1408,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 					dec->rc->x = x;
 					p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)- base;
 					#if CHECK_DEBUG
-						/*if(y==check_y && x==check_x)*/	printf("3\n");
+						// /*if(y==check_y && x==check_x)*/	printf("3\n");
 					#endif
 					#if CONTEXT_COST_MOUNT
 						// dec->cost[y][x] = a * (log(pm->cumfreq[base + dec->maxval + 1] - pm->cumfreq[base]) - log(pm->freq[p] - pm->cumfreq[base]));
@@ -1423,7 +1425,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 					dec->rc->x = x;
 					p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1) - base;
 					#if CHECK_DEBUG
-							/*if(y==check_y && x==check_x)*/	printf("4\n");
+							// /*if(y==check_y && x==check_x)*/	printf("4\n");
 						#endif
 					#if CONTEXT_COST_MOUNT
 						// dec->cost[y][x] = a * (log(pm->cumfreq[base + dec->maxval + 1] - pm->cumfreq[base]) - log(pm->freq[p] - pm->cumfreq[base]));
@@ -1439,7 +1441,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 					dec->rc->x = x;
 					p = rc_decode(fp, dec->rc, pm, 0, dec->maxval+1);
 					#if CHECK_DEBUG
-						/*if(y==check_y && x==check_x)*/	printf("5\n");
+						// /*if(y==check_y && x==check_x)*/	printf("5\n");
 					#endif
 					#if CONTEXT_COST_MOUNT
 						// dec->cost[y][x] = a * (log(pm->cumfreq[dec->maxval + 1]) - log(pm->freq[p]));
@@ -1464,7 +1466,7 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 			#if CHECK_DEBUG
 				// printf("d[%d][%d]: %d(%d) | err: %d\n", y, x, p, prd, e);
 				printf("%d\n", p);
-				printf("cost[%3d][%3d]: %f\n", y, x, dec->cost[y][x]);
+				// printf("cost[%3d][%3d]: %f\n", y, x, dec->cost[y][x]);
 			#endif
 
 		}

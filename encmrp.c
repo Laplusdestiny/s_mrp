@@ -842,10 +842,10 @@ void*** TemplateM (ENCODER *enc, char *outfile) {
 printf("Calculating Template Matching\r");
 for(y = 0 ; y < enc->height ; y++){
 	for (x = 0; x < enc->width; x++){
-		if(y==0 && x==0) {
+		/*if(y==0 && x==0) {
 			enc->temp_num[y][x] = 0;
 			continue;
-		}
+		}*/
 
 		init_2d_array(encval, enc->height, enc->width, 0);
 		for(i=0; i<enc->height; i++){
@@ -1095,7 +1095,7 @@ for(y = 0 ; y < enc->height ; y++){
 				dist_o = tm[i].s_devian;
 			#endif
 
-			if(y == 0 && x< 3){
+			if(y == 0 && x == 0){
 				exam_array[y][x][i] = (enc->maxprd >> 1);
 			} else {
 				#if ZNCC
@@ -1131,8 +1131,8 @@ printf("Calculating Template Matching Fin[%f sec]\n", (float)(end-start)/CLOCKS_
 }
 
 double continuous_GGF(ENCODER *enc, double e, int w_gr){
-	int lngamma(double), cn=WEIGHT_CN, num_pmodel=enc->num_pmodel;
-	double sigma,delta_c,shape,eta,p;
+	int cn=WEIGHT_CN, num_pmodel=enc->num_pmodel;
+	double sigma, delta_c, shape, eta,p, lngamma(double);
 	double accuracy = 1 / (double)NAS_ACCURACY;
 
 	sigma = enc->sigma[w_gr];
@@ -1145,14 +1145,14 @@ double continuous_GGF(ENCODER *enc, double e, int w_gr){
 	}else{
 		p = exp(-pow(eta * (e), shape));
 	}
-
+	// if(enc->function_number==F_NUM)	printf("p: %f | eta: %f | e: %f | shape: %f | delta_c: %f | sigma: %f | num_pmodel: %d | cn :%d\n", p, eta, e, shape, delta_c, sigma, num_pmodel, cn);
 	return(p);
 }
 
 int temp_mask_parameter(ENCODER *enc, int y, int x, int u, int peak, int cl, int weight_all, int w_gr)
 {
 	int i, m_gr, m_prd, m_frac, template_peak = enc->temp_peak_num;
-	double weight[template_peak], sum_weight = 0, weight_coef=0;
+	double weight[template_peak], sum_weight = 0, weight_coef=0, mc=0;
 	if(template_peak > enc->temp_num[y][x])	template_peak = enc->temp_num[y][x];
 	if(template_peak == 0){
 		mask->class[peak] = cl;
@@ -1166,11 +1166,14 @@ int temp_mask_parameter(ENCODER *enc, int y, int x, int u, int peak, int cl, int
 		peak++;
 		return(peak);
 	}
+	// if(y==check_y && x==check_x && enc->function_number ==F_NUM)	printf("w_gr: %d\n", w_gr);
 
 	for(i=0; i<template_peak; i++){
-		weight[i] = continuous_GGF(enc, (enc->array[y][x][i] / COEF_DIVISION) , w_gr);
+		// if(y==check_y && x== check_x && enc->function_number==F_NUM)	printf("e: %f | array: %f | COEF: %f\n", (enc->array[y][x][i] / COEF_DIVISION), enc->array[y][x][i], COEF_DIVISION);
+		mc = enc->array[y][x][i] / COEF_DIVISION;
+		weight[i] = continuous_GGF(enc, mc, w_gr);
 		sum_weight += weight[i];
-		// if(y==check_y && x==check_x)	printf("sum: %.20f | weight: %.20f\n", sum_weight, weight[i]);
+		// if(y==check_y && x==check_x && enc->function_number ==F_NUM)	printf("sum: %.20f | weight: %.20f | array[%d]: %f\n", sum_weight, weight[i], i, enc->array[y][x][i] / COEF_DIVISION);
 	}
 	if(sum_weight == 0){
 		weight_coef = (double)weight_all;
@@ -1181,7 +1184,8 @@ int temp_mask_parameter(ENCODER *enc, int y, int x, int u, int peak, int cl, int
 
 	for(i=0; i<template_peak; i++){
 		mask->class[peak] = cl;
-		mask->weight[peak] = (int)(weight[i] * weight_coef);
+		mask->weight[peak] = round_int(weight[i] * weight_coef);
+		// if(y==check_y && x==check_x && enc->function_number ==F_NUM)	printf("weight[%2d]: %f --> %d\n", i, weight[i] * weight_coef, mask->weight[peak]);
 		if(mask->weight[peak] == 0)	continue;
 		m_gr = enc->uquant[cl][u];
 		m_prd = exam_array[y][x][i];
@@ -4168,7 +4172,7 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 				// enc->cost[y][x] = a * (log(pm->cumfreq[base + enc->maxval + 1] - cumbase) - log(pm->freq[e] - cumbase));
 				enc->cost[y][x] = calc_cost_from_pmodel(pm->freq, base + enc->maxval + 1, base + e);
 				#if CHECK_DEBUG
-					/*if(y==check_y && x==check_x)*/	printf("1\n");
+					// /*if(y==check_y && x==check_x)*/	printf("1\n");
 				#endif
 			}else{
 				pm = &enc->mult_pm;
@@ -4185,10 +4189,9 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 				// enc->cost[y][x] = a * (log(pm->cumfreq[enc->maxval + 1]) - log(pm->freq[e]));
 				enc->cost[y][x] = calc_cost_from_pmodel(pm->freq, enc->maxval + 1, e);
 				#if CHECK_DEBUG
-					/*if(y==check_y && x==check_x)*/	printf("2\n");
+					// /*if(y==check_y && x==check_x)*/	printf("2\n");
 				#endif
 			}
-			printf("cost(%3d,%3d): %f\n", y, x, enc->cost[y][x]);
 			// printf("%d,%d,prd,%d(%d),org,%d,conv:%d\n", y, x, enc->prd_class[y][x][enc->class[y][x]] >> (enc->coef_precision-1), enc->class[y][x], enc->org[y][x], enc->err[y][x]);
 			// printf("cost[%3d][%3d]: %f\n", y, x, enc->cost[y][x]);
 		}
