@@ -1206,7 +1206,7 @@ double continuous_GGF(DECODER *dec, double e, int gr)
 
 int temp_mask_parameter(DECODER *dec, int y, int x , int u, int peak, int cl, int weight_all, int bmask, int shift, int r_cl, int w_gr)
 {
-	int i, m_gr, m_prd, m_base, *th_p, template_peak = dec->temp_peak_num;
+	int i, m_gr, m_prd, m_base, *th_p, template_peak = dec->temp_peak_num, peak_num=0;
 	double weight[template_peak], sum_weight=0, weight_coef=0, mc=0;
 
 	if(template_peak > dec->temp_num[y][x])	template_peak = dec->temp_num[y][x];
@@ -1224,7 +1224,8 @@ int temp_mask_parameter(DECODER *dec, int y, int x , int u, int peak, int cl, in
 		m_base >>= dec->pm_accuracy;
 		mask->base[peak] = m_base;
 		peak++;
-		return(peak);
+		peak_num++;
+		return(peak_num);
 	}
 	// if(y==check_y && x==check_x)	printf("w_gr: %d\n", w_gr);
 	for(i=0; i<template_peak; i++){
@@ -1260,14 +1261,15 @@ int temp_mask_parameter(DECODER *dec, int y, int x , int u, int peak, int cl, in
 		m_base >>= dec->pm_accuracy;
 		mask->base[peak] = m_base;
 		peak++;
+		peak_num++;
 	}
-	return(peak);
+	return(peak_num);
 }
 #endif
 
 int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, int shift)
 {
-	int ty, tx, cl, i, peak, sample,m_gr,m_prd,m_base,r_cl,r_prd;
+	int ty, tx, cl, i, peak, sample,m_gr,m_prd,m_base,r_cl,r_prd, temp_peak_num;
 	int count_cl[dec->num_class];
 	int *th_p;
 
@@ -1297,7 +1299,7 @@ int set_mask_parameter(IMAGE *img, DECODER *dec,int y, int x, int u, int bmask, 
 						if(u < dec->w_gr[m_gr])	break;
 					}
 					if(m_gr >= dec->num_group)	m_gr = dec->num_group - 1;
-					peak = temp_mask_parameter(dec, y, x, u, peak, cl, (count_cl[cl] << W_SHIFT) / sample, bmask, shift, r_cl, m_gr);
+					temp_peak_num = temp_mask_parameter(dec, y, x, u, peak, cl, (count_cl[cl] << W_SHIFT) / sample, bmask, shift, r_cl, m_gr);
 					if( cl == r_cl)	r_prd = exam_array[y][x][0];
 				#endif
 			} else {

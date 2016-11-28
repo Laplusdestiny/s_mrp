@@ -38,6 +38,7 @@
 #define EXTRA_ITERATION	10
 #define AUTO_DEL_CL		1
 #define AUTO_PRD_ORDER	1
+
 #if AUTO_DEL_CL
 	#define RENEW_ADC	1
 	#if RENEW_ADC
@@ -48,6 +49,7 @@
 		#define PAST_ADC	1
 	#endif
 #endif
+
 /****** MULT PEAK **************************/
 #define MULT_PEAK_MODE		1
 #define OPTIMIZE_MASK 		1
@@ -76,12 +78,12 @@
 #define MAX_PRD_ORDER	110
 
 /***** GROUP *******************************/
-#define NUM_GROUP       16
+#define NUM_GROUP		16
 
 /***** UPARA *******************************/
-#define MAX_UPARA       512
-#define UPEL_DIST       3
-#define NUM_UPELS       (UPEL_DIST * (UPEL_DIST + 1))
+#define MAX_UPARA		512
+#define UPEL_DIST		3
+#define NUM_UPELS		(UPEL_DIST * (UPEL_DIST + 1))
 #define CTX_WEIGHT		1	// 1 : weight on (standard) , 0 : weight off
 #if CTX_WEIGHT
 	#define MHD_WEIGHT	1	// 1 : Manhattan Distance (standard), 0 : Euclid Distance
@@ -112,18 +114,18 @@
 #if HAVE_64BIT_INTEGER
 	#define RANGE_SIZE 		64
 	#if defined(__INTEL_COMPILER) || defined(_MSC_VER) || defined(__BORLANDC__)
-		#define range_t unsigned __int64
+		#define range_t		unsigned __int64
 	#else
-		#define range_t unsigned long long int
+		#define range_t		unsigned long long int
 	#endif
-	#define MAX_TOTFREQ (1 << 20)	/* must be < RANGE_BOT */
+	#define MAX_TOTFREQ		(1 << 20)	/* must be < RANGE_BOT */
 #else
-	#define RANGE_SIZE 32
-	#define range_t unsigned int
-	#define MAX_TOTFREQ (1 << 14)	/* must be < RANGE_BOT */
+	#define RANGE_SIZE		32
+	#define range_t			unsigned int
+	#define MAX_TOTFREQ		(1 << 14)	/* must be < RANGE_BOT */
 #endif
-#define RANGE_TOP  ((range_t)1 << (RANGE_SIZE - 8))
-#define RANGE_BOT  ((range_t)1 << (RANGE_SIZE - 16))
+#define RANGE_TOP	((range_t)1 << (RANGE_SIZE - 8))
+#define RANGE_BOT	((range_t)1 << (RANGE_SIZE - 16))
 
 /***** TYPE DEFINE *************************/
 #define uint	unsigned int
@@ -133,11 +135,11 @@
 
 /***** PI **********************************/
 #ifndef M_PI
-#	define M_PI 3.14159265358979323846
+#	define M_PI	3.14159265358979323846
 #endif
 
 /***** MACRO DEFINE ************************/
-#define CLIP(min, max, i)       ((i < min) ? min : ((i > max) ? max : i))
+#define CLIP(min, max, i)	((i < min) ? min : ((i > max) ? max : i))
 
 /***** TIME ********************************/
 #define HAVE_CLOCK
@@ -147,26 +149,26 @@
 #if TEMPLATE_MATCHING_ON
 
 // Template Matching Funtion Mode
-#define ZNCC			0
-#define MANHATTAN_SORT	0	//市街地距離で近い順に事例を更に並び替える
-#define TEMPLATEM_LOG_OUTPUT	1	//テンプレートマッチングの結果を書き出す
+#define ZNCC				0
+#define MANHATTAN_SORT		0	//市街地距離で近い順に事例を更に並び替える
+#define TEMPLATEM_LOG_OUTPUT	0	//テンプレートマッチングの結果を書き出す
 
 // Template Matching Parameters
-#define AREA			6
-#define Y_SIZE			20
-#define X_SIZE			20	//調査結果より80*20がいいかも？
-#define NAS_ACCURACY	1000
-#define MAX_DATA_SAVE	TEMPLATE_CLASS_NUM
+#define AREA				6
+#define Y_SIZE				20
+#define X_SIZE				20	//調査結果より80*20がいいかも？
+#define NAS_ACCURACY		1000
+#define MAX_DATA_SAVE		TEMPLATE_CLASS_NUM
 #define MAX_DATA_SAVE_DOUBLE 	MAX_DATA_SAVE*4
-#define W_GR 			7
-#define WEIGHT_CN		2	//ラプラス関数
+#define W_GR 				7
+#define WEIGHT_CN			2	//ラプラス関数
 #define TEMPLATE_CLASS_NUM	30
 
 // Conditional Jump
 #if ZNCC
-#define	ZSAD			0
+#define	ZSAD	0
 #else
-#define ZSAD			1
+#define ZSAD	1
 #endif
 
 

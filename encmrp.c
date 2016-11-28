@@ -16,9 +16,7 @@ extern int mask_x[], mask_y[];
 extern int win_sample[], win_dis[];
 
 MASK *mask;
-// int ***tempm_array;
 int ***exam_array;
-// DEL_CLASS_COST *del_cost;
 
 float ****calc_entropy_of_conditional_probability(PMODEL ***pmodels, int num_group,
 	int num_pmodel, int pm_accuracy, int maxval)
@@ -1151,7 +1149,7 @@ double continuous_GGF(ENCODER *enc, double e, int w_gr){
 
 int temp_mask_parameter(ENCODER *enc, int y, int x, int u, int peak, int cl, int weight_all, int w_gr)
 {
-	int i, m_gr, m_prd, m_frac, template_peak = enc->temp_peak_num;
+	int i, m_gr, m_prd, m_frac, template_peak = enc->temp_peak_num, peak_num=0;
 	double weight[template_peak], sum_weight = 0, weight_coef=0, mc=0;
 	if(template_peak > enc->temp_num[y][x])	template_peak = enc->temp_num[y][x];
 	if(template_peak == 0){
@@ -1164,7 +1162,8 @@ int temp_mask_parameter(ENCODER *enc, int y, int x, int u, int peak, int cl, int
 		m_frac = enc->fconv[m_prd];
 		mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
 		peak++;
-		return(peak);
+		peak_num++;
+		return(peak_num);
 	}
 	// if(y==check_y && x==check_x && enc->function_number ==F_NUM)	printf("w_gr: %d\n", w_gr);
 
@@ -1198,9 +1197,10 @@ int temp_mask_parameter(ENCODER *enc, int y, int x, int u, int peak, int cl, int
 		m_frac = enc->fconv[m_prd];
 		mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
 		peak++;
+		peak_num++;
 	}
 
-	return(peak);
+	return(peak_num);
 }
 
 int encode_w_gr_threshold(FILE *fp, ENCODER *enc, int flag)
@@ -1313,7 +1313,7 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 
 int set_mask_parameter_optimize(ENCODER *enc,int y, int x, int u, int r_cl)
 {
-	int cl, peak;
+	int cl, peak, temp_peak_num;
 	int m_gr,m_prd,m_frac,r_peak;
 	r_peak = -1;
 
@@ -1324,8 +1324,8 @@ int set_mask_parameter_optimize(ENCODER *enc,int y, int x, int u, int r_cl)
 				for(m_gr=0; m_gr < enc->num_group; m_gr++){
 					if(u < enc->w_gr[m_gr])	break;
 				}
-				peak = temp_mask_parameter(enc, y, x, u, peak, cl, enc->weight[y][x][cl], m_gr);
-				if(cl == r_cl)	r_peak = peak - (enc->temp_peak_num - 1);	//マッチングコストが一番小さい事例のピーク番号
+				temp_peak_num = temp_mask_parameter(enc, y, x, u, peak, cl, enc->weight[y][x][cl], m_gr);
+				if(cl == r_cl)	r_peak = peak - temp_peak_num;	//マッチングコストが一番小さい事例のピーク番号
 			} else {
 		#endif
 				mask->class[peak] = cl;
@@ -3153,22 +3153,26 @@ cost_t optimize_group_mult(ENCODER *enc)
 	for (k = 0; k < MAX_UPARA + 2; k++) trellis[0][k] = 0;
 	/* Dynamic programming */
 	for (cl = 0; cl < enc->num_class; cl++) {
-		//if (enc->cl_hist[cl] == 0) continue;
+		if (enc->cl_hist[cl] == 0) continue;
+
 		for (gr = 0; gr < enc->num_group; gr++) {
 			cbuf_p = cbuf[gr];
 			for (u = 0; u < MAX_UPARA + 2; u++) {
 				cbuf_p[u] = 0;
 			}
 		}
+		// printf("1-4\r");
 		for (y = 0; y < enc->height; y++) {
 			for (x = 0; x < enc->width; x++) {
 				if (enc->weight[y][x][cl] == 0) continue;
+				// printf("1-5\r");
 				u = enc->upara[y][x] + 1;
 				peak = set_mask_parameter_optimize(enc, y, x, u-1,cl);
 				e = enc->encval[y][x];
 				prd = enc->prd_class[y][x][cl];
 				prd = CLIP(0, enc->maxprd, prd);
 				frac = enc->fconv[prd];
+				// printf("1-6\r");
 				for (gr = 0; gr < enc->num_group; gr++) {
 					mask->pm[peak] = enc->pmlist[gr] + frac;
 					if (mask->num_peak == 1){
@@ -3180,6 +3184,7 @@ cost_t optimize_group_mult(ENCODER *enc)
 						// cbuf[gr][u] += a * (log(mask->cumfreq)-log(mask->freq));
 					}
 				}
+				// printf("1-7\r");
 			}
 		}
 
@@ -3193,6 +3198,7 @@ cost_t optimize_group_mult(ENCODER *enc)
 		for (u = 0; u < MAX_UPARA + 2; u++) {
 			dpcost[u] = cbuf_p[u] + thc_p[u];
 		}
+
 		for (gr = 1; gr < enc->num_group - 1; gr++) {
 			cbuf_p = cbuf[gr];
 			/* minimize (cbuf_p[th1] - cbuf_p[th0] + dpcost[th0]) */
@@ -4802,7 +4808,6 @@ int main(int argc, char **argv)
 	}
 	enc->w_gr[enc->num_group-1] = MAX_UPARA;
 #endif
-
 	/* 1st loop */
 	//単峰性確率モデルによる算術符号化
 	enc->optimize_loop = 1;
@@ -5125,6 +5130,7 @@ int main(int argc, char **argv)
 #if AUTO_PRD_ORDER
 	set_prd_pels(enc);
 #endif
+
 //Start Encode
 	bits = header_info = write_header(enc, fp);
 	printf("header info.\t:%10d bits\n", header_info);
