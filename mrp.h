@@ -151,7 +151,7 @@
 // Template Matching Funtion Mode
 #define ZNCC				0
 #define MANHATTAN_SORT		0	//市街地距離で近い順に事例を更に並び替える
-#define TEMPLATEM_LOG_OUTPUT	0	//テンプレートマッチングの結果を書き出す
+#define TEMPLATEM_LOG_OUTPUT	1	//テンプレートマッチングの結果を書き出す
 
 // Template Matching Parameters
 #define AREA				6
@@ -403,7 +403,7 @@ void ***alloc_3d_array(int, int, int, int);
 IMAGE *alloc_image(int, int, int);
 PMODEL ***init_pmodels(int, int, int, int *, double *, int);
 void printmodel(PMODEL *, int);
-cost_t calc_cost_from_pmodel(int*,int, int);
+cost_t calc_cost_from_pmodel(uint*,int, int);
 void set_pmodel_mult(PMODEL *, MASK *, int);
 void set_spmodel(PMODEL *, int, int);
 int *init_ctx_weight(int);

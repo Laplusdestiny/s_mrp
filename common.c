@@ -382,7 +382,7 @@ void printmodel(PMODEL *pm, int size)
 	return;
 }
 
-cost_t calc_cost_from_pmodel(int *freq, int size, int e){
+cost_t calc_cost_from_pmodel(uint *freq, int size, int e){
 	int i, cumfreq=0, cumbase = 0;;
 	cost_t cost;
 	double a = 1.0/ log(2.0);

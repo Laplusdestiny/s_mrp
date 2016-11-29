@@ -1149,7 +1149,7 @@ double continuous_GGF(ENCODER *enc, double e, int w_gr){
 
 int temp_mask_parameter(ENCODER *enc, int y, int x, int u, int peak, int cl, int weight_all, int w_gr)
 {
-	int i, m_gr, m_prd, m_frac, template_peak = enc->temp_peak_num, peak_num=0;
+	int i, m_gr, m_prd, m_frac, template_peak = enc->temp_peak_num;
 	double weight[template_peak], sum_weight = 0, weight_coef=0, mc=0;
 	if(template_peak > enc->temp_num[y][x])	template_peak = enc->temp_num[y][x];
 	if(template_peak == 0){
@@ -1162,8 +1162,7 @@ int temp_mask_parameter(ENCODER *enc, int y, int x, int u, int peak, int cl, int
 		m_frac = enc->fconv[m_prd];
 		mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
 		peak++;
-		peak_num++;
-		return(peak_num);
+		return(peak);
 	}
 	// if(y==check_y && x==check_x && enc->function_number ==F_NUM)	printf("w_gr: %d\n", w_gr);
 
@@ -1197,10 +1196,9 @@ int temp_mask_parameter(ENCODER *enc, int y, int x, int u, int peak, int cl, int
 		m_frac = enc->fconv[m_prd];
 		mask->pm[peak] = enc->pmlist[m_gr] + m_frac;
 		peak++;
-		peak_num++;
 	}
 
-	return(peak_num);
+	return(peak);
 }
 
 int encode_w_gr_threshold(FILE *fp, ENCODER *enc, int flag)
@@ -1313,7 +1311,7 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 
 int set_mask_parameter_optimize(ENCODER *enc,int y, int x, int u, int r_cl)
 {
-	int cl, peak, temp_peak_num;
+	int cl, peak, peak_save;
 	int m_gr,m_prd,m_frac,r_peak;
 	r_peak = -1;
 
@@ -1324,8 +1322,9 @@ int set_mask_parameter_optimize(ENCODER *enc,int y, int x, int u, int r_cl)
 				for(m_gr=0; m_gr < enc->num_group; m_gr++){
 					if(u < enc->w_gr[m_gr])	break;
 				}
-				temp_peak_num = temp_mask_parameter(enc, y, x, u, peak, cl, enc->weight[y][x][cl], m_gr);
-				if(cl == r_cl)	r_peak = peak - temp_peak_num;	//マッチングコストが一番小さい事例のピーク番号
+				peak_save = peak;
+				peak = temp_mask_parameter(enc, y, x, u, peak, cl, enc->weight[y][x][cl], m_gr);
+				if(cl == r_cl)	r_peak = peak_save;	//マッチングコストが一番小さい事例のピーク番号
 			} else {
 		#endif
 				mask->class[peak] = cl;
@@ -1357,10 +1356,8 @@ cost_t calc_cost2(ENCODER *enc, int tly, int tlx, int bry, int brx)
 	int x, y, u, cl, gr, e, base;
 	int *upara_p, *encval_p;
 	char *class_p, *group_p;
-	double a;
 	PMODEL *pm;
 
-	a = 1.0 / log(2.0);
 	if (bry > enc->height) bry = enc->height;
 	if (tlx < 0) tlx = 0;
 	if (tly < 0) tly = 0;
@@ -2152,7 +2149,6 @@ void optimize_coef(ENCODER *enc, int cl, int pos, int *num_eff)
 #define S_RANGE 2		//Search Range  ex. 2 -> +-1
 #define SUBS_RANGE 2	//Search Range of One Coef Modification
 	cost_t *cbuf, *cbuf_p, *cbuf_p2, c_base, *coef_cost_p1, *coef_cost_p2;
-	double a;
 	int i, j, k, l, x, y, df1, df2, df_f, *org_p, base, *roff_p;
 	int coef_abs_pos, coef_abs, coef_pos;
 	int num_swap_search, *swap_search;
@@ -2254,7 +2250,6 @@ void optimize_coef(ENCODER *enc, int cl, int pos, int *num_eff)
 	fconv_p = enc->fconv;
 	maxprd = enc->maxprd;
 	// shift = enc->coef_precision - 1;
-  a = 1.0 / log(2.0);
 	for (y = 0; y < enc->height; y++) {
 		// class_p = enc->class[y];
 		for (x = 0; x < enc->width; x++) {
@@ -2287,7 +2282,6 @@ void optimize_coef(ENCODER *enc, int cl, int pos, int *num_eff)
 						m_gr = enc->uquant[cl][u];
 						mask->pm[peak] = enc->pmlist[m_gr] + fconv_p[prd_c];
 						*cbuf_p++ += set_pmodel_mult_cost(mask,enc->maxval+1,*org_p);
-						// *cbuf_p++ += a * (log(mask->cumfreq)-log(mask->freq));
 					}
 				}
 			}
@@ -2309,7 +2303,6 @@ void optimize_coef(ENCODER *enc, int cl, int pos, int *num_eff)
 							m_gr = enc->uquant[cl][u];
 							mask->pm[peak] = enc->pmlist[m_gr] + fconv_p[prd_c];
 							*cbuf_p++ += set_pmodel_mult_cost(mask,enc->maxval+1,*org_p);
-							// *cbuf_p++ += a * (log(mask->cumfreq)-log(mask->freq));
 						}
 					}
 				}
@@ -2329,7 +2322,6 @@ void optimize_coef(ENCODER *enc, int cl, int pos, int *num_eff)
 					m_gr = enc->uquant[cl][u];
 					mask->pm[peak] = enc->pmlist[m_gr] + fconv_p[prd_c];
 					*cbuf_p2++ += set_pmodel_mult_cost(mask,enc->maxval+1,*org_p);
-					// *cbuf_p2++ += a * (log(mask->cumfreq)-log(mask->freq));
 				}
 			}
 		}
@@ -2953,7 +2945,7 @@ void set_mask_parameter_optimize2(ENCODER *enc,int y, int x, int u)
 				for(gr=0; gr<enc->num_group; gr++){
 					if(u < enc->w_gr[gr])	break;
 				}
-				peak = temp_mask_parameter(enc, y, x, u, peak, cl, enc->weight[y][x][cl], gr);
+				temp_mask_parameter(enc, y, x, u, peak, cl, enc->weight[y][x][cl], gr);
 			} else {
 		#endif
 				mask->class[peak] = cl;
@@ -2971,15 +2963,15 @@ void set_mask_parameter_optimize2(ENCODER *enc,int y, int x, int u)
 #if TEMPLATE_MATCHING_ON
 int set_mask_parameter_optimize_temp(ENCODER *enc,int y, int x, int u, int r_cl, int w_gr)
 {
-	int cl, peak;
+	int cl, peak, temp_peak_num;
 	int m_gr,m_prd,m_frac,r_peak;
 	r_peak = -1;
 
 	for(cl = peak = 0; cl < enc->num_class; cl++){
 		if (enc->weight[y][x][cl] != 0){
 			if(cl == enc->temp_cl){
-				peak = temp_mask_parameter(enc, y, x, u, peak, cl, enc->weight[y][x][cl], w_gr);
-				if(cl == r_cl)	r_peak = peak - (enc->temp_peak_num - 1);	//マッチングコストが一番小さい事例のピーク番号
+				temp_peak_num = temp_mask_parameter(enc, y, x, u, peak, cl, enc->weight[y][x][cl], w_gr);
+				if(cl == r_cl)	r_peak = 0;	//マッチングコストが一番小さい事例のピーク番号
 			} else {
 				mask->class[peak] = cl;
 				mask->weight[peak] = enc->weight[y][x][cl];
@@ -3003,8 +2995,7 @@ int set_mask_parameter_optimize_temp(ENCODER *enc,int y, int x, int u, int r_cl,
 }
 
 void make_th(ENCODER *enc){
-	int gr=0, y, x, u, peak, e, prd, th1, th0, frac, **trellis, cl=0, base, k;
-	double a;
+	int gr=0, y, x, u, e, prd, th1, th0, **trellis, cl=0, base, k, peak, frac;
 	cost_t cost, **cbuf, *cbuf_p, *dpcost, *thc_p, min_cost;
 	PMODEL *pm;
 
@@ -3014,7 +3005,6 @@ void make_th(ENCODER *enc){
 	cbuf = (cost_t **)alloc_2d_array(enc->num_group, MAX_UPARA + 2,
 		sizeof(cost_t));
 	thc_p = enc->th_cost;	//閾値の符号化に必要な符号量
-	a = 1.0 / log(2.0);
 
 	for (gr = 0; gr < enc->num_group; gr++) {
 		cbuf_p = cbuf[gr];
@@ -3024,7 +3014,6 @@ void make_th(ENCODER *enc){
 	}
 	for (y = 0; y < enc->height; y++) {
 		for (x = 0; x < enc->width; x++) {
-			// if (enc->weight[y][x][cl] == 0) continue;
 			if (enc->class[y][x] != enc->temp_cl) continue;
 			cl = enc->class[y][x];
 			u = enc->upara[y][x] + 1;
@@ -3035,14 +3024,13 @@ void make_th(ENCODER *enc){
 			frac = enc->fconv[prd];
 			for (gr = 0; gr < enc->num_group; gr++) {
 				peak = set_mask_parameter_optimize_temp(enc, y, x, u-1,cl, gr);
-				// mask->pm[peak] = enc->pmlist[gr] + frac;
+				mask->pm[peak] = enc->pmlist[gr] + frac;
 				if (mask->num_peak == 1){
 					base = mask->base[0];
 					pm = mask->pm[0];
 					cbuf[gr][u] += pm->cost[base + e] + pm->subcost[base];
 				}else{
 					cbuf[gr][u] += set_pmodel_mult_cost(mask,enc->maxval+1,e);
-					// cbuf[gr][u] += a * (log(mask->cumfreq)-log(mask->freq));
 				}
 			}
 		}
@@ -3100,7 +3088,7 @@ void make_th(ENCODER *enc){
 
 cost_t optimize_template(ENCODER *enc){
 	char temp_num;
-	int min_temp_num=0, i;
+	int min_temp_num=0;
 	cost_t cost, min_cost = INT_MAX;
 	enc->function_number = 6;
 	if(enc->temp_cl == -1)	return(calc_cost2(enc, 0, 0, enc->height, enc->width));
@@ -3112,7 +3100,7 @@ cost_t optimize_template(ENCODER *enc){
 	} */
 
 // ピークの数の最適化
-	if(enc->cl_hist[enc->temp_cl] == 0)	return(calc_cost2(enc, 0, 0, enc->height, enc->width));
+	if(enc->cl_hist[(int)enc->temp_cl] == 0)	return(calc_cost2(enc, 0, 0, enc->height, enc->width));
 
 	for(temp_num = 1; temp_num<=TEMPLATE_CLASS_NUM; temp_num++){
 		enc->temp_peak_num = temp_num;
@@ -3137,7 +3125,6 @@ cost_t optimize_template(ENCODER *enc){
 cost_t optimize_group_mult(ENCODER *enc)
 {
 	cost_t cost, min_cost, **cbuf, *dpcost, *cbuf_p, *thc_p;
-	double a;
 	int x, y, th1, th0, k, u, cl, gr, prd, e, base, frac, peak,m_gr,count;
 	int **trellis;
 	enc->function_number = 5;
@@ -3147,7 +3134,6 @@ cost_t optimize_group_mult(ENCODER *enc)
 	dpcost = (cost_t *)alloc_mem((MAX_UPARA + 2) * sizeof(cost_t));
 	cbuf = (cost_t **)alloc_2d_array(enc->num_group, MAX_UPARA + 2, sizeof(cost_t));
 	thc_p = enc->th_cost;
-	a = 1.0 / log(2.0);
 
 // optimize thresholds of context each class
 	for (k = 0; k < MAX_UPARA + 2; k++) trellis[0][k] = 0;
@@ -3161,18 +3147,15 @@ cost_t optimize_group_mult(ENCODER *enc)
 				cbuf_p[u] = 0;
 			}
 		}
-		// printf("1-4\r");
 		for (y = 0; y < enc->height; y++) {
 			for (x = 0; x < enc->width; x++) {
 				if (enc->weight[y][x][cl] == 0) continue;
-				// printf("1-5\r");
 				u = enc->upara[y][x] + 1;
 				peak = set_mask_parameter_optimize(enc, y, x, u-1,cl);
 				e = enc->encval[y][x];
 				prd = enc->prd_class[y][x][cl];
 				prd = CLIP(0, enc->maxprd, prd);
 				frac = enc->fconv[prd];
-				// printf("1-6\r");
 				for (gr = 0; gr < enc->num_group; gr++) {
 					mask->pm[peak] = enc->pmlist[gr] + frac;
 					if (mask->num_peak == 1){
@@ -3181,10 +3164,8 @@ cost_t optimize_group_mult(ENCODER *enc)
 						cbuf[gr][u] += pm->cost[base + e] + pm->subcost[base];
 					}else{
 						cbuf[gr][u] += set_pmodel_mult_cost(mask,enc->maxval+1,e);
-						// cbuf[gr][u] += a * (log(mask->cumfreq)-log(mask->freq));
 					}
 				}
-				// printf("1-7\r");
 			}
 		}
 
@@ -3271,7 +3252,6 @@ cost_t optimize_group_mult(ENCODER *enc)
 				cost += pm->cost[base + e] + pm->subcost[base];
 			}else{
 				cost += set_pmodel_mult_cost(mask,enc->maxval+1,e);
-				// cost += a * (log(mask->cumfreq)-log(mask->freq));
 			}
 		}
 	}
@@ -3293,7 +3273,7 @@ printf ("[op_group]-> %d" ,(int)cost);	//しきい値毎に分散を最適化し
 		for (gr = 0; gr < enc->num_group; gr++){
 			for (y = 0; y < enc->height; y++) {
 				for (x = 0; x < enc->width; x++) {
-					count = 0;//init
+					count = 0;
 					e = enc->encval[y][x];
 					u = enc->upara[y][x];
 					set_mask_parameter_optimize2(enc, y, x, u);
@@ -3319,7 +3299,6 @@ printf ("[op_group]-> %d" ,(int)cost);	//しきい値毎に分散を最適化し
 							cbuf[gr][k] += pm->cost[base + e] + pm->subcost[base];
 						}else{
 							cbuf[gr][k] += set_pmodel_mult_cost(mask,enc->maxval+1,e);
-							// cbuf[gr][k] += a * (log(mask->cumfreq)-log(mask->freq));
 						}
 					}
 				}
@@ -3334,40 +3313,9 @@ printf ("[op_group]-> %d" ,(int)cost);	//しきい値毎に分散を最適化し
 			}
 			pm_p[gr] = pm;
 		}
-/*
-		for (y = 0; y < enc->height; y++) {
-			for (x = 0; x < enc->width; x++) {
-				gr = enc->group[y][x];
-				e = enc->encval[y][x];
-				prd = enc->prd[y][x];
-				prd = CLIP(0, enc->maxprd, prd);
-				base = enc->bconv[prd];
-				frac = enc->fconv[prd];
-				for (k = 0; k < enc->num_pmodel; k++) {
-					pm = enc->pmodels[gr][k] + frac;
-					cbuf[gr][k] += pm->cost[base + e] + pm->subcost[base];
-				}
-			}
-		}
-		for (gr = 0; gr < enc->num_group; gr++) {
-			pm = enc->pmodels[gr][0];
-			cost = cbuf[gr][0];
-			for (k = 1; k < enc->num_pmodel; k++) {
-				if (cost > cbuf[gr][k]) {
-					cost = cbuf[gr][k];
-					pm = enc->pmodels[gr][k];
-				}
-			}
-			pm_p[gr] = pm;
-		}
-*/
+
 		cost = 0.0;
-/*
-		for (gr = 0; gr < enc->num_group; gr++) {
-			cost += cbuf[gr][pm_p[gr]->id];
-		}
-	}
-*/
+
 		for (y = 0; y < enc->height; y++) {
 			for (x = 0; x < enc->width; x++) {
 				cl = enc->class[y][x];
@@ -3381,7 +3329,6 @@ printf ("[op_group]-> %d" ,(int)cost);	//しきい値毎に分散を最適化し
 					cost += pm->cost[base + e] + pm->subcost[base];
 				}else{
 					cost += set_pmodel_mult_cost(mask,enc->maxval+1,e);
-					// cost += a * (log(mask->cumfreq)-log(mask->freq));
 				}
 			}
 		}
