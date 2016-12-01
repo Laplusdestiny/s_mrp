@@ -13,7 +13,7 @@ extern double sigma_a[];
 extern double qtree_prob[];
 extern double zerocoef_prob[];
 extern int mask_x[], mask_y[];
-extern int win_sample[], win_dis[];
+extern int win_sample[];
 
 MASK *mask;
 int ***exam_array;
@@ -355,13 +355,15 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 	enc->roff = init_ref_offset(enc->height, enc->width, enc->max_prd_order, dyx);
 	enc->org = (int **)alloc_2d_array(enc->height+1, enc->width, sizeof(int));
 	enc->err = (int **)alloc_2d_array(enc->height+1, enc->width, sizeof(int));
-	enc->cost = (cost_t **)alloc_2d_array(enc->height+1, enc->width, sizeof(cost_t));
-	for(y=0; y<enc->height; y++){
-		for(x=0; x<enc->width; x++){
-			enc->cost[y][x] = 0;
+	#if CONTEXT_COST_MOUNT
+		enc->cost = (cost_t **)alloc_2d_array(enc->height+1, enc->width, sizeof(cost_t));
+		for(y=0; y<enc->height; y++){
+			for(x=0; x<enc->width; x++){
+				enc->cost[y][x] = 0;
+			}
 		}
-	}
-	enc->cost[enc->height][0] = 8;
+		enc->cost[enc->height][0] = 8;
+	#endif
 	if (enc->quadtree_depth > 0) {
 		y = (enc->height + MAX_BSIZE - 1) / MAX_BSIZE;
 		x = (enc->width + MAX_BSIZE - 1) / MAX_BSIZE;
@@ -765,14 +767,14 @@ int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出(予測誤差和)
 		// u += err_p[*roff_p++] * (*wt_p++);
 		u += err_p[roff_p[k]] * wt_p[k];
 		#if CHECK_DEBUG
-			// if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("u: %d | err: %d(%3d) | wt_p: %d\n", u, err_p[roff_p[k]], roff_p[k], wt_p[k]);
+			if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("u: %d | err: %d(%3d) | wt_p: %d\n", u, err_p[roff_p[k]], roff_p[k], wt_p[k]);
 		#endif
 	}
 	// u >>= 6;
 	u >>= enc->coef_precision;
 	if (u > MAX_UPARA) u = MAX_UPARA;
 	#if CHECK_DEBUG
-		// if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("u: %d\n", u);
+		if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("u: %d\n", u);
 	#endif
 	return (u);
 }
@@ -1164,26 +1166,26 @@ int temp_mask_parameter(ENCODER *enc, int y, int x, int u, int peak, int cl, int
 		peak++;
 		return(peak);
 	}
-	// if(y==check_y && x==check_x && enc->function_number ==F_NUM)	printf("w_gr: %d\n", w_gr);
+	if(y==check_y && x==check_x && enc->function_number ==F_NUM && CHECK_TM_WEIGHT)	printf("w_gr: %d\n", w_gr);
 
 	for(i=0; i<template_peak; i++){
-		// if(y==check_y && x== check_x && enc->function_number==F_NUM)	printf("e: %f | array: %f | COEF: %f\n", (enc->array[y][x][i] / COEF_DIVISION), enc->array[y][x][i], COEF_DIVISION);
+		if(y==check_y && x== check_x && enc->function_number==F_NUM && CHECK_TM_WEIGHT)	printf("e: %f | array: %f | COEF: %f\n", (enc->array[y][x][i] / COEF_DIVISION), enc->array[y][x][i], COEF_DIVISION);
 		mc = enc->array[y][x][i] / COEF_DIVISION;
 		weight[i] = continuous_GGF(enc, mc, w_gr);
 		sum_weight += weight[i];
-		// if(y==check_y && x==check_x && enc->function_number ==F_NUM)	printf("sum: %.20f | weight: %.20f | array[%d]: %f\n", sum_weight, weight[i], i, enc->array[y][x][i] / COEF_DIVISION);
+		if(y==check_y && x==check_x && enc->function_number ==F_NUM && CHECK_TM_WEIGHT)	printf("sum: %.20f | weight: %.20f | array[%d]: %f\n", sum_weight, weight[i], i, enc->array[y][x][i] / COEF_DIVISION);
 	}
 	if(sum_weight == 0){
 		weight_coef = (double)weight_all;
 	} else {
 		weight_coef = (double)weight_all / sum_weight;
 	}
-	// if(y==check_y && x==check_x)	printf("weight_coef: %.20f | sum_weight: %.20f\n", weight_coef, sum_weight);
+	if(y==check_y && x==check_x && enc->function_number == F_NUM && CHECK_TM_WEIGHT)	printf("weight_coef: %.20f | sum_weight: %.20f\n", weight_coef, sum_weight);
 
 	for(i=0; i<template_peak; i++){
 		mask->class[peak] = cl;
 		mask->weight[peak] = round_int(weight[i] * weight_coef);
-		// if(y==check_y && x==check_x && enc->function_number ==F_NUM)	printf("weight[%2d]: %f --> %d\n", i, weight[i] * weight_coef, mask->weight[peak]);
+		if(y==check_y && x==check_x && enc->function_number ==F_NUM && CHECK_TM_WEIGHT)	printf("weight[%2d]: %f --> %d\n", i, weight[i] * weight_coef, mask->weight[peak]);
 		if(mask->weight[peak] == 0)	continue;
 		m_gr = enc->uquant[cl][u];
 		m_prd = exam_array[y][x][i];
@@ -1393,7 +1395,6 @@ cost_t calc_cost2(ENCODER *enc, int tly, int tlx, int bry, int brx)
 					cost += set_pmodel_mult_cost(mask, enc->maxval + 1, e);
 				#endif
 			}
-			// cost += enc->cost[y][x];
 			// if(/*y==check_y && x==check_x && */enc->function_number == F_NUM)printf("cost(%3d,%3d): %f\n", y, x, enc->cost[y][x]);
 			// if(enc->function_number== F_NUM) printf("(%3d,%3d) cost: %d | cl: %d\n", y, x, (int)cost, cl );
 		}
@@ -1438,9 +1439,13 @@ cost_t calc_cost(ENCODER *enc, int tly, int tlx, int bry, int brx)		//コスト�
 			base = enc->bconv[prd];
 			frac = enc->fconv[prd];
 			pm = enc->pmlist[gr] + frac;
-			enc->cost[y][x] = pm->cost[base + e] + pm->subcost[base];
-			// if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("cost(%3d,%3d): %f\n", y, x, enc->cost[y][x]);
-			cost += enc->cost[y][x];
+			#if CONTEXT_COST_MOUNT
+				enc->cost[y][x] = pm->cost[base + e] + pm->subcost[base];
+				// if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("cost(%3d,%3d): %f\n", y, x, enc->cost[y][x]);
+				cost += enc->cost[y][x];
+			#else
+				cost += pm->cost[base+e] + pm->subcost[base];
+			#endif
 		}
 	}
 	if(cost < 0) cost = INT_MAX;
@@ -4123,9 +4128,11 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 					pm->freq[base + e],
 					pm->cumfreq[base + enc->maxval + 1] - cumbase);
 				// enc->cost[y][x] = a * (log(pm->cumfreq[base + enc->maxval + 1] - cumbase) - log(pm->freq[e] - cumbase));
-				enc->cost[y][x] = calc_cost_from_pmodel(pm->freq, base + enc->maxval + 1, base + e);
-				#if CHECK_DEBUG
-					// /*if(y==check_y && x==check_x)*/	printf("1\n");
+				#if CONTEXT_COST_MOUNT
+					enc->cost[y][x] = calc_cost_from_pmodel(pm->freq, base + enc->maxval + 1, base + e);
+					#if CHECK_DEBUG
+						/*if(y==check_y && x==check_x)*/	printf("1\n");
+					#endif
 				#endif
 			}else{
 				pm = &enc->mult_pm;
@@ -4139,14 +4146,18 @@ int encode_image(FILE *fp, ENCODER *enc)	//多峰性確率モデル
 ,					pm->cumfreq[e],
 					pm->freq[e],
 					pm->cumfreq[enc->maxval + 1]);
-				// enc->cost[y][x] = a * (log(pm->cumfreq[enc->maxval + 1]) - log(pm->freq[e]));
-				enc->cost[y][x] = calc_cost_from_pmodel(pm->freq, enc->maxval + 1, e);
-				#if CHECK_DEBUG
-					// /*if(y==check_y && x==check_x)*/	printf("2\n");
+
+				#if CONTEXT_COST_MOUNT
+					enc->cost[y][x] = calc_cost_from_pmodel(pm->freq, enc->maxval + 1, e);
+					#if CHECK_DEBUG
+						/*if(y==check_y && x==check_x)*/	printf("2\n");
+					#endif
 				#endif
 			}
 			// printf("%d,%d,prd,%d(%d),org,%d,conv:%d\n", y, x, enc->prd_class[y][x][enc->class[y][x]] >> (enc->coef_precision-1), enc->class[y][x], enc->org[y][x], enc->err[y][x]);
-			// printf("cost[%3d][%3d]: %f\n", y, x, enc->cost[y][x]);
+			#if CONTEXT_COST_MOUNT
+				// printf("cost[%3d][%3d]: %f\n", y, x, enc->cost[y][x]);
+			#endif
 		}
 	}
 	rc_finishenc(fp, enc->rc);
@@ -4496,7 +4507,6 @@ cost_t auto_del_class(ENCODER *enc, cost_t pre_cost)
 	int x, y, k, del_cl, blk;
 	cost_t cost, min_cost;
 	char **class=0;
-	DEL_CLASS_COST temp;
 	class = (char **)alloc_2d_array(enc->height, enc->width, sizeof(char));
 
 	for (y = 0; y < enc->height; y++) {

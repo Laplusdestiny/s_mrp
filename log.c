@@ -1206,7 +1206,7 @@ void TemplateM_Log_Input(ENCODER *enc, char *outfile, int ***exam_array){
 			}*/
 
 			for(k=0; k<MAX_DATA_SAVE; k++){
-				fscanf(fp, "%f,", &enc->array[y][x][k]);
+				fscanf(fp, "%lf,", &enc->array[y][x][k]);
 			}
 
 			for(k=0; k<TEMPLATE_CLASS_NUM; k++){

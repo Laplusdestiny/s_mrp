@@ -34,7 +34,7 @@
 
 /****** OPTIMIZE ***************************/
 #define OPT_SIDEINFO		1 // 1 : side-info into consideration (standard), 0 : neglect side-info
-#define MAX_ITERATION 	100	//100
+#define MAX_ITERATION 	10	//100
 #define EXTRA_ITERATION	10
 #define AUTO_DEL_CL		1
 #define AUTO_PRD_ORDER	1
@@ -100,7 +100,7 @@
 #define NUM_ZMODEL		49
 #define TOT_ZEROFR		(1 << 10)
 #define MAX_SYMBOL		1024	// must be >> MAX_UPARA
-#define CONTEXT_COST_MOUNT	1
+#define CONTEXT_COST_MOUNT	0
 
 #if CONTEXT_COST_MOUNT
 	#define	CONTEXT_ERROR	0
@@ -181,12 +181,13 @@
 /*********DEBUG******************************/
 #define CHECK_TM 		0
 #define CHECK_TM_DETAIL	0
+#define	CHECK_TM_WEIGHT	0
 #define CHECK_DEBUG 		1
 #define CHECK_PMODEL	0
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
-#define check_y			44
-#define check_x			139
+#define check_y			0
+#define check_x			42
 #define F_NUM			8
 
 #define NUM_THREADS		4
@@ -233,11 +234,6 @@ typedef struct {
 typedef struct {
 	int y, x;
 } CPOINT;
-
-typedef struct {
-	int cl;
-	cost_t cost;
-} DEL_CLASS_COST;
 
 typedef struct{
 	int id;
@@ -293,6 +289,7 @@ typedef struct {
 	#if CONTEXT_COST_MOUNT
 		double *ctx_weight_double;
 		double cost_extension;
+		cost_t **cost;
 	#endif
 	int ***roff;
 	int ***prd_class;
@@ -323,7 +320,6 @@ typedef struct {
 	int *zero_m;
 	int *zero_fr;
 	cost_t ***coef_cost;
-	cost_t **cost;
 #else
 	cost_t **coef_cost;
 #endif
@@ -369,6 +365,7 @@ typedef struct {
 	#if CONTEXT_COST_MOUNT
 		double *ctx_weight_double;
 		double cost_extension;
+		cost_t **cost;
 	#endif
 	char **qtmap[QUADTREE_DEPTH];
 	char **class;
@@ -379,7 +376,6 @@ typedef struct {
 	RANGECODER *rc;
 	double *sigma;
 	int *mtfbuf;
-	cost_t **cost;
 #if AUTO_PRD_ORDER
 	int prd_mhd;
 	int *zero_fr;
