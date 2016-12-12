@@ -1219,4 +1219,32 @@ void TemplateM_Log_Input(ENCODER *enc, char *outfile, int ***exam_array){
 	return;
 }
 
+void print_temp_class_map(ENCODER *enc, char *outfile){
+	int i, j, step;
+	char *name;
+	char file[256];
+	FILE *fp;
+// ITU-R BT.709 (1125/60/2:1)
+// https://ja.wikipedia.org/wiki/YUV#RGB.E3.81.8B.E3.82.89.E3.81.AE.E5.A4.89.E6.8F.9B
+	double r, g, b;
+
+	name = strrchr( outfile, BS);
+	name++;
+	sprintf(file, LOG_CL_DIR"%s_temp_class.ppm", name);
+	fp = fileopen(file, "wb");
+	fprintf(fp, "P6\n%d %d\n%d\n", enc->width, enc->height, enc->maxval);
+	for (i = 0; i < enc->height; i++) {
+		for (j = 0; j < enc->width; j++) {
+			r = g = b = enc->org[i][j];
+			if(enc->class[i][j] == enc->temp_cl)	g += enc->maxval >>3;
+			if(g > enc->maxval)	g = enc->maxval;
+			putc(r, fp);
+			putc(g, fp);
+			putc(b, fp);
+			// putc(class[i][j] * step, fp);
+		}
+	}
+	fclose(fp);
+	return;
+}
 #endif

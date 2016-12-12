@@ -1191,7 +1191,7 @@ int temp_mask_parameter(ENCODER *enc, int y, int x, int u, int peak, int cl, int
 		m_prd = exam_array[y][x][i];
 		m_prd = CLIP(0, enc->maxprd, m_prd);
 		#if CHECK_DEBUG
-			if( y == check_y && x == check_x && enc->function_number == F_NUM)	printf("[temp_mask_parameter]\tm_prd[%d]: %d[%2d] | weight: %d | u: %d | gr: %d\n", peak, m_prd, cl, mask->weight[peak], u, m_gr);
+			if( y == check_y && x == check_x && enc->function_number == F_NUM)	printf("[temp_mask_parameter]\tm_prd[%2d]: %d[%2d] | weight: %d | u: %d | gr: %d\n", peak, m_prd, cl, mask->weight[peak], u, m_gr);
 		#endif
 
 		mask->base[peak] = enc->bconv[m_prd];
@@ -1295,7 +1295,7 @@ void set_mask_parameter(ENCODER *enc,int y, int x, int u)
 				m_prd = enc->prd_class[y][x][cl];
 				m_prd = CLIP(0, enc->maxprd, m_prd);
 				#if CHECK_DEBUG
-					if( y == check_y && x == check_x && enc->function_number== F_NUM)	printf("[set_mask_parameter]\tm_prd[%d]: %d[%2d] | weight: %d | u: %d | gr: %d\n", 	peak, m_prd, cl, mask->weight[peak], u, m_gr);
+					if( y == check_y && x == check_x && enc->function_number== F_NUM)	printf("[set_mask_parameter]\t\tm_prd[%d]: %d[%2d] | weight: %d | u: %d | gr: %d\n", 	peak, m_prd, cl, mask->weight[peak], u, m_gr);
 				#endif
 
 				mask->base[peak] = enc->bconv[m_prd];
@@ -1439,13 +1439,13 @@ cost_t calc_cost(ENCODER *enc, int tly, int tlx, int bry, int brx)		//コスト�
 			base = enc->bconv[prd];
 			frac = enc->fconv[prd];
 			pm = enc->pmlist[gr] + frac;
-			#if CONTEXT_COST_MOUNT
-				enc->cost[y][x] = pm->cost[base + e] + pm->subcost[base];
+			// #if CONTEXT_COST_MOUNT
+				// enc->cost[y][x] = pm->cost[base + e] + pm->subcost[base];
 				// if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("cost(%3d,%3d): %f\n", y, x, enc->cost[y][x]);
-				cost += enc->cost[y][x];
-			#else
+				// cost += enc->cost[y][x];
+			// #else	//CHECKTODAY		/1st loopは予測誤差でしか見ていないので保存もしない
 				cost += pm->cost[base+e] + pm->subcost[base];
-			#endif
+			// #endif
 		}
 	}
 	if(cost < 0) cost = INT_MAX;
@@ -1665,7 +1665,7 @@ cost_t optimize_group(ENCODER *enc)
 			th1 = trellis[gr][th1];
 			enc->th[cl][gr - 1] = th1;
 		}
-		enc->th[cl][enc->num_group - 1] = MAX_UPARA + 1;
+		// enc->th[cl][enc->num_group - 1] = MAX_UPARA + 1;	//CHECKTODAY
 	}
 	/* set context quantizer */
 	for (cl = 0; cl < enc->num_class; cl++) {
@@ -2950,7 +2950,7 @@ void set_mask_parameter_optimize2(ENCODER *enc,int y, int x, int u)
 				for(gr=0; gr<enc->num_group; gr++){
 					if(u < enc->w_gr[gr])	break;
 				}
-				temp_mask_parameter(enc, y, x, u, peak, cl, enc->weight[y][x][cl], gr);
+				peak = temp_mask_parameter(enc, y, x, u, peak, cl, enc->weight[y][x][cl], gr);
 			} else {
 		#endif
 				mask->class[peak] = cl;
@@ -2968,15 +2968,16 @@ void set_mask_parameter_optimize2(ENCODER *enc,int y, int x, int u)
 #if TEMPLATE_MATCHING_ON
 int set_mask_parameter_optimize_temp(ENCODER *enc,int y, int x, int u, int r_cl, int w_gr)
 {
-	int cl, peak, temp_peak_num;
+	int cl, peak, peak_save;
 	int m_gr,m_prd,m_frac,r_peak;
 	r_peak = -1;
 
 	for(cl = peak = 0; cl < enc->num_class; cl++){
 		if (enc->weight[y][x][cl] != 0){
 			if(cl == enc->temp_cl){
-				temp_peak_num = temp_mask_parameter(enc, y, x, u, peak, cl, enc->weight[y][x][cl], w_gr);
-				if(cl == r_cl)	r_peak = 0;	//マッチングコストが一番小さい事例のピーク番号
+				peak_save = peak;
+				peak = temp_mask_parameter(enc, y, x, u, peak, cl, enc->weight[y][x][cl], w_gr);
+				if(cl == r_cl)	r_peak = peak_save;	//マッチングコストが一番小さい事例のピーク番号
 			} else {
 				mask->class[peak] = cl;
 				mask->weight[peak] = enc->weight[y][x][cl];
@@ -3421,7 +3422,7 @@ void remove_emptyclass(ENCODER *enc)
 	}
 	printf("M = %d\n", cl);
 	enc->num_class = cl;
-	predict_region(enc, 0, 0, enc->height, enc->width);
+	// predict_region(enc, 0, 0, enc->height, enc->width);		//CHECKTODAY
 }
 
 
@@ -4680,7 +4681,7 @@ int main(int argc, char **argv)
 
 	k = img->width * img->height;
 	if (num_class < 0) {
-		num_class = (int)(10.4E-5 * k + 13.8);
+		num_class = (int)((10.4E-5 * k + 13.8) * 1.5);
 		if (num_class > MAX_CLASS) num_class = MAX_CLASS;
 	}
 	if (prd_order < 0) {
@@ -4694,8 +4695,7 @@ int main(int argc, char **argv)
 		if (i >= 8) prd_order = 72;
 	}
 #if AUTO_DEL_CL
-	num_class = MAX_CLASS;
-	// del_cost = (DEL_CLASS_COST *)alloc_mem(MAX_CLASS * sizeof(DEL_CLASS_COST));
+	// num_class = MAX_CLASS;
 #endif
 
 #if TEMPLATE_MATCHING_ON
@@ -4962,7 +4962,8 @@ int main(int argc, char **argv)
 		if (cost < min_cost) {
 			printf(" *\n");
 			min_cost = cost;
-			del = sw = 0;
+			sw = 0;
+			del--;
 			j = i;
 			if (f_optpred) {
 				num_class_save = enc->num_class;
@@ -5073,7 +5074,7 @@ int main(int argc, char **argv)
 			enc->w_gr[gr] = w_gr_save[gr];
 		}
 #endif
-		optimize_class(enc);
+		// optimize_class(enc);		//CHECKTODAY
 #if AUTO_PRD_ORDER
 		set_prd_pels(enc);
 #endif
@@ -5087,6 +5088,7 @@ int main(int argc, char **argv)
 #if AUTO_PRD_ORDER
 	set_prd_pels(enc);
 #endif
+	predict_region(enc, 0, 0, enc->height, enc->width);	//CHECKTODAY
 
 //Start Encode
 	bits = header_info = write_header(enc, fp);
@@ -5128,6 +5130,7 @@ int main(int argc, char **argv)
 	print_predictor(enc->predictor, enc->max_prd_order, enc->num_class, enc->max_coef, outfile);
 	#if TEMPLATE_MATCHING_ON
 		print_threshold(enc->th, enc->num_group, enc->num_class, enc->pmlist, NULL, enc->w_gr, outfile);
+		print_temp_class_map(enc, outfile);
 	#else
 		print_threshold(enc->th, enc->num_group, enc->num_class, enc->pmlist, NULL, NULL, outfile);
 	#endif

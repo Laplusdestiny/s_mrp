@@ -34,7 +34,7 @@
 
 /****** OPTIMIZE ***************************/
 #define OPT_SIDEINFO		1 // 1 : side-info into consideration (standard), 0 : neglect side-info
-#define MAX_ITERATION 	10	//100
+#define MAX_ITERATION 	100	//100
 #define EXTRA_ITERATION	10
 #define AUTO_DEL_CL		1
 #define AUTO_PRD_ORDER	1
@@ -68,7 +68,7 @@
 
 /***** CLASS *******************************/
 #define NUM_CLASS 		-1	//負の値にすると画像サイズに依存したクラス数
-#define MAX_CLASS		63
+#define MAX_CLASS		200
 
 /***** PREDICTOR ***************************/
 #define COEF_PRECISION	6
@@ -135,7 +135,7 @@
 
 /***** PI **********************************/
 #ifndef M_PI
-#	define M_PI	3.14159265358979323846
+	#define M_PI	3.14159265358979323846
 #endif
 
 /***** MACRO DEFINE ************************/
@@ -182,12 +182,12 @@
 #define CHECK_TM 		0
 #define CHECK_TM_DETAIL	0
 #define	CHECK_TM_WEIGHT	0
-#define CHECK_DEBUG 		1
+#define CHECK_DEBUG 		0
 #define CHECK_PMODEL	0
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0
-#define check_y			0
-#define check_x			42
+#define check_y			75
+#define check_x			377
 #define F_NUM			8
 
 #define NUM_THREADS		4
@@ -436,9 +436,11 @@ void print_block_size(int **, char ***, int, int, int, char *);
 void calc_var_upara( ENCODER *, char *);
 void init_log_sheet(ENCODER *, char *);
 void finish_log_sheet(ENCODER *, int, int, int, int, int, int, int, double, double);
-void TemplateM_Log_Output(ENCODER *, char *, int ***);
-void TemplateM_Log_Input(ENCODER *, char *, int ***);
-
+#if TEMPLATE_MATCHING_ON
+	void TemplateM_Log_Output(ENCODER *, char *, int ***);
+	void TemplateM_Log_Input(ENCODER *, char *, int ***);
+	void print_temp_class_map(ENCODER *, char *);
+#endif
 #if defined(_WIN32)
 	int set_directory(void);
 #endif
