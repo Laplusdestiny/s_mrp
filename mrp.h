@@ -68,7 +68,7 @@
 
 /***** CLASS *******************************/
 #define NUM_CLASS 		-1	//負の値にすると画像サイズに依存したクラス数
-#define MAX_CLASS		200
+#define MAX_CLASS		63
 
 /***** PREDICTOR ***************************/
 #define COEF_PRECISION	6
@@ -104,7 +104,7 @@
 
 #if CONTEXT_COST_MOUNT
 	#define	CONTEXT_ERROR	0
-	#define	MAX_COST_WEIGHT		63
+	#define	MAX_COST_WEIGHT		255
 #else
 	#define	CONTEXT_ERROR	1
 #endif

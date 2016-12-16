@@ -3283,7 +3283,7 @@ cost_t optimize_group_mult(ENCODER *enc)
 			}
 		}
 	}
-printf ("[op_group]-> %d" ,(int)cost);	//しきい値毎に分散を最適化した時のコスト算出
+printf ("[%d][op_group]-> %d" , cost_range, (int)cost);	//しきい値毎に分散を最適化した時のコスト算出
 
 	/* optimize probability models */
 	if (enc->optimize_loop > 1 && enc->num_pmodel > 1) {
@@ -3470,7 +3470,7 @@ int write_header(ENCODER *enc, FILE *fp)
 	printf("TEMP_PEAK_NUM: %d\n", enc->temp_peak_num);
 #endif
 #if CONTEXT_COST_MOUNT
-	bits += putbits(fp, 7, cost_range);
+	bits += putbits(fp, 8, cost_range);
 	printf("cost_range: %d\n", cost_range);
 #endif
 
@@ -4719,7 +4719,7 @@ int main(int argc, char **argv)
 		if (i >= 8) prd_order = 72;
 	}
 #if AUTO_DEL_CL
-	// num_class = MAX_CLASS;
+	num_class = MAX_CLASS;
 #endif
 
 #if TEMPLATE_MATCHING_ON

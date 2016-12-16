@@ -152,7 +152,7 @@ DECODER *init_decoder(FILE *fp)
 	dec->temp_cl = -1;
 #endif
 #if CONTEXT_COST_MOUNT
-	cost_range = getbits(fp, 7);
+	cost_range = getbits(fp, 8);
 #endif
 
 	dec->maxprd = dec->maxval << dec->coef_precision;
