@@ -634,7 +634,7 @@ void set_cost_rate(ENCODER *enc)	//分散ごとの確率モデルにおける符
 		i = (enc->maxprd - k + (1 << shift) / 2) >> shift;
 		enc->fconv[k] = (i & mask);
 		enc->bconv[k] = (i >> enc->pm_accuracy);
-		 // printf("[%5d]i:%d | fconv:%d | bconv:%d\n", k, i, enc->fconv[k], enc->bconv[k]);
+		// printf("[%5d]i:%d | fconv:%d | bconv:%d\n", k, i, enc->fconv[k], enc->bconv[k]);
 	}
 	num_spm = 1 << enc->pm_accuracy;
 
@@ -914,7 +914,7 @@ for(y = 0 ; y < enc->height ; y++){
 		}
 
 		for (by = y - Y_SIZE ; by <= y ; by++) {
-			if((by < 0) || (by > enc->height))continue;
+			if((by < 0) || (by >= enc->height))continue;
 			for (bx = x - x_size ; bx <= x + x_size  ; bx++) {
 				if((bx < 0) || (bx > enc->width))continue;
 				if(by==y && bx >= x) break_flag=1;
@@ -4681,7 +4681,7 @@ int main(int argc, char **argv)
 
 	k = img->width * img->height;
 	if (num_class < 0) {
-		num_class = (int)((10.4E-5 * k + 13.8) * 1.5);
+		num_class = (int)((10.4E-5 * k + 13.8)) + 30;
 		if (num_class > MAX_CLASS) num_class = MAX_CLASS;
 	}
 	if (prd_order < 0) {
@@ -4938,7 +4938,7 @@ int main(int argc, char **argv)
 				}
 				if(flg == 1){
 					save_info(enc, min_cost_side, 1);
-					del=0;
+					if(del > 0)del--;
 				} else if(flg == 2){
 					save_info(enc, before_side, 1);
 				} else {
@@ -4963,8 +4963,10 @@ int main(int argc, char **argv)
 			printf(" *\n");
 			min_cost = cost;
 			sw = 0;
-			del--;
 			j = i;
+#if AUTO_DEL_CL
+			if(del >= 3)	del--;
+#endif
 			if (f_optpred) {
 				num_class_save = enc->num_class;
 				for (y = 0; y < enc->height; y++) {

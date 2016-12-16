@@ -100,11 +100,11 @@
 #define NUM_ZMODEL		49
 #define TOT_ZEROFR		(1 << 10)
 #define MAX_SYMBOL		1024	// must be >> MAX_UPARA
-#define CONTEXT_COST_MOUNT	0
+#define CONTEXT_COST_MOUNT	1
 
 #if CONTEXT_COST_MOUNT
 	#define	CONTEXT_ERROR	0
-	#define	COST_WEIGHT		8
+	#define	COST_WEIGHT		14
 #else
 	#define	CONTEXT_ERROR	1
 #endif
@@ -182,7 +182,7 @@
 #define CHECK_TM 		0
 #define CHECK_TM_DETAIL	0
 #define	CHECK_TM_WEIGHT	0
-#define CHECK_DEBUG 		0
+#define CHECK_DEBUG 		1
 #define CHECK_PMODEL	0
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0

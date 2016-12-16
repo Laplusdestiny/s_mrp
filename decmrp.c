@@ -748,7 +748,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 	}
 
 	for( by = dec_y - Y_SIZE; by <= dec_y; by++){
-		if( by < 0 || by > dec->height)continue;
+		if( by < 0 || by >= dec->height)continue;
 		for( bx = dec_x - x_size; bx <= dec_x + x_size  ; bx++){
 			if( bx <0 || bx > dec->width)continue;
 			if(by==dec_y && bx >= dec_x)break_flag=1;
@@ -1361,9 +1361,9 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 							- base;
 
 						#if CONTEXT_COST_MOUNT
-							#if CHECK_DEBUG
-								/*if(y==check_y && x==check_x)*/	printf("1\n");
-							#endif
+							/*#if CHECK_DEBUG
+								if(y==check_y && x==check_x)	printf("1\n");
+							#endif*/
 							dec->cost[y][x] = calc_cost_from_pmodel(pm->freq, base + dec->maxval + 1, base + p);
 						#endif
 					}else{
@@ -1377,9 +1377,9 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 						p = rc_decode(fp, dec->rc, pm, 0, dec->maxval+1);
 
 						#if CONTEXT_COST_MOUNT
-							#if CHECK_DEBUG
-								/*if(y==check_y && x==check_x)*/	printf("2\n");
-							#endif
+							/*#if CHECK_DEBUG
+								if(y==check_y && x==check_x)	printf("2\n");
+							#endif*/
 							dec->cost[y][x] = calc_cost_from_pmodel(pm->freq, dec->maxval + 1, p);
 						#endif
 					}
@@ -1400,9 +1400,9 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 					p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1)- base;
 
 					#if CONTEXT_COST_MOUNT
-						#if CHECK_DEBUG
-							/*if(y==check_y && x==check_x)*/	printf("3\n");
-						#endif
+						/*#if CHECK_DEBUG
+							if(y==check_y && x==check_x)	printf("3\n");
+						#endif*/
 						dec->cost[y][x] = calc_cost_from_pmodel(pm->freq, base + dec->maxval + 1, base + p);
 					#endif
 				}
@@ -1417,9 +1417,9 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 					p = rc_decode(fp, dec->rc, pm, base, base+dec->maxval+1) - base;
 
 					#if CONTEXT_COST_MOUNT
-						#if CHECK_DEBUG
-							/*if(y==check_y && x==check_x)*/	printf("4\n");
-						#endif
+						/*#if CHECK_DEBUG
+							if(y==check_y && x==check_x)	printf("4\n");
+						#endif*/
 						dec->cost[y][x] = calc_cost_from_pmodel(pm->freq, base + dec->maxval + 1, base + p);
 					#endif
 				}else{
@@ -1433,9 +1433,9 @@ IMAGE *decode_image(FILE *fp, DECODER *dec)		//多峰性確率モデル
 					p = rc_decode(fp, dec->rc, pm, 0, dec->maxval+1);
 
 					#if CONTEXT_COST_MOUNT
-						#if CHECK_DEBUG
-							/*if(y==check_y && x==check_x)*/	printf("5\n");
-						#endif
+						/*#if CHECK_DEBUG
+							if(y==check_y && x==check_x)	printf("5\n");
+						#endif*/
 						dec->cost[y][x] = calc_cost_from_pmodel(pm->freq, dec->maxval + 1, p);
 					#endif
 				}
