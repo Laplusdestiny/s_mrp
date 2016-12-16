@@ -15,9 +15,9 @@ extern int mask_y[], mask_x[];
 extern int win_sample[], win_dis[];
 
 MASK *mask;
-// int *tempm_array;
 int ***exam_array;
 int  **decval;
+int cost_range;
 
 uint getbits(FILE *fp, int n)
 {
@@ -146,12 +146,13 @@ DECODER *init_decoder(FILE *fp)
 
 #if TEMPLATE_MATCHING_ON
 	dec->temp_cl = 0;
-	// dec->temp_cl = getbits(fp, 6);
-	// printf("TEMP_CL : %d | ", dec->temp_cl);
 	dec->temp_peak_num = getbits(fp, 6);
 	printf("TEMP_PEAK_NUM: %d\n", dec->temp_peak_num);
 #else
 	dec->temp_cl = -1;
+#endif
+#if CONTEXT_COST_MOUNT
+	cost_range = getbits(fp, 7);
 #endif
 
 	dec->maxprd = dec->maxval << dec->coef_precision;
@@ -643,7 +644,7 @@ int calc_udec2(DECODER *dec, int y, int x)	//特徴量算出(符号量和)
 	roff_p = dec->roff[y][x];
 
 	for(k=0; k<NUM_UPELS; k++){
-		cost += cost_p[roff_p[k]] * wt_p[k] * COST_WEIGHT;
+		cost += cost_p[roff_p[k]] * wt_p[k] * cost_range / 10.0;
 		#if CHECK_DEBUG
 			if(y==check_y && x== check_x)	printf("u: %f | cost: %f(%3d) | wt_p: %f\n", cost, cost_p[roff_p[k]], roff_p[k], wt_p[k]);
 		#endif

@@ -104,7 +104,7 @@
 
 #if CONTEXT_COST_MOUNT
 	#define	CONTEXT_ERROR	0
-	#define	COST_WEIGHT		14
+	#define	MAX_COST_WEIGHT		63
 #else
 	#define	CONTEXT_ERROR	1
 #endif
@@ -133,9 +133,12 @@
 #define cost_t	double
 #define	size_t	unsigned long int
 
-/***** PI **********************************/
+/***** CONSTANT **********************************/
 #ifndef M_PI
 	#define M_PI	3.14159265358979323846
+#endif
+#ifndef	DBL_MAX
+	#define	DBL_MAX	1E37
 #endif
 
 /***** MACRO DEFINE ************************/

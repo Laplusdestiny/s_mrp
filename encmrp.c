@@ -17,6 +17,7 @@ extern int win_sample[];
 
 MASK *mask;
 int ***exam_array;
+int cost_range;
 
 float ****calc_entropy_of_conditional_probability(PMODEL ***pmodels, int num_group,
 	int num_pmodel, int pm_accuracy, int maxval)
@@ -788,7 +789,7 @@ int calc_uenc2(ENCODER *enc, int y, int x){	//特徴量算出(符号量和)
 	roff_p = enc->roff[y][x];
 
 	for (k =0; k < NUM_UPELS; k++) {
-		cost += cost_p[roff_p[k]] * wt_p[k] * COST_WEIGHT;
+		cost += cost_p[roff_p[k]] * wt_p[k] * cost_range / 10.0;
 		#if CHECK_DEBUG
 			if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("u: %f | cost: %f(%3d) | wt_p: %f\n", cost, cost_p[roff_p[k]], roff_p[k], wt_p[k]);
 		#endif
@@ -3128,6 +3129,23 @@ cost_t optimize_template(ENCODER *enc){
 }
 #endif
 
+#if CONTEXT_COST_MOUNT
+void optimize_cost_range(ENCODER *enc){
+	int i, min_range;
+	cost_t cost, min_cost=DBL_MAX;
+
+	for(i=10; i<MAX_COST_WEIGHT; i++){
+		cost_range = i;
+		cost = calc_cost(enc, 0, 0, enc->height, enc->width);
+		if(cost < min_cost){
+			min_cost = cost;
+			min_range = i;
+		}
+	}
+	cost_range = min_range;
+}
+#endif
+
 cost_t optimize_group_mult(ENCODER *enc)
 {
 	cost_t cost, min_cost, **cbuf, *dpcost, *cbuf_p, *thc_p;
@@ -3140,6 +3158,10 @@ cost_t optimize_group_mult(ENCODER *enc)
 	dpcost = (cost_t *)alloc_mem((MAX_UPARA + 2) * sizeof(cost_t));
 	cbuf = (cost_t **)alloc_2d_array(enc->num_group, MAX_UPARA + 2, sizeof(cost_t));
 	thc_p = enc->th_cost;
+
+#if CONTEXT_COST_MOUNT
+	optimize_cost_range(enc);
+#endif
 
 // optimize thresholds of context each class
 	for (k = 0; k < MAX_UPARA + 2; k++) trellis[0][k] = 0;
@@ -3444,10 +3466,12 @@ int write_header(ENCODER *enc, FILE *fp)
 	bits += putbits(fp, 1, (enc->quadtree_depth < 0)? 0 : 1);
 
 #if TEMPLATE_MATCHING_ON
-	// bits += putbits(fp, 6, enc->temp_cl);
-	// printf("TEMP_CL : %d | ", enc->temp_cl);
 	bits += putbits(fp, 6, enc->temp_peak_num);
 	printf("TEMP_PEAK_NUM: %d\n", enc->temp_peak_num);
+#endif
+#if CONTEXT_COST_MOUNT
+	bits += putbits(fp, 7, cost_range);
+	printf("cost_range: %d\n", cost_range);
 #endif
 
 	return (bits);
