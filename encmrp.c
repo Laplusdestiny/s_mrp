@@ -1766,15 +1766,23 @@ void set_prdbuf(ENCODER *enc, int **prdbuf, int **errbuf,
 					coef_p = enc->predictor[cl];
 					roff_p = enc->roff[y][x];
 					prd = 0;
-					for (k = 0; k < enc->num_nzcoef[cl]; k++) {
-						if(nzc_p[k] == TEMPLATE_FLAG){
+				#if TEMPLATE_MATCHING_ON
+					if(nzc_p[0] == TEMPLATE_FLAG){
+						prd = exam_array[y][x][0];
+					} else {
+				#endif
+						for (k = 0; k < enc->num_nzcoef[cl]; k++) {
+						/*if(nzc_p[k] == TEMPLATE_FLAG){
 							prd = exam_array[y][x][0];
 							break;
-						} else {
+						} else {*/
 							l = nzc_p[k];
 							prd += org_p[roff_p[l]] * (coef_p[l]);
+						// }
 						}
+				#if TEMPLATE_MATCHING_ON
 					}
+				#endif					
 					org = *org_p++;
 					*prdbuf_p++ = prd;
 					prd = CLIP(0, enc->maxprd, prd);
@@ -2036,8 +2044,7 @@ cost_t optimize_class(ENCODER *enc)
 	for (y = 0; y < enc->height; y += blksize) {
 		for (x = 0; x < enc->width; x += blksize) {
 			set_prdbuf(enc, prdbuf, errbuf, y, x, blksize);
-			vbs_class(enc, prdbuf, errbuf, y, x,
-				blksize, enc->width, level, &blk);
+			vbs_class(enc, prdbuf, errbuf, y, x, blksize, enc->width, level, &blk);
 		}
 	}
 #if TEMPLATE_MATCHING_ON
@@ -3283,7 +3290,10 @@ cost_t optimize_group_mult(ENCODER *enc)
 			}
 		}
 	}
-printf ("[%d][op_group]-> %d" , cost_range, (int)cost);	//しきい値毎に分散を最適化した時のコスト算出
+#if CONTEXT_COST_MOUNT
+	printf("[%3d]", cost_range);
+#endif
+	printf ("[op_group]-> %d" , (int)cost);	//しきい値毎に分散を最適化した時のコスト算出
 
 	/* optimize probability models */
 	if (enc->optimize_loop > 1 && enc->num_pmodel > 1) {
@@ -4500,7 +4510,7 @@ void save_info(ENCODER *enc, RESTORE_SIDE *r_side, int restore){
 		set_prd_pels(enc);
 #endif
 		predict_region(enc, 0, 0, enc->height, enc->width);
-		// optimize_class(enc);
+		optimize_class(enc);
 	} else {
 		r_side->num_class_s = enc->num_class;
 		for(y=0; y<enc->height; y++){
@@ -4988,7 +4998,7 @@ int main(int argc, char **argv)
 			min_cost = cost;
 			sw = 0;
 			j = i;
-#if AUTO_DEL_CL
+#if RENEW_ADC
 			if(del >= 3)	del--;
 #endif
 			if (f_optpred) {

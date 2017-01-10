@@ -5,7 +5,7 @@
 	KODAK="/rda2/DATABASE/kodak/gray"
 	ITE="/rda2/DATABASE/ITE_ARIB_NEW/B_Series_HD"
 
-	FLAG="-o $@"
+	FLAG="-o -f $@"
 
 for image in 1 2 3 4 5 6 7 8 9 10 11 12 13
 		#21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
