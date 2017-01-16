@@ -1767,7 +1767,7 @@ void set_prdbuf(ENCODER *enc, int **prdbuf, int **errbuf,
 					roff_p = enc->roff[y][x];
 					prd = 0;
 				#if TEMPLATE_MATCHING_ON
-					if(nzc_p[0] == TEMPLATE_FLAG){
+					if(enc->num_nzcoef[cl] == -1){
 						prd = exam_array[y][x][0];
 					} else {
 				#endif
@@ -4510,7 +4510,7 @@ void save_info(ENCODER *enc, RESTORE_SIDE *r_side, int restore){
 		set_prd_pels(enc);
 #endif
 		predict_region(enc, 0, 0, enc->height, enc->width);
-		optimize_class(enc);
+		// optimize_class(enc);
 	} else {
 		r_side->num_class_s = enc->num_class;
 		for(y=0; y<enc->height; y++){
@@ -4940,7 +4940,7 @@ int main(int argc, char **argv)
 				cost_save = min_cost;
 				before_cost = cost;
 				flg = 0;
-				while(yy - xx < EXTRA_AUTO_DEL && yy < MAX_DEL_CLASS) {
+				while(yy - xx < (EXTRA_ITERATION / 3) && yy < MAX_DEL_CLASS) {
 					#if CHECK_DEBUG
 						printf("\n");
 					#endif

@@ -68,7 +68,7 @@
 
 /***** CLASS *******************************/
 #define NUM_CLASS 		-1	//負の値にすると画像サイズに依存したクラス数
-#define MAX_CLASS		127
+#define MAX_CLASS		63
 
 /***** PREDICTOR ***************************/
 #define COEF_PRECISION	6
@@ -165,7 +165,7 @@
 #define MAX_DATA_SAVE_DOUBLE 	MAX_DATA_SAVE*4
 #define W_GR 				7
 #define WEIGHT_CN			2	//ラプラス関数
-#define TEMPLATE_CLASS_NUM	30
+#define TEMPLATE_CLASS_NUM	50
 
 // Conditional Jump
 #if ZNCC
