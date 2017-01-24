@@ -757,6 +757,7 @@ void save_prediction_value(ENCODER *enc)
 	}
 }
 
+#if CONTEXT_ERROR
 int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出(予測誤差和)
 {
 	int u=0, k, *roff_p, *err_p, *wt_p;
@@ -779,7 +780,7 @@ int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出(予測誤差和)
 	#endif
 	return (u);
 }
-#if CONTEXT_COST_MOUNT
+#elif CONTEXT_COST_MOUNT
 int calc_uenc2(ENCODER *enc, int y, int x){	//特徴量算出(符号量和)
 	int u=0, k, *roff_p;
 	double *wt_p;
@@ -836,18 +837,12 @@ void*** TemplateM (ENCODER *enc, char *outfile) {
 	encval = (int **)alloc_2d_array(enc->height+1, enc->width, sizeof(int));
 	init_2d_array(encval, enc->height, enc->width, 0);
 	encval[enc->height][0] = (int)(enc->maxval + 1) << (enc->coef_precision - 1);
-
 ///////////////////////////
 ////////画像の走査/////////
 ///////////////////////////
 printf("Calculating Template Matching\r");
 for(y = 0 ; y < enc->height ; y++){
 	for (x = 0; x < enc->width; x++){
-		/*if(y==0 && x==0) {
-			enc->temp_num[y][x] = 0;
-			continue;
-		}*/
-
 		init_2d_array(encval, enc->height, enc->width, 0);
 		for(i=0; i<enc->height; i++){
 			if( i != y){
@@ -869,7 +864,7 @@ for(y = 0 ; y < enc->height ; y++){
 		org_p = &encval[y][x];
 
 		sum1 = 0;
-		for(i=0;i < AREA; i++){//市街地距離AREA個分
+		for(i=0;i < AREA; i++){
 			area1[i] = 0;
 			area1[i] = org_p[roff_p[i]];
 			sum1 += area1[i];
@@ -1125,9 +1120,9 @@ free(encval);
 printf("Restoring Template Matching\r");
 TemplateM_Log_Input(enc, outfile, exam_array);
 #endif
+output_temp_dispersion(enc, outfile, exam_array);
 end = clock();
 printf("Calculating Template Matching Fin[%f sec]\n", (float)(end-start)/CLOCKS_PER_SEC);
-
 	return(0);
 }
 
@@ -4922,8 +4917,8 @@ int main(int argc, char **argv)
 #endif
 		cost += side_cost;
 #if AUTO_DEL_CL
-		if (sw != 0) {	//コスト削減に一度でも失敗した場合に入る
-			if( enc->num_class > 1 && del < 3) {
+		if (sw != 0 && del < 3) {	//コスト削減に一度でも失敗した場合に入る
+			if( enc->num_class > 1) {
 			#if PAST_ADC
 				sw = enc->num_class;
 				cost = auto_del_class(enc, cost);	//使用していないクラスの削除
@@ -5178,6 +5173,7 @@ int main(int argc, char **argv)
 	print_mask(enc->mask, enc->height, enc->width, outfile);
 	print_amp_chara(enc->predictor, enc->max_prd_order, enc->num_class, enc->height, enc->width, outfile);
 	print_rate_map(enc, outfile);
+	output_rate_map(enc, outfile);
 	calc_var_upara(enc, outfile);
 	print_rate_compare_map(enc, outfile);
 	print_rate_compare_class_map(enc, outfile);

@@ -365,7 +365,25 @@ void print_class_and_block(char **class, int num_class, char ***qtmap, int quadt
 	}
 	fclose(fp);
 	free(level);
-	return;
+}
+
+void print_block_num(int **block_num, int height, int width, char *outfile){
+	int y, x;
+	char *name, file[256];
+	FILE *fp;
+
+	name = strrchr(outfile, BS);
+	name++;
+	sprintf(file, LOG_CL_DIR"%s_block_num.csv", name);
+	fp = fileopen(file,"wb");
+
+	for(y=0; y<height; y++){
+		for(x=0; x<width; x++){
+			fprintf(fp, "%d,", block_num[y][x]);
+		}
+		fprintf(fp, "\n");
+	}
+	fclose(fp);
 }
 
 void print_mask(char **mask, int height, int width, char *outfile)
@@ -789,6 +807,101 @@ void print_rate_compare_class_map(ENCODER *enc, char *outfile)
 	return;
 }
 
+#if CONTEXT_ERROR
+int calc_uenc_log(ENCODER *enc, int y, int x)		//特徴量算出(予測誤差和)
+{
+	int u=0, k, *roff_p, *err_p, *wt_p;
+	wt_p = enc->ctx_weight;
+	err_p = &enc->err[y][x];
+	roff_p = enc->roff[y][x];
+
+	for (k =0; k < NUM_UPELS; k++) {
+		// u += err_p[*roff_p++] * (*wt_p++);
+		u += err_p[roff_p[k]] * wt_p[k];
+		#if CHECK_DEBUG
+			if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("u: %d | err: %d(%3d) | wt_p: %d\n", u, err_p[roff_p[k]], roff_p[k], wt_p[k]);
+		#endif
+	}
+	// u >>= 6;
+	u >>= enc->coef_precision;
+	if (u > MAX_UPARA) u = MAX_UPARA;
+	#if CHECK_DEBUG
+		if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("u: %d\n", u);
+	#endif
+	return (u);
+}
+#elif CONTEXT_COST_MOUNT
+int calc_uenc2_log(ENCODER *enc, int y, int x){	//特徴量算出(符号量和)
+	int u=0, k, *roff_p;
+	double *wt_p;
+	cost_t cost=0, *cost_p;
+	wt_p = enc->ctx_weight_double;
+	cost_p = &enc->cost[y][x];
+	roff_p = enc->roff[y][x];
+
+	for (k =0; k < NUM_UPELS; k++) {
+		cost += cost_p[roff_p[k]] * wt_p[k] * cost_range / 10.0;
+		#if CHECK_DEBUG
+			if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("u: %f | cost: %f(%3d) | wt_p: %f\n", cost, cost_p[roff_p[k]], roff_p[k], wt_p[k]);
+		#endif
+	}
+
+	u = round_int(cost) >> enc->coef_precision;
+	// u = round_int(cost / NUM_UPELS);
+	// u = round_int(cost / 6.0);	// 全ての画素が8bitだった場合に512に正規化するときの値
+
+	if (u > MAX_UPARA) u = MAX_UPARA;
+	#if CHECK_DEBUG
+		if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("u: %d\n", u);
+	#endif
+	return (u);
+}
+#endif
+
+void output_rate_map(ENCODER *enc, char *outfile)
+{
+	int y, x;
+	int org, u, e, base;
+	cost_t **cost;
+	char *name;
+	char file[256];
+	PMODEL *pm;
+	FILE *fp;
+
+	cost = (cost_t **)alloc_2d_array(enc->height, enc->width, sizeof(cost_t));
+	name = strrchr( outfile, BS);
+	if (name == NULL) {
+		name = outfile;
+	}else {
+		name++;
+	}
+	sprintf(file, LOG_RATE_DIR"%s_rate_map.csv", name);
+	fp = fileopen(file, "wb");
+	for (y = 0; y < enc->height; y++) {
+		for (x = 0; x < enc->width; x++) {
+			#if CONTEXT_ERROR
+				u = calc_uenc_log(enc, y, x);
+			#elif CONTEXT_COST_MOUNT
+				u = calc_uenc2_log(enc, y, x);
+			#endif
+			set_mask_parameter(enc,y,x,u);
+			e = enc->encval[y][x];
+			if (mask->num_peak == 1){
+				base = mask->base[0];
+				pm = mask->pm[0];
+				cost[y][x] = calc_cost_from_pmodel(pm->freq, base + enc->maxval + 1, base + e);
+			}else{
+				pm = &enc->mult_pm;
+				set_pmodel_mult(pm,mask,enc->maxval+1);
+				cost[y][x] = calc_cost_from_pmodel(pm->freq, enc->maxval + 1, e);
+			}
+			fprintf(fp, "%f,", cost[y][x]);
+		}
+		fprintf(fp, "\n");
+	}
+	fclose(fp);
+	return;
+}
 
 /* Write upara - variance of predictive error */
 void calc_var_upara( ENCODER *enc, char *outfile)
@@ -1137,6 +1250,7 @@ void TemplateM_Log_Output(ENCODER *enc, char *outfile, int ***exam_array){
 	fclose(fp1);
 	fclose(fp2);
 	free(cost_sum);
+	free(cost_hist);
 	return;
 }
 
@@ -1246,5 +1360,76 @@ void print_temp_class_map(ENCODER *enc, char *outfile){
 	}
 	fclose(fp);
 	return;
+}
+
+void output_temp_dispersion(ENCODER *enc, char *outfile, int ***exam_array){
+	int y, x, org, i, j, r, g, b, example;
+	double *array_error, division, average, **error_map, l;
+	char *name, file[256];
+	FILE *fp;
+
+	name = strrchr(outfile, BS);
+	name++;
+	sprintf(file, LOG_TEMP_DIR"%s_temp_dispersion.csv", name);
+	fp = fileopen(file, "wb");
+	array_error = (double *)alloc_mem(TEMPLATE_CLASS_NUM * sizeof(double));
+	error_map = (double **)alloc_2d_array(enc->height, enc->width, sizeof(double));
+
+	for(y=0; y<enc->height; y++){
+		for(x=0; x<enc->width; x++){
+			average = division = 0;
+			org = enc->org[y][x];
+			if(enc->temp_num[y][x] == 0){
+				fprintf(fp, "-1,");
+				continue;
+			}else if(enc->temp_num[y][x] < TEMPLATE_CLASS_NUM){
+				example = enc->temp_num[y][x];
+			} else {
+				example = TEMPLATE_CLASS_NUM;
+			}
+			
+			for(i=0; i< example; i++){
+				array_error[i] = ((double)org - (double)exam_array[y][x][i])/ COEF_DIVISION;
+				average += array_error[i];
+			}
+			error_map[y][x] = array_error[0];
+			average /= example;
+			for(i=0; i<example; i++){
+				division += (array_error[i] - average) * (array_error[i] - average);
+			}
+			division /= example;
+			division = sqrt(division);
+			fprintf(fp, "%f,", division);
+		}
+		fprintf(fp, "\n");
+	}
+
+	fprintf(fp, "\n\n\nError Map of Most Least Matching Cost Examples\n");
+	for(y=0; y<enc->height; y++){
+		for(x=0; x<enc->width; x++){
+			fprintf(fp, "%f,", error_map[y][x]);
+		}
+		fprintf(fp, "\n");
+	}
+
+	fclose(fp);
+	free(array_error);
+
+	/*sprintf(file, LOG_TEMP_DIR"%s_temp_error_map.ppm", name);
+	fp = fileopen(file, "wb");
+	fprintf(fp, "P6\n%d %d\n%d\n", enc->width, enc->height, enc->maxval);
+
+	for(y=0; y<enc->height; y++){
+		for(x=0; x<enc->width; x++){
+			r = g = b = enc->org[y][x];
+			r += (int)(fabs(error_map[y][x]));
+			if(r > enc->maxval)	r = enc->maxval;
+			putc(r, fp);
+			putc(g, fp);
+			putc(b, fp);
+		}
+	}
+	fclose(fp);*/
+	free(error_map);
 }
 #endif

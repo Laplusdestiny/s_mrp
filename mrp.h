@@ -30,14 +30,14 @@
 /****** MRP-VERSION ************************/
 #define MAGIC_NUMBER	('M' << 8) + 'R'
 #define BANNER		"ENCMRP/DECMRP version %.2f ( Jan. 2016 )"
-#define VERSION		611
+#define VERSION		700
 
 /****** OPTIMIZE ***************************/
 #define OPT_SIDEINFO		1 // 1 : side-info into consideration (standard), 0 : neglect side-info
-#define MAX_ITERATION 	100	//100
-#define EXTRA_ITERATION	10
-#define AUTO_DEL_CL		1
-#define AUTO_PRD_ORDER	1
+#define MAX_ITERATION		100	//100
+#define EXTRA_ITERATION		10
+#define AUTO_DEL_CL			1
+#define AUTO_PRD_ORDER		1
 
 #if AUTO_DEL_CL
 	#define RENEW_ADC	1
@@ -148,13 +148,14 @@
 #define HAVE_CLOCK
 
 /*****TEMPLATE MATCHING ********************/
-#define TEMPLATE_MATCHING_ON 	1
+#define TEMPLATE_MATCHING_ON 	0
 #if TEMPLATE_MATCHING_ON
 
 // Template Matching Funtion Mode
 #define ZNCC				0
 #define MANHATTAN_SORT		0	//市街地距離で近い順に事例を更に並び替える
 #define TEMPLATEM_LOG_OUTPUT	1	//テンプレートマッチングの結果を書き出す
+									//0にすれば出力ファイルから事例のデータを復元
 
 // Template Matching Parameters
 #define AREA				6
@@ -165,7 +166,7 @@
 #define MAX_DATA_SAVE_DOUBLE 	MAX_DATA_SAVE*4
 #define W_GR 				7
 #define WEIGHT_CN			2	//ラプラス関数
-#define TEMPLATE_CLASS_NUM	50
+#define TEMPLATE_CLASS_NUM	30
 
 // Conditional Jump
 #if ZNCC
@@ -433,6 +434,7 @@ void print_mask(char **, int, int, char *);
 void print_amp_chara(int **, int, int, int, int, char *);
 //Lower funcs are can use in encoder only.
 void print_rate_map(ENCODER *, char *);
+void output_rate_map(ENCODER *, char *);
 void print_rate_compare_map(ENCODER *, char *);
 void print_rate_compare_class_map(ENCODER *, char *);
 void print_block_size(int **, char ***, int, int, int, char *);
@@ -443,6 +445,7 @@ void finish_log_sheet(ENCODER *, int, int, int, int, int, int, int, double, doub
 	void TemplateM_Log_Output(ENCODER *, char *, int ***);
 	void TemplateM_Log_Input(ENCODER *, char *, int ***);
 	void print_temp_class_map(ENCODER *, char *);
+	void output_temp_dispersion(ENCODER *enc, char *, int ***);
 #endif
 #if defined(_WIN32)
 	int set_directory(void);
