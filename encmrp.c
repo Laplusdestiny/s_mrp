@@ -1437,13 +1437,7 @@ cost_t calc_cost(ENCODER *enc, int tly, int tlx, int bry, int brx)		//コスト�
 			base = enc->bconv[prd];
 			frac = enc->fconv[prd];
 			pm = enc->pmlist[gr] + frac;
-			// #if CONTEXT_COST_MOUNT
-				// enc->cost[y][x] = pm->cost[base + e] + pm->subcost[base];
-				// if(y==check_y && x==check_x && enc->function_number == F_NUM)	printf("cost(%3d,%3d): %f\n", y, x, enc->cost[y][x]);
-				// cost += enc->cost[y][x];
-			// #else	//CHECKTODAY		/1st loopは予測誤差でしか見ていないので保存もしない
-				cost += pm->cost[base+e] + pm->subcost[base];
-			// #endif
+			cost += pm->cost[base+e] + pm->subcost[base];
 		}
 	}
 	if(cost < 0) cost = INT_MAX;
@@ -1663,7 +1657,7 @@ cost_t optimize_group(ENCODER *enc)
 			th1 = trellis[gr][th1];
 			enc->th[cl][gr - 1] = th1;
 		}
-		// enc->th[cl][enc->num_group - 1] = MAX_UPARA + 1;	//CHECKTODAY
+		enc->th[cl][enc->num_group - 1] = MAX_UPARA + 1;
 	}
 	/* set context quantizer */
 	for (cl = 0; cl < enc->num_class; cl++) {
@@ -3454,7 +3448,7 @@ void remove_emptyclass(ENCODER *enc)
 	}
 	printf("M = %d\n", cl);
 	enc->num_class = cl;
-	// predict_region(enc, 0, 0, enc->height, enc->width);		//CHECKTODAY
+	// predict_region(enc, 0, 0, enc->height, enc->width);
 }
 
 
@@ -4799,6 +4793,10 @@ int main(int argc, char **argv)
 	}
 	enc->w_gr[enc->num_group-1] = MAX_UPARA;
 #endif
+
+//*****************************************************************************************************************************************************//
+//*****************************************************************************************************************************************************//
+//*****************************************************************************************************************************************************//	
 	/* 1st loop */
 	//単峰性確率モデルによる算術符号化
 	enc->optimize_loop = 1;
@@ -4873,6 +4871,10 @@ int main(int argc, char **argv)
 	// printf("INIT_MASK = %d\n", INIT_MASK);	//マスクサイズのパラメータ(1,9,25...) / 0であればマスクを用いた多峰性確率モデルではなく，従来の単峰性確率モデル
 	set_weight_flag(enc);	//各画素毎にマスクのサイズに応じた隣のブロックにかかる画素の数を算出
 
+
+//*****************************************************************************************************************************************************//
+//*****************************************************************************************************************************************************//
+//*****************************************************************************************************************************************************//
 	/* 2nd loop */
 	//マスクによる多峰性確率モデルの作成および算術符号化
 	enc->optimize_loop = 2;
@@ -5110,7 +5112,7 @@ int main(int argc, char **argv)
 			enc->w_gr[gr] = w_gr_save[gr];
 		}
 #endif
-		// optimize_class(enc);		//CHECKTODAY
+		// optimize_class(enc);
 #if AUTO_PRD_ORDER
 		set_prd_pels(enc);
 #endif
@@ -5124,7 +5126,11 @@ int main(int argc, char **argv)
 #if AUTO_PRD_ORDER
 	set_prd_pels(enc);
 #endif
-	predict_region(enc, 0, 0, enc->height, enc->width);	//CHECKTODAY
+	predict_region(enc, 0, 0, enc->height, enc->width);
+
+//*****************************************************************************************************************************************************//
+//*****************************************************************************************************************************************************//
+//*****************************************************************************************************************************************************//
 
 //Start Encode
 	bits = header_info = write_header(enc, fp);
