@@ -501,6 +501,8 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 	enc->array = (double ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE, sizeof(double));
 	enc->temp_num = (int **)alloc_2d_array(enc->height, enc->width, sizeof(int));
 	enc->w_gr = (int *)alloc_mem(enc->num_group * sizeof(int));
+#else
+	enc->temp_cl = -1;
 #endif
 	return (enc);
 }
@@ -2063,7 +2065,10 @@ cost_t optimize_class(ENCODER *enc)
 		}
 	}
 	if(enc->optimize_loop == 2)	mask->temp_cl = enc->temp_cl;
+#else
+	enc->temp_cl = -1;
 #endif
+	
 #if CHECK_CLASS
 	if(enc->optimize_loop == 1){
 		for(y=0; y<enc->height; y += blksize){
@@ -4497,7 +4502,7 @@ void save_info(ENCODER *enc, RESTORE_SIDE *r_side, int restore){
 			for(j=0; j<enc->max_prd_order; j++){
 				enc->predictor[i][j] = r_side->prd_s[i][j];
 			}
-			for(j=0; j<MAX_UPARA; j++){
+			for(j=0; j<=MAX_UPARA; j++){
 				enc->uquant[i][j] = r_side->uq_s[i][j];
 			}
 		}
@@ -4524,7 +4529,7 @@ void save_info(ENCODER *enc, RESTORE_SIDE *r_side, int restore){
 			for(j=0; j<enc->max_prd_order; j++){
 				r_side->prd_s[i][j] = enc->predictor[i][j];
 			}
-			for(j=0; j<MAX_UPARA; j++){
+			for(j=0; j<=MAX_UPARA; j++){
 				r_side->uq_s[i][j] = enc->uquant[i][j];
 			}
 		}
