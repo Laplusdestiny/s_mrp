@@ -146,7 +146,7 @@ DECODER *init_decoder(FILE *fp)
 
 #if TEMPLATE_MATCHING_ON
 	dec->temp_cl = 0;
-	dec->temp_peak_num = getbits(fp, 6);
+	dec->temp_peak_num = getbits(fp, 5);
 	printf("TEMP_PEAK_NUM: %d\n", dec->temp_peak_num);
 #else
 	dec->temp_cl = -1;
@@ -608,6 +608,7 @@ int calc_udec_temp(DECODER *dec, int y, int x)
 	return (u);
 }
 
+#if CONTEXT_ERROR
 int calc_udec(DECODER *dec, int y, int x)	//特徴量算出(予測誤差和)
 {
 	int k, u=0, *roff_p;
@@ -632,8 +633,7 @@ int calc_udec(DECODER *dec, int y, int x)	//特徴量算出(予測誤差和)
 	#endif
 	return (u);
 }
-
-#if CONTEXT_COST_MOUNT
+#elif CONTEXT_COST_MOUNT
 int calc_udec2(DECODER *dec, int y, int x)	//特徴量算出(符号量和)
 {
 	int k, u=0, *roff_p;

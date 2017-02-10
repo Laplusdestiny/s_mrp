@@ -831,7 +831,7 @@ int calc_uenc_log(ENCODER *enc, int y, int x)		//特徴量算出(予測誤差和
 	return (u);
 }
 #elif CONTEXT_COST_MOUNT
-int calc_uenc2_log(ENCODER *enc, int y, int x){	//特徴量算出(符号量和)
+int calc_uenc2_log(ENCODER *enc, int y, int x, int cost_range){	//特徴量算出(符号量和)
 	int u=0, k, *roff_p;
 	double *wt_p;
 	cost_t cost=0, *cost_p;
@@ -858,7 +858,7 @@ int calc_uenc2_log(ENCODER *enc, int y, int x){	//特徴量算出(符号量和)
 }
 #endif
 
-void output_rate_map(ENCODER *enc, char *outfile)
+void output_rate_map(ENCODER *enc, char *outfile, int cost_range)
 {
 	int y, x;
 	int org, u, e, base;
@@ -882,7 +882,7 @@ void output_rate_map(ENCODER *enc, char *outfile)
 			#if CONTEXT_ERROR
 				u = calc_uenc_log(enc, y, x);
 			#elif CONTEXT_COST_MOUNT
-				u = calc_uenc2_log(enc, y, x);
+				u = calc_uenc2_log(enc, y, x, cost_range);
 			#endif
 			set_mask_parameter(enc,y,x,u);
 			e = enc->encval[y][x];

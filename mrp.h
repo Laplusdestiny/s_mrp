@@ -148,7 +148,7 @@
 #define HAVE_CLOCK
 
 /*****TEMPLATE MATCHING ********************/
-#define TEMPLATE_MATCHING_ON 	0
+#define TEMPLATE_MATCHING_ON	1	
 #if TEMPLATE_MATCHING_ON
 
 // Template Matching Funtion Mode
@@ -434,7 +434,7 @@ void print_mask(char **, int, int, char *);
 void print_amp_chara(int **, int, int, int, int, char *);
 //Lower funcs are can use in encoder only.
 void print_rate_map(ENCODER *, char *);
-void output_rate_map(ENCODER *, char *);
+void output_rate_map(ENCODER *, char *, int);
 void print_rate_compare_map(ENCODER *, char *);
 void print_rate_compare_class_map(ENCODER *, char *);
 void print_block_size(int **, char ***, int, int, int, char *);

@@ -297,6 +297,7 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 		sizeof(int));
 	enc->num_nzcoef = (int *)alloc_mem(enc->num_class * sizeof(int));
 	enc->optimize_loop = 0;
+	cost_range = 0;
 
 #if AUTO_PRD_ORDER
 	for (i = 0; i < enc->num_class; i++) {
@@ -364,6 +365,7 @@ ENCODER *init_encoder(IMAGE *img, int num_class, int num_group,
 			}
 		}
 		enc->cost[enc->height][0] = 8;
+		cost_range = 1;
 	#endif
 	if (enc->quadtree_depth > 0) {
 		y = (enc->height + MAX_BSIZE - 1) / MAX_BSIZE;
@@ -759,7 +761,7 @@ void save_prediction_value(ENCODER *enc)
 	}
 }
 
-#if CONTEXT_ERROR
+// #if CONTEXT_ERROR
 int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出(予測誤差和)
 {
 	int u=0, k, *roff_p, *err_p, *wt_p;
@@ -782,7 +784,7 @@ int calc_uenc(ENCODER *enc, int y, int x)		//特徴量算出(予測誤差和)
 	#endif
 	return (u);
 }
-#elif CONTEXT_COST_MOUNT
+// #elif CONTEXT_COST_MOUNT
 int calc_uenc2(ENCODER *enc, int y, int x){	//特徴量算出(符号量和)
 	int u=0, k, *roff_p;
 	double *wt_p;
@@ -2261,7 +2263,7 @@ void optimize_coef(ENCODER *enc, int cl, int pos, int *num_eff)
 		// class_p = enc->class[y];
 		for (x = 0; x < enc->width; x++) {
 			// if (cl != *class_p++) continue;
-	  	if (enc->weight[y][x][cl] == 0) continue;
+			if (enc->weight[y][x][cl] == 0) continue;
 			u = enc->upara[y][x];
 			peak = set_mask_parameter_optimize(enc, y, x, u, cl);
 			roff_p = enc->roff[y][x];
@@ -2350,9 +2352,12 @@ void optimize_coef(ENCODER *enc, int cl, int pos, int *num_eff)
 		for (y = 0; y < enc->height; y++) {
 			class_p = enc->class[y];
 			for (x = 0; x < enc->width; x++) {
+			#if TEMPLATE_MATCHING_ON
 				if (cl == enc->temp_cl ){
 					enc->prd_class[y][x][cl] = exam_array[y][x][0];
-				} else if (cl == *class_p++) {
+				} else
+			#endif
+				if (cl == *class_p++) {
 					org_p = &enc->org[y][x];
 					roff_p = enc->roff[y][x];
 					enc->prd[y][x] += org_p[roff_p[pos]] * diff[j];
@@ -3470,7 +3475,7 @@ int write_header(ENCODER *enc, FILE *fp)
 	bits += putbits(fp, 1, (enc->quadtree_depth < 0)? 0 : 1);
 
 #if TEMPLATE_MATCHING_ON
-	bits += putbits(fp, 6, enc->temp_peak_num);
+	bits += putbits(fp, 5, enc->temp_peak_num);
 	printf("TEMP_PEAK_NUM: %d\n", enc->temp_peak_num);
 #endif
 #if CONTEXT_COST_MOUNT
@@ -5184,7 +5189,7 @@ int main(int argc, char **argv)
 	print_mask(enc->mask, enc->height, enc->width, outfile);
 	print_amp_chara(enc->predictor, enc->max_prd_order, enc->num_class, enc->height, enc->width, outfile);
 	print_rate_map(enc, outfile);
-	output_rate_map(enc, outfile);
+	output_rate_map(enc, outfile, cost_range);
 	calc_var_upara(enc, outfile);
 	print_rate_compare_map(enc, outfile);
 	print_rate_compare_class_map(enc, outfile);
