@@ -4786,12 +4786,10 @@ int main(int argc, char **argv)
 	}
 	pmlist_save = (PMODEL **)alloc_mem(enc->num_group * sizeof(PMODEL *));
 
-#if TEMPLATE_MATCHING_ON
-	// tempm_array = (int ***)alloc_3d_array(enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, sizeof(int));
-	// init_3d_array(tempm_array, enc->height, enc->width, MAX_DATA_SAVE_DOUBLE, 0);
-	exam_array = (int ***)alloc_3d_array(enc->height, enc->width, TEMPLATE_CLASS_NUM, sizeof(int));
+#if TEMPLATE_MATCHING_ON	// テンプレートマッチングの準備
+	exam_array = (int ***)alloc_3d_array(enc->height, enc->width, TEMPLATE_CLASS_NUM, sizeof(int));	//補正値が保存される配列
 	init_3d_array(exam_array, enc->height, enc->width, TEMPLATE_CLASS_NUM, 0);
-	TemplateM(enc, outfile);
+	TemplateM(enc, outfile);	// テンプレートマッチング本体
 	w_gr_save = (int *)alloc_mem(enc->num_group * sizeof(int));
 	for(gr=0; gr<enc->num_group-1; gr++){
 		enc->w_gr[gr] = 0;
@@ -4799,9 +4797,6 @@ int main(int argc, char **argv)
 	enc->w_gr[enc->num_group-1] = MAX_UPARA;
 #endif
 
-//*****************************************************************************************************************************************************//
-//*****************************************************************************************************************************************************//
-//*****************************************************************************************************************************************************//	
 	/* 1st loop */
 	//単峰性確率モデルによる算術符号化
 	enc->optimize_loop = 1;
@@ -4877,9 +4872,6 @@ int main(int argc, char **argv)
 	set_weight_flag(enc);	//各画素毎にマスクのサイズに応じた隣のブロックにかかる画素の数を算出
 
 
-//*****************************************************************************************************************************************************//
-//*****************************************************************************************************************************************************//
-//*****************************************************************************************************************************************************//
 	/* 2nd loop */
 	//マスクによる多峰性確率モデルの作成および算術符号化
 	enc->optimize_loop = 2;
@@ -4887,8 +4879,8 @@ int main(int argc, char **argv)
 	sw = 0;
 	del=0;
 #if TEMPLATE_MATCHING_ON
-	enc->temp_peak_num = TEMPLATE_CLASS_NUM;
-	mask->temp_cl = enc->temp_cl;
+	enc->temp_peak_num = TEMPLATE_CLASS_NUM;	// 事例の使用する数
+	mask->temp_cl = enc->temp_cl;	// テンプレートマッチングがどのクラス番号か
 #endif
 #if RENEW_ADC
 	int cost_save=0, flg=0, before_cost=0;
@@ -4905,12 +4897,12 @@ int main(int argc, char **argv)
 		side_cost = sc = encode_predictor(NULL, enc, 1);	//予測器の符号量を見積もる
 		printf("[%d]->", (int)sc);
 #if TEMPLATE_MATCHING_ON
-		cost = optimize_template(enc);
-		side_cost += sc = encode_w_gr_threshold(NULL, enc, 1);
+		cost = optimize_template(enc);	// テンプレートマッチング周りのパラメータを最適化
+		side_cost += sc = encode_w_gr_threshold(NULL, enc, 1);	// 片側ラプラス関数用のしきい値の符号量見積もり
 		printf(" %d(%2d)[%d]->", (int)cost, enc->temp_peak_num, (int)sc);
 #endif
 #if OPTIMIZE_MASK_LOOP
-		cost = optimize_group_mult(enc);
+		cost = optimize_group_mult(enc);	// しきい値および確率モデルの最適化
 #else
 		cost = optimize_group(enc);	//閾値に対する分散の再決定
 #endif
@@ -4920,18 +4912,14 @@ int main(int argc, char **argv)
 		side_cost += sc = encode_class(NULL, enc, 1);	//クラス情報の符号量を見積もる
 		printf(" %d[%d](%d)", (int)cost, (int)sc, (int)side_cost);
 #if OPTIMIZE_MASK_LOOP
-		// if (sw != 0) {
-		cost = optimize_mask(enc);
+		cost = optimize_mask(enc);	// マスクサイズの最適化
 		printf("-> %d", (int)cost);
-		// }else{
-			// set_weight_flag(enc);
-		// }
 #endif
 		cost += side_cost;
 #if AUTO_DEL_CL
-		if (sw != 0 && del < 3) {	//コスト削減に一度でも失敗した場合に入る
+		if (sw != 0 && del < 3) {	//コスト削減に一度でも失敗した場合に入る	delは自動削除に失敗した回数
 			if( enc->num_class > 1) {
-			#if PAST_ADC
+			#if PAST_ADC	//従来の自動削除方式
 				sw = enc->num_class;
 				cost = auto_del_class(enc, cost);	//使用していないクラスの削除
 				cl = 1;
@@ -4940,9 +4928,9 @@ int main(int argc, char **argv)
 					cost = auto_del_class(enc, cost);
 					cl++;
 				}
-			#elif RENEW_ADC
+			#elif RENEW_ADC 	// 予測器の削除数に制限を設けた新しい方式
 				// sw = enc->num_class;
-				save_info(enc, min_cost_side, 0);
+				save_info(enc, min_cost_side, 0);	// 必要な情報を一旦保存
 				yy = xx =0;
 				cost_save = min_cost;
 				before_cost = cost;
@@ -4959,7 +4947,7 @@ int main(int argc, char **argv)
 						#endif
 						cost_save = cost;
 						xx = yy;
-						save_info(enc, min_cost_side, 0);
+						save_info(enc, min_cost_side, 0);	// 更新した後の情報を保存
 						flg = 1;
 					} else if(cost < before_cost && flg != 1){
 						#if CHECK_DEBUG
@@ -4977,7 +4965,7 @@ int main(int argc, char **argv)
 					if(enc->num_class <= 1)	break;
 					// break;
 				}
-				if(flg == 1){
+				if(flg == 1){	// 自動削除周りの情報をリストア
 					save_info(enc, min_cost_side, 1);
 					if(del > 0)del--;
 				} else if(flg == 2){
@@ -4990,7 +4978,7 @@ int main(int argc, char **argv)
 					printf("(%d)", del);
 				#endif
 			#endif
-				cost = calc_side_info(enc, calc_cost(enc, 0, 0, enc->height, enc->width));
+				cost = calc_side_info(enc, calc_cost(enc, 0, 0, enc->height, enc->width));	//付加情報も含めたコスト算出
 				printf("->%d[%d]", (int)cost, enc->num_class);
 			}
 		}
@@ -5006,7 +4994,7 @@ int main(int argc, char **argv)
 			sw = 0;
 			j = i;
 #if RENEW_ADC
-			if(del >= 3)	del--;
+			if(del >= 3)	del--;	// 符号量が下がったら自動削除をまたやってみる
 #endif
 			if (f_optpred) {
 				num_class_save = enc->num_class;
