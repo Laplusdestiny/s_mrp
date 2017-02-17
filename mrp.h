@@ -29,7 +29,7 @@
 
 /****** MRP-VERSION ************************/
 #define MAGIC_NUMBER	('M' << 8) + 'R'
-#define BANNER		"ENCMRP/DECMRP version %.2f ( Jan. 2016 )"
+#define BANNER		"ENCMRP/DECMRP version %.2f ( Feb. 2016 )"
 #define VERSION		700
 
 /****** OPTIMIZE ***************************/
@@ -100,7 +100,7 @@
 #define NUM_ZMODEL		49
 #define TOT_ZEROFR		(1 << 10)
 #define MAX_SYMBOL		1024	// must be >> MAX_UPARA
-#define CONTEXT_COST_MOUNT	0
+#define CONTEXT_COST_MOUNT	1	
 
 #if CONTEXT_COST_MOUNT
 	#define	CONTEXT_ERROR	0
@@ -152,15 +152,15 @@
 #if TEMPLATE_MATCHING_ON
 
 // Template Matching Funtion Mode
-#define ZNCC				0
-#define MANHATTAN_SORT		0	//市街地距離で近い順に事例を更に並び替える
+#define ZNCC				1
+#define MANHATTAN_SORT		1	//市街地距離で近い順に事例を更に並び替える
 #define TEMPLATEM_LOG_OUTPUT	1	//テンプレートマッチングの結果を書き出す
 									//0にすれば出力ファイルから事例のデータを復元
 
 // Template Matching Parameters
 #define AREA				6
 #define Y_SIZE				20
-#define X_SIZE				20	//調査結果より80*20がいいかも？
+#define X_SIZE				40	//調査結果より80*20がいいかも？
 #define NAS_ACCURACY		1000
 #define MAX_DATA_SAVE		TEMPLATE_CLASS_NUM
 #define MAX_DATA_SAVE_DOUBLE 	MAX_DATA_SAVE*4
@@ -186,7 +186,7 @@
 #define CHECK_TM 		0
 #define CHECK_TM_DETAIL	0
 #define	CHECK_TM_WEIGHT	0
-#define CHECK_DEBUG 	0
+#define CHECK_DEBUG 	1
 #define CHECK_PMODEL	0
 #define CHECK_CLASS		0
 #define CHECK_PREDICTOR	0

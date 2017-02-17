@@ -18,7 +18,7 @@ https://github.com/Laplusdestiny/s_mrp/wiki
 |makefile|コンパイル用，コンパイルオプションなどはここで設定|
 |m|コンパイル→実行を一括で(shell)|
 |init_directory.sh|フォルダを再構築|
-|README.txt|これ|
+|README.md|これ|
 
 ## オプション周り
 mrp.hの中身について
@@ -26,19 +26,10 @@ mrp.hの中身について
 |定義名|意味|
 |:-:|:-:|
 |OPT_SIDE_INFO|付加情報も含めた最適化|
-|RENEW_ADC|予測器自動削除の個数を制限(墨氏)|
-|PAST_ADC|従来の予測器自動削除(柴崎氏)|
+|RENEW_ADC|予測器自動削除の個数を制限(墨方式)|
+|PAST_ADC|従来の予測器自動削除(柴崎氏方式)|
 |MAX_DEL_CLASS|削除個数の制限数|
 |EXTRA_AUTO_DEL|自動削除に失敗してループを抜ける数|
-
-### MULT PEAK
-|定義名|意味|
-|:-:|:-:|
-|MULT_PEAK_MODE|多峰性確率モデルによる符号化|
-|OPTIMIZE_MASK|マスクサイズの最適化|
-|WIN_BSIZE|マスクサイズの切り替え単位のブロックサイズ|
-|INIT_MASK|最初のマスクサイズ(基本的には1*1)|
-|MAX_PEAK_NUM|多峰性確率モデルにおけるピークの最大数|
 
 ### MULT PEAK
 |定義名|意味|
