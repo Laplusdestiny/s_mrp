@@ -810,7 +810,6 @@ int calc_uenc2(ENCODER *enc, int y, int x){	//特徴量算出(符号量和)
 	#endif
 	return (u);
 }
-#endif
 
 #if TEMPLATE_MATCHING_ON
 void*** TemplateM (ENCODER *enc, char *outfile) {
@@ -830,7 +829,8 @@ void*** TemplateM (ENCODER *enc, char *outfile) {
 #endif
 
 #if MANHATTAN_SORT
-	int *mcost_num, max_nas=0, before_nas_num=0;
+	int *mcost_num, max_nas=0, before_nas_num=0, g, h;
+	TM_Member temp;
 	printf("MANHATTAN_SORT\tON\n");
 #endif
 
@@ -1025,7 +1025,7 @@ for(y = 0 ; y < enc->height ; y++){
 		// mcost_num = memset(mcost_num, 0, sizeof(memset));
 		before_nas_num=0;
 		for( g = 0 ; g < j ; g++){
-			mcost_num[tm[g].sum]++;
+			mcost_num[(int)tm[g].sum]++;
 		}
 
 		for( g = 0 ; g <= max_nas ; g++){

@@ -665,8 +665,7 @@ int calc_udec2(DECODER *dec, int y, int x)	//特徴量算出(符号量和)
 void TemplateM (DECODER *dec, int dec_y, int dec_x){
 	int bx, by, i, j, k, count, area1[AREA], area_o[AREA], *roff_p, *org_p,  x_size = X_SIZE, sum1, sum_o, temp_x, temp_y, break_flag=0, /**tm_array,*/ temp_peak_num=0, window_size = Y_SIZE * (X_SIZE * 2 + 1) + X_SIZE;
 	double ave1, ave_o, nas;
-	TM_Member tm[window_size];
-	TM_Member *tm_save;
+	TM_Member tm[window_size], *tm_save;
 
 #if ZNCC
 	double dist1=0, dist_o=0, *area1_d=0, *area_o_d=0;
@@ -675,7 +674,8 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 #endif
 
 #if MANHATTAN_SORT
-	int *mcost_num, max_nas =0, before_nas_num=0;
+	int *mcost_num, max_nas =0, before_nas_num=0, g, h;
+	TM_Member temp;
 #endif
 
 	// tm_array = (int *)alloc_mem( window_size * 4 * sizeof(int));
@@ -857,7 +857,7 @@ void TemplateM (DECODER *dec, int dec_y, int dec_x){
 
 		before_nas_num = 0;
 		for(g=0; g<j; g++){
-			mcost_num[tm[g].sum]++;
+			mcost_num[(int)tm[g].sum]++;
 		}
 
 		for(g=0; g<=max_nas; g++){
